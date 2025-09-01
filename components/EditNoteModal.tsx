@@ -1,0 +1,458 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { X, Save, Tag, Plus, Trash2, Circle, CheckCircle2 } from 'lucide-react-native';
+import { CallNote, NoteStatus } from '@/types/contact';
+
+interface EditNoteModalProps {
+  visible: boolean;
+  note: CallNote | null;
+  onClose: () => void;
+  onSave: (updatedNote: Partial<CallNote>) => void;
+  onDelete?: (noteId: string) => void;
+}
+
+const PRIORITY_COLORS = {
+  low: '#34C759',
+  medium: '#FF9500',
+  high: '#FF3B30',
+};
+
+const PRIORITY_LABELS = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+};
+
+export default function EditNoteModal({ visible, note, onClose, onSave, onDelete }: EditNoteModalProps) {
+  const [noteText, setNoteText] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<NoteStatus>('follow-up');
+  const [customStatus, setCustomStatus] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [category, setCategory] = useState('');
+  const [showStatusPicker, setShowStatusPicker] = useState(false);
+  const [showPriorityPicker, setShowPriorityPicker] = useState(false);
+
+  useEffect(() => {
+    if (note) {
+      setNoteText(note.note);
+      setSelectedStatus(note.status);
+      setCustomStatus(note.customStatus || '');
+      setTags(note.tags || []);
+      setPriority(note.priority || 'medium');
+      setCategory(note.category || '');
+    }
+  }, [note]);
+
+  const handleSave = () => {
+    if (!note || !noteText.trim()) return;
+
+    const finalCustomStatus = selectedStatus === 'other' ? customStatus.trim() : undefined;
+    const updatedNote: Partial<CallNote> = {
+      note: noteText.trim(),
+      status: selectedStatus,
+      customStatus: finalCustomStatus,
+      tags: tags.filter(tag => tag.trim()),
+      priority,
+      category: category.trim() || undefined,
+      updatedAt: new Date(),
+    };
+
+    onSave(updatedNote);
+    onClose();
+  };
+
+  const handleDelete = () => {
+    if (!note || !onDelete) return;
+
+    Alert.alert(
+      'Delete Note',
+      'Are you sure you want to delete this note? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            onDelete(note.id);
+            onClose();
+          },
+        },
+      ]
+    );
+  };
+
+  const addTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags([...tags, newTag.trim()]);
+      setNewTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const getStatusText = (status: NoteStatus, customStatus?: string) => {
+    if (status === 'other' && customStatus) return customStatus;
+    switch (status) {
+      case 'follow-up': return 'Follow-up';
+      case 'waiting-reply': return 'Waiting Reply';
+      case 'closed': return 'Closed';
+      case 'other': return 'Other';
+      default: return 'Unknown';
+    }
+  };
+
+  if (!visible || !note) return null;
+
+  return (
+    <Modal
+      visible={true}
+      animationType="slide"
+      presentationStyle="pageSheet"
+    >
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose}>
+            <X size={24} color="#007AFF" />
+          </TouchableOpacity>
+          
+          <Text style={styles.title}>Edit Note</Text>
+          
+          <View style={styles.headerActions}>
+            {onDelete && (
+              <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+                <Trash2 size={20} color="#FF3B30" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+              <Save size={20} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <Text style={styles.contactName}>{note.contactName}</Text>
+          <Text style={styles.contactPhone}>
+            {new Date(note.callStartTime).toLocaleDateString()} • {new Date(note.callStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+          
+          {/* Note Text */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Note</Text>
+            <TextInput
+              style={styles.noteInput}
+              placeholder="Add your note here..."
+              placeholderTextColor="#999"
+              multiline
+              textAlignVertical="top"
+              value={noteText}
+              onChangeText={setNoteText}
+            />
+          </View>
+
+          {/* Status Selection */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Status</Text>
+            <TouchableOpacity 
+              style={styles.selector}
+              onPress={() => setShowStatusPicker(!showStatusPicker)}
+            >
+              <Tag size={16} color="#007AFF" />
+              <Text style={styles.selectorText}>
+                {getStatusText(selectedStatus, customStatus)}
+              </Text>
+            </TouchableOpacity>
+            
+            {showStatusPicker && (
+              <View style={styles.picker}>
+                {(['follow-up', 'waiting-reply', 'closed', 'other'] as NoteStatus[]).map((status) => (
+                  <TouchableOpacity
+                    key={status}
+                    style={styles.pickerOption}
+                    onPress={() => {
+                      setSelectedStatus(status);
+                      if (status !== 'other') {
+                        setShowStatusPicker(false);
+                      }
+                    }}
+                  >
+                    <Text style={[styles.pickerOptionText, selectedStatus === status && styles.selectedText]}>
+                      {getStatusText(status)}
+                    </Text>
+                    {selectedStatus === status && <CheckCircle2 size={16} color="#007AFF" />}
+                  </TouchableOpacity>
+                ))}
+                
+                {selectedStatus === 'other' && (
+                  <TextInput
+                    style={styles.customInput}
+                    placeholder="Enter custom status..."
+                    placeholderTextColor="#999"
+                    value={customStatus}
+                    onChangeText={setCustomStatus}
+                    onSubmitEditing={() => setShowStatusPicker(false)}
+                  />
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Priority Selection */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Priority</Text>
+            <TouchableOpacity 
+              style={styles.selector}
+              onPress={() => setShowPriorityPicker(!showPriorityPicker)}
+            >
+              <Circle size={16} color={PRIORITY_COLORS[priority]} fill={PRIORITY_COLORS[priority]} />
+              <Text style={styles.selectorText}>{PRIORITY_LABELS[priority]}</Text>
+            </TouchableOpacity>
+            
+            {showPriorityPicker && (
+              <View style={styles.picker}>
+                {(['low', 'medium', 'high'] as const).map((p) => (
+                  <TouchableOpacity
+                    key={p}
+                    style={styles.pickerOption}
+                    onPress={() => {
+                      setPriority(p);
+                      setShowPriorityPicker(false);
+                    }}
+                  >
+                    <View style={styles.priorityOption}>
+                      <Circle size={16} color={PRIORITY_COLORS[p]} fill={PRIORITY_COLORS[p]} />
+                      <Text style={[styles.pickerOptionText, priority === p && styles.selectedText]}>
+                        {PRIORITY_LABELS[p]}
+                      </Text>
+                    </View>
+                    {priority === p && <CheckCircle2 size={16} color="#007AFF" />}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Category */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Category</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Sales, Support, Follow-up..."
+              placeholderTextColor="#999"
+              value={category}
+              onChangeText={setCategory}
+            />
+          </View>
+
+          {/* Tags */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Tags</Text>
+            <View style={styles.tagsContainer}>
+              {tags.map((tag, index) => (
+                <View key={index} style={styles.tag}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                  <TouchableOpacity onPress={() => removeTag(tag)}>
+                    <X size={14} color="#666" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+            <View style={styles.addTagContainer}>
+              <TextInput
+                style={styles.tagInput}
+                placeholder="Add a tag..."
+                placeholderTextColor="#999"
+                value={newTag}
+                onChangeText={setNewTag}
+                onSubmitEditing={addTag}
+              />
+              <TouchableOpacity onPress={addTag} style={styles.addTagButton}>
+                <Plus size={16} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deleteButton: {
+    padding: 4,
+  },
+  saveButton: {
+    padding: 4,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  contactName: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  contactPhone: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  noteInput: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#000',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#000',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+  },
+  selector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    gap: 8,
+  },
+  selectorText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+  },
+  picker: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e1e5e9',
+  },
+  pickerOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedText: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  priorityOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  customInput: {
+    padding: 12,
+    fontSize: 16,
+    color: '#333',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e1e5e9',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF20',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  tagText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  addTagContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tagInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#000',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+  },
+  addTagButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    padding: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

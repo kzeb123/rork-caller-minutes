@@ -21,6 +21,10 @@ export interface CallNote {
   callDirection: 'inbound' | 'outbound';
   status: NoteStatus;
   customStatus?: string; // for when status is 'other'
+  updatedAt?: Date;
+  tags?: string[];
+  priority?: 'low' | 'medium' | 'high';
+  category?: string;
 }
 
 export interface IncomingCall {

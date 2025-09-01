@@ -185,6 +185,32 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     }
   });
 
+  const updateNoteMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<CallNote> }) => {
+      const notes = notesQuery.data || [];
+      const updated = notes.map(note => 
+        note.id === id ? { ...note, ...updates, updatedAt: new Date() } : note
+      );
+      await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(updated));
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+    }
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      const notes = notesQuery.data || [];
+      const updated = notes.filter(note => note.id !== noteId);
+      await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(updated));
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+    }
+  });
+
   const addReminderMutation = useMutation({
     mutationFn: async (reminder: Omit<Reminder, 'id' | 'createdAt'>) => {
       const reminders = remindersQuery.data || [];
@@ -584,6 +610,8 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     deleteContact: deleteContactMutation.mutate,
     importContacts: importContactsMutation.mutate,
     isImporting: importContactsMutation.isPending,
+    updateNote: updateNoteMutation.mutate,
+    deleteNote: deleteNoteMutation.mutate,
     addReminder: addReminderMutation.mutate,
     updateReminder: updateReminderMutation.mutate,
     deleteReminder: deleteReminderMutation.mutate,
@@ -626,6 +654,8 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     deleteContactMutation.mutate,
     importContactsMutation.mutate,
     importContactsMutation.isPending,
+    updateNoteMutation.mutate,
+    deleteNoteMutation.mutate,
     addReminderMutation.mutate,
     updateReminderMutation.mutate,
     deleteReminderMutation.mutate,
