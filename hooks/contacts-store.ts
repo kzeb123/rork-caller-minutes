@@ -10,6 +10,19 @@ const CONTACTS_KEY = 'call_notes_contacts';
 const NOTES_KEY = 'call_notes_notes';
 const REMINDERS_KEY = 'call_notes_reminders';
 const ORDERS_KEY = 'call_notes_orders';
+const NOTE_TEMPLATE_KEY = 'call_note_template';
+
+const DEFAULT_NOTE_TEMPLATE = `Call with [CONTACT_NAME] - [DATE]
+
+Purpose of call:
+
+Key points discussed:
+
+Action items:
+
+Next steps:
+
+Additional notes:`;
 
 export const [ContactsProvider, useContacts] = createContextHook(() => {
   // Always call hooks in the same order
@@ -55,6 +68,14 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<Order[]> => {
       const stored = await AsyncStorage.getItem(ORDERS_KEY);
       return stored ? JSON.parse(stored) : [];
+    }
+  });
+
+  const noteTemplateQuery = useQuery({
+    queryKey: ['noteTemplate'],
+    queryFn: async (): Promise<string> => {
+      const stored = await AsyncStorage.getItem(NOTE_TEMPLATE_KEY);
+      return stored || DEFAULT_NOTE_TEMPLATE;
     }
   });
 
@@ -235,8 +256,27 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     }
   });
+
+  const updateNoteTemplateMutation = useMutation({
+    mutationFn: async (template: string) => {
+      await AsyncStorage.setItem(NOTE_TEMPLATE_KEY, template);
+      return template;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['noteTemplate'] });
+    }
+  });
   
   const { mutate: addNoteMutate } = addNoteMutation;
+
+  const openCallNoteModal = useCallback((contact: Contact) => {
+    const now = new Date();
+    setCurrentCallContact(contact);
+    setCallStartTime(now);
+    setCallEndTime(now);
+    setCallDirection('inbound');
+    setShowNoteModal(true);
+  }, []);
 
   const simulateIncomingCall = useCallback((contact: Contact, direction: 'inbound' | 'outbound' = 'inbound') => {
     setIncomingCall({
@@ -412,6 +452,23 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     closeNoteModal();
   }, [currentCallContact, callStartTime, callEndTime, callDirection, addNoteMutate, closeNoteModal, detectDateTimeInText]);
 
+  const getFormattedNoteTemplate = useCallback((contactName: string) => {
+    const template = noteTemplateQuery.data || DEFAULT_NOTE_TEMPLATE;
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    return template
+      .replace(/\[CONTACT_NAME\]/g, contactName)
+      .replace(/\[DATE\]/g, formattedDate);
+  }, [noteTemplateQuery.data]);
+
   const clearAllData = useCallback(async () => {
     await AsyncStorage.removeItem(CONTACTS_KEY);
     await AsyncStorage.removeItem(NOTES_KEY);
@@ -493,7 +550,8 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     notes: notesQuery.data || [],
     reminders: remindersQuery.data || [],
     orders: ordersQuery.data || [],
-    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading,
+    noteTemplate: noteTemplateQuery.data || DEFAULT_NOTE_TEMPLATE,
+    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading,
     incomingCall,
     activeCall,
     showNoteModal,
@@ -513,12 +571,15 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     addOrder: addOrderMutation.mutate,
     updateOrder: updateOrderMutation.mutate,
     deleteOrder: deleteOrderMutation.mutate,
+    updateNoteTemplate: updateNoteTemplateMutation.mutate,
+    openCallNoteModal,
     simulateIncomingCall,
     answerCall,
     declineCall,
     endCall,
     closeNoteModal,
     saveNote,
+    getFormattedNoteTemplate,
     clearAllData,
     createReminderFromDetection,
     closeReminderSuggestionModal,
@@ -527,10 +588,12 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     notesQuery.data,
     remindersQuery.data,
     ordersQuery.data,
+    noteTemplateQuery.data,
     contactsQuery.isLoading,
     notesQuery.isLoading,
     remindersQuery.isLoading,
     ordersQuery.isLoading,
+    noteTemplateQuery.isLoading,
     incomingCall,
     activeCall,
     showNoteModal,
@@ -550,12 +613,15 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     addOrderMutation.mutate,
     updateOrderMutation.mutate,
     deleteOrderMutation.mutate,
+    updateNoteTemplateMutation.mutate,
+    openCallNoteModal,
     simulateIncomingCall,
     answerCall,
     declineCall,
     endCall,
     closeNoteModal,
     saveNote,
+    getFormattedNoteTemplate,
     clearAllData,
     createReminderFromDetection,
     closeReminderSuggestionModal,

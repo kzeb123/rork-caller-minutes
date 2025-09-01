@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { X, Save, Clock, Phone } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 
 export default function NoteModal() {
-  const { showNoteModal, currentCallContact, callStartTime, callEndTime, closeNoteModal, saveNote } = useContacts();
+  const { showNoteModal, currentCallContact, callStartTime, callEndTime, closeNoteModal, saveNote, getFormattedNoteTemplate } = useContacts();
   const [noteText, setNoteText] = useState('');
+
+  useEffect(() => {
+    if (showNoteModal && currentCallContact) {
+      const template = getFormattedNoteTemplate(currentCallContact.name);
+      setNoteText(template);
+    }
+  }, [showNoteModal, currentCallContact, getFormattedNoteTemplate]);
   
   const formatCallDuration = () => {
     if (!callStartTime || !callEndTime) return '0s';
@@ -42,6 +49,11 @@ export default function NoteModal() {
   const handleClose = () => {
     setNoteText('');
     closeNoteModal();
+  };
+
+  const handleSkip = () => {
+    saveNote('');
+    setNoteText('');
   };
 
   if (!showNoteModal || !currentCallContact) return null;

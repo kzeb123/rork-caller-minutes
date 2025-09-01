@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Stack } from 'expo-router';
-import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Phone, Shield, ExternalLink } from 'lucide-react-native';
+import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Phone, Shield, ExternalLink, Edit3, X, Save } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import AddContactModal from '@/components/AddContactModal';
 
 export default function SettingsScreen() {
-  const { contacts, addContact, importContacts, isImporting, clearAllData } = useContacts();
+  const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate } = useContacts();
   const [showAddModal, setShowAddModal] = useState(false);
   const [isExportingCallDirectory, setIsExportingCallDirectory] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateText, setTemplateText] = useState('');
 
   const handleImportContacts = async () => {
     if (Platform.OS === 'web') {
@@ -66,6 +68,22 @@ export default function SettingsScreen() {
         },
       ]
     );
+  };
+
+  const handleEditTemplate = () => {
+    setTemplateText(noteTemplate);
+    setShowTemplateModal(true);
+  };
+
+  const handleSaveTemplate = () => {
+    updateNoteTemplate(templateText);
+    setShowTemplateModal(false);
+    Alert.alert('Template Updated', 'Your call note template has been updated successfully.');
+  };
+
+  const handleCloseTemplate = () => {
+    setShowTemplateModal(false);
+    setTemplateText('');
   };
 
   const handleEnableCallerID = () => {
@@ -286,6 +304,18 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Call Notes</Text>
+          <View style={styles.settingsGroup}>
+            <SettingItem
+              icon={<Edit3 />}
+              title="Edit Note Template"
+              subtitle="Customize the default structure for call notes"
+              onPress={handleEditTemplate}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Management</Text>
           <View style={styles.settingsGroup}>
             <SettingItem
@@ -304,6 +334,52 @@ export default function SettingsScreen() {
         onClose={() => setShowAddModal(false)}
         onAdd={addContact}
       />
+
+      <Modal
+        visible={showTemplateModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <KeyboardAvoidingView 
+          style={styles.templateModalContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.templateHeader}>
+            <TouchableOpacity onPress={handleCloseTemplate}>
+              <X size={24} color="#007AFF" />
+            </TouchableOpacity>
+            
+            <Text style={styles.templateTitle}>Edit Note Template</Text>
+            
+            <TouchableOpacity onPress={handleSaveTemplate}>
+              <Save size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.templateContent}>
+            <Text style={styles.templateDescription}>
+              Customize your default call note template. Use [CONTACT_NAME] and [DATE] as placeholders.
+            </Text>
+            
+            <TextInput
+              style={styles.templateInput}
+              placeholder="Enter your template..."
+              placeholderTextColor="#999"
+              multiline
+              textAlignVertical="top"
+              value={templateText}
+              onChangeText={setTemplateText}
+              autoFocus
+            />
+          </View>
+
+          <View style={styles.templateFooter}>
+            <TouchableOpacity style={styles.templateSaveButton} onPress={handleSaveTemplate}>
+              <Text style={styles.templateSaveButtonText}>Save Template</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -408,5 +484,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+  templateModalContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  templateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+  },
+  templateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  templateContent: {
+    flex: 1,
+    padding: 20,
+  },
+  templateDescription: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  templateInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#000',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    textAlignVertical: 'top',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  templateFooter: {
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+  },
+  templateSaveButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  templateSaveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
