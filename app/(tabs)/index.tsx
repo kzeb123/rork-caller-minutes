@@ -1,18 +1,43 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, SectionList } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity, TextInput, Animated } from 'react-native';
 import { Stack } from 'expo-router';
-import { Users } from 'lucide-react-native';
+import { Users, Search } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import ContactCard from '@/components/ContactCard';
 import NoteModal from '@/components/NoteModal';
 
 export default function ContactsScreen() {
   const { contacts, isLoading } = useContacts();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const searchAnimation = new Animated.Value(0);
+
+  const toggleSearch = () => {
+    const toValue = showSearch ? 0 : 1;
+    setShowSearch(!showSearch);
+    Animated.timing(searchAnimation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    if (showSearch) {
+      setSearchQuery('');
+    }
+  };
+
+  const filteredContacts = useMemo(() => {
+    if (!searchQuery.trim()) return contacts;
+    const query = searchQuery.toLowerCase();
+    return contacts.filter(contact => 
+      contact.name.toLowerCase().includes(query) ||
+      contact.phoneNumber.includes(query)
+    );
+  }, [contacts, searchQuery]);
 
   const sectionedContacts = useMemo(() => {
-    if (!contacts.length) return [];
+    if (!filteredContacts.length) return [];
     
-    const sorted = [...contacts].sort((a, b) => a.name.localeCompare(b.name));
+    const sorted = [...filteredContacts].sort((a, b) => a.name.localeCompare(b.name));
     const sections: { title: string; data: typeof contacts }[] = [];
     
     sorted.forEach(contact => {
@@ -28,7 +53,7 @@ export default function ContactsScreen() {
     });
     
     return sections.sort((a, b) => a.title.localeCompare(b.title));
-  }, [contacts]);
+  }, [filteredContacts]);
 
   const renderContact = ({ item }: { item: any }) => (
     <ContactCard contact={item} />
@@ -63,8 +88,39 @@ export default function ContactsScreen() {
             fontSize: 17,
             fontWeight: '600',
           },
+          headerRight: () => (
+            <TouchableOpacity onPress={toggleSearch} style={styles.searchButton}>
+              <Search size={20} color="#007AFF" />
+            </TouchableOpacity>
+          ),
         }} 
       />
+
+      {/* Search Bar */}
+      <Animated.View 
+        style={[
+          styles.searchContainer,
+          {
+            height: searchAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 60],
+            }),
+            opacity: searchAnimation,
+          }
+        ]}
+      >
+        <View style={styles.searchInputContainer}>
+          <Search size={16} color="#999" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search contacts..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoFocus={showSearch}
+          />
+        </View>
+      </Animated.View>
 
       {sectionedContacts.length > 0 ? (
         <SectionList
@@ -125,5 +181,30 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  searchButton: {
+    padding: 4,
+  },
+  searchContainer: {
+    backgroundColor: '#F2F2F7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#C6C6C8',
+    overflow: 'hidden',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
   },
 });
