@@ -63,3 +63,10 @@ export interface Order {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface DetectedDateTime {
+  originalText: string;
+  suggestedDate: Date;
+  type: 'date' | 'time' | 'datetime';
+  confidence: number;
+}

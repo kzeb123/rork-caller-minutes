@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback, useMemo } from 'react';
 import { Platform } from 'react-native';
 import * as Contacts from 'expo-contacts';
-import { Contact, CallNote, IncomingCall, ActiveCall, Reminder, Order } from '@/types/contact';
+import { Contact, CallNote, IncomingCall, ActiveCall, Reminder, Order, DetectedDateTime } from '@/types/contact';
 
 const CONTACTS_KEY = 'call_notes_contacts';
 const NOTES_KEY = 'call_notes_notes';
@@ -20,6 +20,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
   const [callEndTime, setCallEndTime] = useState<Date | null>(null);
   const [callDirection, setCallDirection] = useState<'inbound' | 'outbound'>('inbound');
+  const [detectedDateTimes, setDetectedDateTimes] = useState<DetectedDateTime[]>([]);
+  const [showReminderSuggestionModal, setShowReminderSuggestionModal] = useState<boolean>(false);
+  const [currentNoteForReminder, setCurrentNoteForReminder] = useState<CallNote | null>(null);
   
   const queryClient = useQueryClient();
 
@@ -287,10 +290,103 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     setCallDirection('inbound');
   }, []);
 
+  // Date/time detection utility function
+  const detectDateTimeInText = useCallback((text: string): DetectedDateTime[] => {
+    const detections: DetectedDateTime[] = [];
+    const now = new Date();
+    
+    // Common date/time patterns
+    const patterns = [
+      // Time patterns
+      { regex: /\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/gi, type: 'time' as const },
+      { regex: /\b(\d{1,2})\s*(am|pm)\b/gi, type: 'time' as const },
+      
+      // Date patterns
+      { regex: /\b(tomorrow|tmrw)\b/gi, type: 'date' as const },
+      { regex: /\b(today)\b/gi, type: 'date' as const },
+      { regex: /\b(next week)\b/gi, type: 'date' as const },
+      { regex: /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi, type: 'date' as const },
+      { regex: /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/g, type: 'date' as const },
+      { regex: /\b(\d{1,2})-(\d{1,2})(?:-(\d{2,4}))?\b/g, type: 'date' as const },
+      { regex: /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:,?\s+(\d{4}))?\b/gi, type: 'date' as const },
+      { regex: /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\.?\s+(\d{1,2})(?:,?\s+(\d{4}))?\b/gi, type: 'date' as const },
+      
+      // Combined patterns
+      { regex: /\b(tomorrow|tmrw)\s+at\s+(\d{1,2}):(\d{2})\s*(am|pm)?\b/gi, type: 'datetime' as const },
+      { regex: /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+at\s+(\d{1,2}):(\d{2})\s*(am|pm)?\b/gi, type: 'datetime' as const },
+    ];
+    
+    patterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.regex.exec(text)) !== null) {
+        const matchText = match[0];
+        let suggestedDate = new Date(now);
+        
+        try {
+          // Parse different date/time formats
+          if (matchText.toLowerCase().includes('tomorrow') || matchText.toLowerCase().includes('tmrw')) {
+            suggestedDate.setDate(now.getDate() + 1);
+          } else if (matchText.toLowerCase().includes('today')) {
+            // Keep current date
+          } else if (matchText.toLowerCase().includes('next week')) {
+            suggestedDate.setDate(now.getDate() + 7);
+          } else if (matchText.toLowerCase().match(/monday|tuesday|wednesday|thursday|friday|saturday|sunday/)) {
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const targetDay = dayNames.indexOf(matchText.toLowerCase().match(/monday|tuesday|wednesday|thursday|friday|saturday|sunday/)![0]);
+            const currentDay = now.getDay();
+            let daysUntilTarget = targetDay - currentDay;
+            if (daysUntilTarget <= 0) daysUntilTarget += 7; // Next occurrence
+            suggestedDate.setDate(now.getDate() + daysUntilTarget);
+          }
+          
+          // Handle time parsing
+          const timeMatch = matchText.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i) || matchText.match(/(\d{1,2})\s*(am|pm)/i);
+          if (timeMatch) {
+            let hours = parseInt(timeMatch[1]);
+            const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+            const ampm = timeMatch[3] || timeMatch[2];
+            
+            if (ampm && ampm.toLowerCase() === 'pm' && hours !== 12) {
+              hours += 12;
+            } else if (ampm && ampm.toLowerCase() === 'am' && hours === 12) {
+              hours = 0;
+            }
+            
+            suggestedDate.setHours(hours, minutes, 0, 0);
+          }
+          
+          detections.push({
+            originalText: matchText,
+            suggestedDate,
+            type: pattern.type,
+            confidence: 0.8
+          });
+        } catch (error) {
+          console.log('Error parsing date/time:', error);
+        }
+      }
+    });
+    
+    return detections;
+  }, []);
+
   const saveNote = useCallback((noteText: string) => {
     if (currentCallContact && callStartTime && callEndTime) {
       const duration = Math.floor((callEndTime.getTime() - callStartTime.getTime()) / 1000);
       const finalNote = noteText.trim() || 'No note was taken';
+      
+      const newNote: CallNote = {
+        id: Date.now().toString(),
+        contactId: currentCallContact.id,
+        contactName: currentCallContact.name,
+        note: finalNote,
+        callStartTime,
+        callEndTime,
+        callDuration: duration,
+        isAutoGenerated: !noteText.trim(),
+        callDirection,
+        createdAt: new Date(),
+      };
       
       addNoteMutate({
         contactId: currentCallContact.id,
@@ -302,9 +398,19 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         isAutoGenerated: !noteText.trim(),
         callDirection,
       });
+      
+      // Detect dates/times in the note text if it's not auto-generated
+      if (noteText.trim()) {
+        const detectedDates = detectDateTimeInText(noteText);
+        if (detectedDates.length > 0) {
+          setDetectedDateTimes(detectedDates);
+          setCurrentNoteForReminder(newNote);
+          setShowReminderSuggestionModal(true);
+        }
+      }
     }
     closeNoteModal();
-  }, [currentCallContact, callStartTime, callEndTime, callDirection, addNoteMutate, closeNoteModal]);
+  }, [currentCallContact, callStartTime, callEndTime, callDirection, addNoteMutate, closeNoteModal, detectDateTimeInText]);
 
   const clearAllData = useCallback(async () => {
     await AsyncStorage.removeItem(CONTACTS_KEY);
@@ -316,6 +422,29 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryClient.invalidateQueries({ queryKey: ['reminders'] });
     queryClient.invalidateQueries({ queryKey: ['orders'] });
   }, [queryClient]);
+
+  const { mutate: addReminderMutate } = addReminderMutation;
+
+  const createReminderFromDetection = useCallback((detection: DetectedDateTime, title?: string) => {
+    if (currentNoteForReminder) {
+      const reminderTitle = title || `Follow up: ${detection.originalText}`;
+      addReminderMutate({
+        contactId: currentNoteForReminder.contactId,
+        contactName: currentNoteForReminder.contactName,
+        title: reminderTitle,
+        description: `From call note: "${currentNoteForReminder.note.substring(0, 100)}${currentNoteForReminder.note.length > 100 ? '...' : ''}"`,
+        dueDate: detection.suggestedDate,
+        isCompleted: false,
+        relatedNoteId: currentNoteForReminder.id,
+      });
+    }
+  }, [currentNoteForReminder, addReminderMutate]);
+
+  const closeReminderSuggestionModal = useCallback(() => {
+    setShowReminderSuggestionModal(false);
+    setDetectedDateTimes([]);
+    setCurrentNoteForReminder(null);
+  }, []);
 
   // Call Directory Extension Support (iOS only)
   const getCallDirectoryData = useCallback(() => {
@@ -371,6 +500,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     currentCallContact,
     callStartTime,
     callEndTime,
+    detectedDateTimes,
+    showReminderSuggestionModal,
+    currentNoteForReminder,
     addContact: addContactMutation.mutate,
     deleteContact: deleteContactMutation.mutate,
     importContacts: importContactsMutation.mutate,
@@ -388,6 +520,8 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     closeNoteModal,
     saveNote,
     clearAllData,
+    createReminderFromDetection,
+    closeReminderSuggestionModal,
   }), [
     contactsQuery.data,
     notesQuery.data,
@@ -403,6 +537,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     currentCallContact,
     callStartTime,
     callEndTime,
+    detectedDateTimes,
+    showReminderSuggestionModal,
+    currentNoteForReminder,
     addContactMutation.mutate,
     deleteContactMutation.mutate,
     importContactsMutation.mutate,
@@ -420,5 +557,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     closeNoteModal,
     saveNote,
     clearAllData,
+    createReminderFromDetection,
+    closeReminderSuggestionModal,
   ]);
 });

@@ -4,6 +4,10 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ContactsProvider } from "@/hooks/contacts-store";
+import IncomingCallModal from "@/components/IncomingCallModal";
+import ActiveCallModal from "@/components/ActiveCallModal";
+import NoteModal from "@/components/NoteModal";
+import ReminderSuggestionModal from "@/components/ReminderSuggestionModal";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,6 +32,10 @@ export default function RootLayout() {
       <ContactsProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <RootLayoutNav />
+          <IncomingCallModal />
+          <ActiveCallModal />
+          <NoteModal />
+          <ReminderSuggestionModal />
         </GestureHandlerRootView>
       </ContactsProvider>
     </QueryClientProvider>
