@@ -6,7 +6,7 @@ import { useContacts } from '@/hooks/contacts-store';
 import AddContactModal from '@/components/AddContactModal';
 
 export default function SettingsScreen() {
-  const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate } = useContacts();
+  const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts } = useContacts();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -47,6 +47,37 @@ export default function SettingsScreen() {
       Alert.alert(
         'Import Failed',
         error.message || 'Failed to import contacts. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleAddFakeContacts = async () => {
+    try {
+      const result = await new Promise<{ added: number; total: number }>((resolve, reject) => {
+        addFakeContacts(undefined, {
+          onSuccess: resolve,
+          onError: reject,
+        });
+      });
+
+      if (result.added > 0) {
+        Alert.alert(
+          'Fake Contacts Added',
+          `Successfully added ${result.added} fake contacts for testing. You now have ${result.total} total contacts.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'No New Contacts',
+          'All fake contacts are already in the app.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error: any) {
+      Alert.alert(
+        'Failed to Add Contacts',
+        error.message || 'Failed to add fake contacts. Please try again.',
         [{ text: 'OK' }]
       );
     }
@@ -157,6 +188,13 @@ export default function SettingsScreen() {
               subtitle={Platform.OS === 'web' ? 'Not available on web' : `Sync contacts from your device (${contacts.length} contacts)`}
               onPress={handleImportContacts}
               disabled={isImporting || Platform.OS === 'web'}
+            />
+            <SettingItem
+              icon={<Users />}
+              title={isAddingFakeContacts ? 'Adding...' : 'Add Fake Contacts'}
+              subtitle="Add sample contacts for testing the app"
+              onPress={handleAddFakeContacts}
+              disabled={isAddingFakeContacts}
             />
           </View>
         </View>

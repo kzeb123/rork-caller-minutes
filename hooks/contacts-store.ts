@@ -525,6 +525,96 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryClient.invalidateQueries({ queryKey: ['orders'] });
   }, [queryClient]);
 
+  const addFakeContactsMutation = useMutation({
+    mutationFn: async () => {
+      const fakeContacts: Omit<Contact, 'id' | 'createdAt'>[] = [
+        {
+          name: 'John Smith',
+          phoneNumber: '+1234567890',
+        },
+        {
+          name: 'Sarah Johnson',
+          phoneNumber: '+1987654321',
+        },
+        {
+          name: 'Michael Brown',
+          phoneNumber: '+1555123456',
+        },
+        {
+          name: 'Emily Davis',
+          phoneNumber: '+1444987654',
+        },
+        {
+          name: 'David Wilson',
+          phoneNumber: '+1333456789',
+        },
+        {
+          name: 'Lisa Anderson',
+          phoneNumber: '+1222789012',
+        },
+        {
+          name: 'Robert Taylor',
+          phoneNumber: '+1111345678',
+        },
+        {
+          name: 'Jennifer Martinez',
+          phoneNumber: '+1666901234',
+        },
+        {
+          name: 'Christopher Lee',
+          phoneNumber: '+1777567890',
+        },
+        {
+          name: 'Amanda White',
+          phoneNumber: '+1888234567',
+        },
+        {
+          name: 'James Garcia',
+          phoneNumber: '+1999678901',
+        },
+        {
+          name: 'Michelle Rodriguez',
+          phoneNumber: '+1555890123',
+        },
+        {
+          name: 'Daniel Thompson',
+          phoneNumber: '+1444123456',
+        },
+        {
+          name: 'Jessica Moore',
+          phoneNumber: '+1333789012',
+        },
+        {
+          name: 'Matthew Jackson',
+          phoneNumber: '+1222456789',
+        }
+      ];
+
+      const existingContacts = contactsQuery.data || [];
+      const existingPhones = new Set(existingContacts.map(c => c.phoneNumber));
+      
+      const newContacts: Contact[] = [];
+      
+      fakeContacts.forEach(fakeContact => {
+        if (!existingPhones.has(fakeContact.phoneNumber)) {
+          newContacts.push({
+            ...fakeContact,
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            createdAt: new Date(),
+          });
+          existingPhones.add(fakeContact.phoneNumber);
+        }
+      });
+
+      const updated = [...existingContacts, ...newContacts];
+      await AsyncStorage.setItem(CONTACTS_KEY, JSON.stringify(updated));
+      return { added: newContacts.length, total: updated.length };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+    }
+  });
+
   const { mutate: addReminderMutate } = addReminderMutation;
 
   const createReminderFromDetection = useCallback((detection: DetectedDateTime, title?: string) => {
@@ -628,6 +718,8 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     saveNote,
     getFormattedNoteTemplate,
     clearAllData,
+    addFakeContacts: addFakeContactsMutation.mutate,
+    isAddingFakeContacts: addFakeContactsMutation.isPending,
     createReminderFromDetection,
     closeReminderSuggestionModal,
   }), [
@@ -672,6 +764,8 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     saveNote,
     getFormattedNoteTemplate,
     clearAllData,
+    addFakeContactsMutation.mutate,
+    addFakeContactsMutation.isPending,
     createReminderFromDetection,
     closeReminderSuggestionModal,
   ]);
