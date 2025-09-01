@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Stack } from 'expo-router';
-import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Phone, Shield, ExternalLink, Edit3, X, Save } from 'lucide-react-native';
+import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import AddContactModal from '@/components/AddContactModal';
 
 export default function SettingsScreen() {
   const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate } = useContacts();
   const [showAddModal, setShowAddModal] = useState(false);
-  const [isExportingCallDirectory, setIsExportingCallDirectory] = useState(false);
+
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateText, setTemplateText] = useState('');
 
@@ -86,100 +86,7 @@ export default function SettingsScreen() {
     setTemplateText('');
   };
 
-  const handleEnableCallerID = () => {
-    Alert.alert(
-      'Enable Caller ID',
-      'To enable caller identification:\n\n1. Go to iOS Settings\n2. Tap Phone\n3. Tap Call Blocking & Identification\n4. Enable this app\n\nThis will show contact names for incoming calls from numbers in your contact list.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open Settings', onPress: handleOpenIOSSettings },
-      ]
-    );
-  };
 
-  const handleSetupCallBlocking = () => {
-    Alert.alert(
-      'Setup Call Blocking',
-      'Call blocking allows you to automatically reject calls from specific numbers. You can:\n\n• Block unknown numbers\n• Block numbers not in your contacts\n• Block specific numbers you add to a block list\n\nThis must be configured in iOS Settings.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open Settings', onPress: handleOpenIOSSettings },
-      ]
-    );
-  };
-
-  const handleOpenIOSSettings = async () => {
-    try {
-      // Try to open the specific Phone settings first
-      const phoneSettingsURL = 'App-Prefs:Phone';
-      const canOpen = await Linking.canOpenURL(phoneSettingsURL);
-      
-      if (canOpen) {
-        await Linking.openURL(phoneSettingsURL);
-      } else {
-        // Fallback to general settings
-        await Linking.openURL('App-Prefs:root');
-      }
-    } catch (error) {
-      // Final fallback - open general settings
-      try {
-        await Linking.openURL('App-Prefs:root');
-      } catch (fallbackError) {
-        Alert.alert(
-          'Cannot Open Settings',
-          'Please manually go to Settings > Phone > Call Blocking & Identification to configure the Call Directory extension.',
-          [{ text: 'OK' }]
-        );
-      }
-    }
-  };
-
-  const handleExportCallDirectoryData = async () => {
-    if (Platform.OS !== 'ios') {
-      Alert.alert(
-        'iOS Only Feature',
-        'Call Directory extensions are only available on iOS devices.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
-    if (contacts.length === 0) {
-      Alert.alert(
-        'No Contacts',
-        'You need to add contacts first before setting up Call Directory identification.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
-    setIsExportingCallDirectory(true);
-    
-    try {
-      // Simulate preparing Call Directory data
-      const validContacts = contacts.filter(contact => contact.phoneNumber);
-      
-      // In a real implementation, this would prepare data for the Call Directory extension
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing
-      
-      Alert.alert(
-        'Call Directory Data Ready',
-        `Prepared ${validContacts.length} contacts for caller identification.\n\nNext steps:\n1. Go to iOS Settings\n2. Phone > Call Blocking & Identification\n3. Enable this app\n\nYour contacts will then appear as caller ID during incoming calls.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: handleOpenIOSSettings },
-        ]
-      );
-    } catch (error) {
-      Alert.alert(
-        'Export Failed',
-        'Failed to prepare Call Directory data. Please try again.',
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsExportingCallDirectory(false);
-    }
-  };
 
   const SettingItem = ({ 
     icon, 
@@ -254,52 +161,17 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {Platform.OS === 'ios' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Call Directory (iOS Only)</Text>
-            <View style={styles.settingsGroup}>
-              <SettingItem
-                icon={<Phone />}
-                title={isExportingCallDirectory ? 'Preparing...' : 'Setup Caller ID'}
-                subtitle={`Prepare ${contacts.filter(c => c.phoneNumber).length} contacts for identification`}
-                onPress={handleExportCallDirectoryData}
-                disabled={isExportingCallDirectory}
-              />
-              <SettingItem
-                icon={<Shield />}
-                title="Setup Call Blocking"
-                subtitle="Block unwanted calls using your contact list"
-                onPress={handleSetupCallBlocking}
-              />
-              <SettingItem
-                icon={<ExternalLink />}
-                title="Open iOS Settings"
-                subtitle="Configure Call Directory extension"
-                onPress={handleOpenIOSSettings}
-              />
-            </View>
-            <InfoCard
-              title="Call Directory Extension"
-              description="iOS Call Directory extensions allow apps to provide caller identification and call blocking. You must manually enable this feature in iOS Settings > Phone > Call Blocking & Identification."
-            />
-          </View>
-        )}
+
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
           <InfoCard
             title="How it works"
-            description={Platform.OS === 'ios' 
-              ? "This app uses iOS Call Directory extension to identify your contacts during calls and can block unwanted numbers. All data is stored locally on your device."
-              : "This app helps you manage contacts and take call notes. All data is stored locally on your device."
-            }
+            description="This app helps you manage contacts and take call notes. All data is stored locally on your device."
           />
           <InfoCard
-            title="Call Detection"
-            description={Platform.OS === 'ios'
-              ? "Enable the Call Directory extension in iOS Settings to automatically identify your contacts during incoming calls."
-              : "The app helps you organize contacts and manage call-related notes and reminders."
-            }
+            title="Contact Management"
+            description="The app helps you organize contacts and manage call-related notes and reminders."
           />
         </View>
 
