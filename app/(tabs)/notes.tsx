@@ -179,7 +179,7 @@ export default function NotesScreen() {
   }, [notes, searchQuery, activeFilters]);
 
   const groupedNotes = useMemo(() => {
-    const groups: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string }[] = [];
+    const groups: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string; subGroups?: any[] }[] = [];
 
     if (groupBy === 'none') {
       // Group by contact name for collapsible view
@@ -233,20 +233,34 @@ export default function NotesScreen() {
             notesByContactInFolder.get(contactName)!.push(note);
           });
 
+          // Create subgroups for each contact
+          const contactGroups: any[] = [];
           notesByContactInFolder.forEach((contactNotes, contactName) => {
-            const sortedNotes = contactNotes.sort((a, b) => 
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-            
-            groups.push({
+            contactGroups.push({
               id: `${folder.id}-${contactName}`,
-              title: `${contactName} (${folder.name})`,
-              notes: sortedNotes,
-              type: 'folder-based',
-              folderId: folder.id,
+              title: contactName,
+              notes: contactNotes.sort((a, b) => 
+                new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
+              ),
+              type: 'contact-based',
               contactName,
-              date: sortedNotes[0].createdAt,
             });
+          });
+
+          // Sort contact groups by most recent call
+          contactGroups.sort((a, b) => {
+            const aLatest = Math.max(...a.notes.map((n: CallNote) => new Date(n.callStartTime).getTime()));
+            const bLatest = Math.max(...b.notes.map((n: CallNote) => new Date(n.callStartTime).getTime()));
+            return bLatest - aLatest;
+          });
+
+          groups.push({
+            id: folder.id,
+            title: folder.name,
+            notes: folderNotes,
+            type: 'folder-based',
+            folderId: folder.id,
+            subGroups: contactGroups,
           });
         }
       });
@@ -269,35 +283,37 @@ export default function NotesScreen() {
           notesByContactUngrouped.get(contactName)!.push(note);
         });
 
+        // Create subgroups for ungrouped contacts
+        const ungroupedContactGroups: any[] = [];
         notesByContactUngrouped.forEach((contactNotes, contactName) => {
-          const sortedNotes = contactNotes.sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          
-          groups.push({
+          ungroupedContactGroups.push({
             id: `ungrouped-${contactName}`,
-            title: `${contactName} (Ungrouped)`,
-            notes: sortedNotes,
-            type: 'folder-based',
+            title: contactName,
+            notes: contactNotes.sort((a, b) => 
+              new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
+            ),
+            type: 'contact-based',
             contactName,
-            date: sortedNotes[0].createdAt,
           });
+        });
+
+        groups.push({
+          id: 'ungrouped',
+          title: 'Ungrouped',
+          notes: ungrouped,
+          type: 'folder-based',
+          subGroups: ungroupedContactGroups,
         });
       }
 
-      return groups.sort((a, b) => {
-        if (a.date && b.date) {
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        }
-        return 0;
-      });
+      return groups;
     }
 
     // Time-based grouping with contact sub-grouping
-    const notesByTimeAndContact = new Map<string, Map<string, CallNote[]>>();
+    const notesByTimePeriod = new Map<string, CallNote[]>();
     
     filteredNotes.forEach(note => {
-      const date = new Date(note.createdAt);
+      const date = new Date(note.callStartTime);
       let timeKey: string;
       let timeTitle: string;
 
@@ -342,36 +358,56 @@ export default function NotesScreen() {
           timeTitle = date.toDateString();
       }
 
-      if (!notesByTimeAndContact.has(timeKey)) {
-        notesByTimeAndContact.set(timeKey, new Map());
+      if (!notesByTimePeriod.has(timeKey)) {
+        notesByTimePeriod.set(timeKey, []);
       }
-      
-      const contactsInTime = notesByTimeAndContact.get(timeKey)!;
-      const contactName = note.contactName;
-      
-      if (!contactsInTime.has(contactName)) {
-        contactsInTime.set(contactName, []);
-      }
-      contactsInTime.get(contactName)!.push(note);
+      notesByTimePeriod.get(timeKey)!.push(note);
     });
 
-    // Create groups for each time period and contact combination
-    notesByTimeAndContact.forEach((contactsMap, timeKey) => {
-      const timeTitle = timeKey.split('|')[0] || timeKey;
+    // Now create groups with contact-based subgrouping for time periods
+    notesByTimePeriod.forEach((notesInPeriod, key) => {
+      // Group notes by contact within this time period
+      const notesByContact = new Map<string, CallNote[]>();
       
-      contactsMap.forEach((contactNotes, contactName) => {
-        const sortedNotes = contactNotes.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        
-        groups.push({
-          id: `${timeKey}-${contactName}`,
-          title: `${contactName} - ${timeTitle}`,
-          notes: sortedNotes,
-          type: 'time-based',
+      notesInPeriod.forEach(note => {
+        const contactKey = note.contactName;
+        if (!notesByContact.has(contactKey)) {
+          notesByContact.set(contactKey, []);
+        }
+        notesByContact.get(contactKey)!.push(note);
+      });
+
+      // Create subgroups for each contact
+      const contactGroups: any[] = [];
+      notesByContact.forEach((contactNotes, contactName) => {
+        contactGroups.push({
+          id: `${key}-${contactName}`,
+          title: contactName,
+          notes: contactNotes.sort((a, b) => 
+            new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
+          ),
+          type: 'contact-based',
           contactName,
-          date: sortedNotes[0].createdAt,
         });
+      });
+
+      // Sort contact groups by most recent call
+      contactGroups.sort((a, b) => {
+        const aLatest = Math.max(...a.notes.map((n: CallNote) => new Date(n.callStartTime).getTime()));
+        const bLatest = Math.max(...b.notes.map((n: CallNote) => new Date(n.callStartTime).getTime()));
+        return bLatest - aLatest;
+      });
+
+      const [title] = key.split('|');
+      groups.push({
+        id: key,
+        title: title || key,
+        notes: notesInPeriod.sort((a, b) => 
+          new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
+        ),
+        type: 'time-based',
+        date: notesInPeriod[0].callStartTime,
+        subGroups: contactGroups,
       });
     });
 
@@ -555,21 +591,125 @@ export default function NotesScreen() {
     });
   };
 
-  const NoteGroup = ({ group }: { group: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string } }) => {
+  const NoteGroup = ({ group }: { group: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string; subGroups?: any[] } }) => {
     const isExpanded = expandedGroups.has(group.id);
     const sortedGroupNotes = [...group.notes].sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    const getGroupSubtitle = () => {
-      const latestNote = sortedGroupNotes[0];
-      if (latestNote) {
-        const totalDuration = sortedGroupNotes.reduce((sum, note) => sum + note.callDuration, 0);
-        return `${sortedGroupNotes.length} note${sortedGroupNotes.length > 1 ? 's' : ''} • ${formatCallDuration(totalDuration)} total`;
-      }
-      return null;
-    };
+    // For time-based groups with subgroups (like day/week/month)
+    if (group.type === 'time-based' && group.subGroups) {
+      return (
+        <View style={styles.noteGroup}>
+          <TouchableOpacity
+            style={styles.groupHeader}
+            onPress={() => toggleGroup(group.id)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.groupHeaderLeft}>
+              {isExpanded ? (
+                <ChevronDown size={20} color="#000" />
+              ) : (
+                <ChevronRight size={20} color="#000" />
+              )}
+              <Text style={styles.groupTitle}>{group.title}</Text>
+            </View>
+            <Text style={styles.groupCount}>{group.notes.length}</Text>
+          </TouchableOpacity>
 
+          {isExpanded && (
+            <View style={styles.groupContent}>
+              {group.subGroups.map(subGroup => {
+                const subGroupExpanded = expandedGroups.has(subGroup.id);
+                const subGroupNotes = [...subGroup.notes].sort((a, b) => 
+                  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                );
+                
+                return (
+                  <View key={subGroup.id} style={styles.subGroup}>
+                    <TouchableOpacity
+                      style={styles.subGroupHeader}
+                      onPress={() => toggleGroup(subGroup.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.subGroupHeaderLeft}>
+                        {subGroupExpanded ? (
+                          <ChevronDown size={16} color="#666" />
+                        ) : (
+                          <ChevronRight size={16} color="#666" />
+                        )}
+                        <View style={styles.contactAvatar}>
+                          <User size={14} color="#666" />
+                        </View>
+                        <Text style={styles.subGroupTitle}>{subGroup.title}</Text>
+                      </View>
+                      <Text style={styles.subGroupCount}>{subGroup.notes.length}</Text>
+                    </TouchableOpacity>
+                    
+                    {subGroupExpanded && (
+                      <View style={styles.subGroupContent}>
+                        {subGroupNotes.map(item => (
+                          <TouchableOpacity 
+                            key={item.id} 
+                            style={styles.noteItem}
+                            onPress={() => handleEditNote(item)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.noteItemHeader}>
+                              <View style={styles.noteTimeInfo}>
+                                <Text style={styles.noteTime}>
+                                  {new Date(item.callStartTime).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </Text>
+                              </View>
+                              <View style={styles.noteCallInfo}>
+                                {item.callDirection === 'inbound' ? (
+                                  <PhoneIncoming size={12} color="#34c759" />
+                                ) : (
+                                  <PhoneOutgoing size={12} color="#007AFF" />
+                                )}
+                                <Clock size={12} color="#8E8E93" />
+                                <Text style={styles.callDurationText}>
+                                  {Math.floor(item.callDuration / 60)}:{(item.callDuration % 60).toString().padStart(2, '0')}
+                                </Text>
+                              </View>
+                            </View>
+                            
+                            {item.note && !item.isAutoGenerated && (
+                              <Text style={styles.notePreview} numberOfLines={2}>
+                                {item.note}
+                              </Text>
+                            )}
+                            
+                            <View style={styles.noteTagsRow}>
+                              <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+                                <Text style={[styles.statusTagText, { color: getStatusColor(item.status) }]}>
+                                  {getStatusText(item.status, item.customStatus)}
+                                </Text>
+                              </View>
+                              {item.priority && (
+                                <View style={styles.priorityBadge}>
+                                  <Circle size={6} color={getPriorityColor(item.priority)} fill={getPriorityColor(item.priority)} />
+                                  <Text style={styles.priorityText}>{item.priority}</Text>
+                                </View>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    // For contact-based groups (default grouping)
     return (
       <View style={styles.noteGroup}>
         <TouchableOpacity
@@ -586,87 +726,65 @@ export default function NotesScreen() {
             <View style={styles.contactAvatar}>
               <User size={16} color="#666" />
             </View>
-            {group.type === 'folder-based' && group.folderId && (
-              <View
-                style={[
-                  styles.folderIndicator,
-                  { backgroundColor: folders.find(f => f.id === group.folderId)?.color || COLORS.primary },
-                ]}
-              />
-            )}
-            <View style={styles.groupTitleContainer}>
-              <Text style={styles.groupTitle}>{group.title}</Text>
-              {getGroupSubtitle() && (
-                <Text style={styles.groupSubtitle}>{getGroupSubtitle()}</Text>
-              )}
-            </View>
+            <Text style={styles.groupTitle}>{group.title}</Text>
           </View>
-          <View style={styles.groupHeaderRight}>
-            <Text style={styles.groupCount}>{group.notes.length}</Text>
-          </View>
+          <Text style={styles.groupCount}>{group.notes.length}</Text>
         </TouchableOpacity>
 
         {isExpanded && (
           <View style={styles.groupContent}>
-            {sortedGroupNotes.map((item, index) => (
-              <View key={item.id} style={styles.noteInGroup}>
-                <View style={styles.noteHeader}>
+            {sortedGroupNotes.map(item => (
+              <TouchableOpacity 
+                key={item.id} 
+                style={styles.noteItem}
+                onPress={() => handleEditNote(item)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.noteItemHeader}>
                   <View style={styles.noteTimeInfo}>
-                    <Clock size={12} color="#999" />
-                    <Text style={styles.noteTime}>{formatDate(item.createdAt)}</Text>
-                    <View style={styles.callDirectionIndicator}>
-                      {item.callDirection === 'inbound' ? (
-                        <PhoneIncoming size={12} color="#34c759" />
-                      ) : (
-                        <PhoneOutgoing size={12} color="#007AFF" />
-                      )}
-                      <Text style={styles.callDurationText}>{formatCallDuration(item.callDuration)}</Text>
-                    </View>
+                    <Text style={styles.noteTime}>
+                      {new Date(item.callStartTime).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                    <Text style={styles.noteDate}>
+                      {formatDate(item.createdAt)}
+                    </Text>
                   </View>
-                  <TouchableOpacity onPress={() => handleEditNote(item)} style={styles.editButton}>
-                    <Edit3 size={14} color="#007AFF" />
-                  </TouchableOpacity>
+                  <View style={styles.noteCallInfo}>
+                    {item.callDirection === 'inbound' ? (
+                      <PhoneIncoming size={12} color="#34c759" />
+                    ) : (
+                      <PhoneOutgoing size={12} color="#007AFF" />
+                    )}
+                    <Clock size={12} color="#8E8E93" />
+                    <Text style={styles.callDurationText}>
+                      {Math.floor(item.callDuration / 60)}:{(item.callDuration % 60).toString().padStart(2, '0')}
+                    </Text>
+                  </View>
                 </View>
                 
-                {/* Status and Tags */}
-                <View style={styles.noteMetaRow}>
+                {item.note && !item.isAutoGenerated && (
+                  <Text style={styles.notePreview} numberOfLines={2}>
+                    {item.note}
+                  </Text>
+                )}
+                
+                <View style={styles.noteTagsRow}>
                   <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-                    <Tag size={8} color={getStatusColor(item.status)} />
                     <Text style={[styles.statusTagText, { color: getStatusColor(item.status) }]}>
                       {getStatusText(item.status, item.customStatus)}
                     </Text>
                   </View>
                   {item.priority && (
-                    <View style={styles.priorityIndicator}>
+                    <View style={styles.priorityBadge}>
                       <Circle size={6} color={getPriorityColor(item.priority)} fill={getPriorityColor(item.priority)} />
                       <Text style={styles.priorityText}>{item.priority}</Text>
                     </View>
                   )}
                 </View>
-                
-                {/* Note Content */}
-                <TouchableOpacity onPress={() => handleEditNote(item)} style={styles.noteContentContainer}>
-                  <Text style={[styles.noteText, item.isAutoGenerated && styles.autoNoteText]} numberOfLines={3}>
-                    {item.note}
-                  </Text>
-                </TouchableOpacity>
-                
-                {/* Custom Tags */}
-                {item.tags && item.tags.length > 0 && (
-                  <View style={styles.customTagsContainer}>
-                    {item.tags.slice(0, 3).map((tag, tagIndex) => (
-                      <View key={tagIndex} style={styles.customTag}>
-                        <Text style={styles.customTagText}>{tag}</Text>
-                      </View>
-                    ))}
-                    {item.tags.length > 3 && (
-                      <Text style={styles.moreTagsText}>+{item.tags.length - 3}</Text>
-                    )}
-                  </View>
-                )}
-                
-
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -1543,5 +1661,79 @@ const styles = StyleSheet.create({
   },
   noteSeparator: {
     height: 0,
+  },
+  subGroup: {
+    marginBottom: 8,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  subGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F0F0F0',
+  },
+  subGroupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  subGroupTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  subGroupCount: {
+    fontSize: 12,
+    color: '#8E8E93',
+    backgroundColor: '#E0E0E0',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  subGroupContent: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  noteItem: {
+    backgroundColor: '#F2F2F7',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  noteItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  noteCallInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  notePreview: {
+    fontSize: 13,
+    color: '#3C3C43',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  noteTagsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priorityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  noteDate: {
+    fontSize: 11,
+    color: '#8E8E93',
+    marginLeft: 4,
   },
 });
