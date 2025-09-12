@@ -222,12 +222,31 @@ export default function NotesScreen() {
       folders.forEach(folder => {
         const folderNotes = filteredNotes.filter(n => n.folderId === folder.id);
         if (folderNotes.length > 0) {
-          groups.push({
-            id: folder.id,
-            title: folder.name,
-            notes: folderNotes,
-            type: 'folder-based',
-            folderId: folder.id,
+          // Group by contact within each folder
+          const notesByContactInFolder = new Map<string, CallNote[]>();
+          
+          folderNotes.forEach(note => {
+            const contactName = note.contactName;
+            if (!notesByContactInFolder.has(contactName)) {
+              notesByContactInFolder.set(contactName, []);
+            }
+            notesByContactInFolder.get(contactName)!.push(note);
+          });
+
+          notesByContactInFolder.forEach((contactNotes, contactName) => {
+            const sortedNotes = contactNotes.sort((a, b) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            
+            groups.push({
+              id: `${folder.id}-${contactName}`,
+              title: `${contactName} (${folder.name})`,
+              notes: sortedNotes,
+              type: 'folder-based',
+              folderId: folder.id,
+              contactName,
+              date: sortedNotes[0].createdAt,
+            });
           });
         }
       });
@@ -239,28 +258,53 @@ export default function NotesScreen() {
       });
 
       if (ungrouped.length > 0) {
-        groups.push({
-          id: 'ungrouped',
-          title: 'Ungrouped',
-          notes: ungrouped,
-          type: 'folder-based',
+        // Group ungrouped notes by contact
+        const notesByContactUngrouped = new Map<string, CallNote[]>();
+        
+        ungrouped.forEach(note => {
+          const contactName = note.contactName;
+          if (!notesByContactUngrouped.has(contactName)) {
+            notesByContactUngrouped.set(contactName, []);
+          }
+          notesByContactUngrouped.get(contactName)!.push(note);
+        });
+
+        notesByContactUngrouped.forEach((contactNotes, contactName) => {
+          const sortedNotes = contactNotes.sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          
+          groups.push({
+            id: `ungrouped-${contactName}`,
+            title: `${contactName} (Ungrouped)`,
+            notes: sortedNotes,
+            type: 'folder-based',
+            contactName,
+            date: sortedNotes[0].createdAt,
+          });
         });
       }
 
-      return groups;
+      return groups.sort((a, b) => {
+        if (a.date && b.date) {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        }
+        return 0;
+      });
     }
 
-    const notesByDate = new Map<string, CallNote[]>();
+    // Time-based grouping with contact sub-grouping
+    const notesByTimeAndContact = new Map<string, Map<string, CallNote[]>>();
     
     filteredNotes.forEach(note => {
       const date = new Date(note.createdAt);
-      let key: string;
-      let title: string;
+      let timeKey: string;
+      let timeTitle: string;
 
       switch (groupBy) {
         case 'day':
-          key = date.toDateString();
-          title = date.toLocaleDateString('en-US', { 
+          timeKey = date.toDateString();
+          timeTitle = date.toLocaleDateString('en-US', { 
             weekday: 'long', 
             month: 'long', 
             day: 'numeric', 
@@ -272,8 +316,8 @@ export default function NotesScreen() {
           weekStart.setDate(date.getDate() - date.getDay());
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
-          key = `${weekStart.toDateString()}-${weekEnd.toDateString()}`;
-          title = `Week of ${weekStart.toLocaleDateString('en-US', { 
+          timeKey = `${weekStart.toDateString()}-${weekEnd.toDateString()}`;
+          timeTitle = `Week of ${weekStart.toLocaleDateString('en-US', { 
             month: 'short', 
             day: 'numeric' 
           })} - ${weekEnd.toLocaleDateString('en-US', { 
@@ -283,37 +327,51 @@ export default function NotesScreen() {
           })}`;
           break;
         case 'month':
-          key = `${date.getFullYear()}-${date.getMonth()}`;
-          title = date.toLocaleDateString('en-US', { 
+          timeKey = `${date.getFullYear()}-${date.getMonth()}`;
+          timeTitle = date.toLocaleDateString('en-US', { 
             month: 'long', 
             year: 'numeric' 
           });
           break;
         case 'year':
-          key = date.getFullYear().toString();
-          title = date.getFullYear().toString();
+          timeKey = date.getFullYear().toString();
+          timeTitle = date.getFullYear().toString();
           break;
         default:
-          key = date.toDateString();
-          title = date.toDateString();
+          timeKey = date.toDateString();
+          timeTitle = date.toDateString();
       }
 
-      if (!notesByDate.has(key)) {
-        notesByDate.set(key, []);
+      if (!notesByTimeAndContact.has(timeKey)) {
+        notesByTimeAndContact.set(timeKey, new Map());
       }
-      notesByDate.get(key)!.push(note);
+      
+      const contactsInTime = notesByTimeAndContact.get(timeKey)!;
+      const contactName = note.contactName;
+      
+      if (!contactsInTime.has(contactName)) {
+        contactsInTime.set(contactName, []);
+      }
+      contactsInTime.get(contactName)!.push(note);
     });
 
-    notesByDate.forEach((notesInGroup, key) => {
-      const [title] = key.split('|');
-      groups.push({
-        id: key,
-        title: title || key,
-        notes: notesInGroup.sort((a, b) => 
+    // Create groups for each time period and contact combination
+    notesByTimeAndContact.forEach((contactsMap, timeKey) => {
+      const timeTitle = timeKey.split('|')[0] || timeKey;
+      
+      contactsMap.forEach((contactNotes, contactName) => {
+        const sortedNotes = contactNotes.sort((a, b) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        ),
-        type: 'time-based',
-        date: notesInGroup[0].createdAt,
+        );
+        
+        groups.push({
+          id: `${timeKey}-${contactName}`,
+          title: `${contactName} - ${timeTitle}`,
+          notes: sortedNotes,
+          type: 'time-based',
+          contactName,
+          date: sortedNotes[0].createdAt,
+        });
       });
     });
 
@@ -504,11 +562,10 @@ export default function NotesScreen() {
     );
 
     const getGroupSubtitle = () => {
-      if (group.type === 'contact-based') {
-        const latestNote = sortedGroupNotes[0];
-        if (latestNote) {
-          return `Latest: ${formatDate(latestNote.createdAt)}`;
-        }
+      const latestNote = sortedGroupNotes[0];
+      if (latestNote) {
+        const totalDuration = sortedGroupNotes.reduce((sum, note) => sum + note.callDuration, 0);
+        return `${sortedGroupNotes.length} note${sortedGroupNotes.length > 1 ? 's' : ''} • ${formatCallDuration(totalDuration)} total`;
       }
       return null;
     };
@@ -526,11 +583,9 @@ export default function NotesScreen() {
             ) : (
               <ChevronRight size={20} color="#000" />
             )}
-            {group.type === 'contact-based' && (
-              <View style={styles.contactAvatar}>
-                <User size={16} color="#666" />
-              </View>
-            )}
+            <View style={styles.contactAvatar}>
+              <User size={16} color="#666" />
+            </View>
             {group.type === 'folder-based' && group.folderId && (
               <View
                 style={[
@@ -610,7 +665,7 @@ export default function NotesScreen() {
                   </View>
                 )}
                 
-                {index < sortedGroupNotes.length - 1 && <View style={styles.noteSeparator} />}
+
               </View>
             ))}
           </View>
@@ -1228,15 +1283,23 @@ const styles = StyleSheet.create({
   },
   noteGroup: {
     backgroundColor: '#fff',
-    marginBottom: 1,
+    marginBottom: 8,
+    borderRadius: 12,
+    marginHorizontal: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   groupHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#f8f9fa',
+    paddingVertical: 14,
+    backgroundColor: '#fff',
+    borderRadius: 12,
   },
   groupHeaderLeft: {
     flexDirection: 'row',
@@ -1255,15 +1318,20 @@ const styles = StyleSheet.create({
   },
   groupCount: {
     fontSize: 14,
-    color: '#8E8E93',
-    backgroundColor: '#e9ecef',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    color: '#666',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    fontWeight: '600',
   },
   groupContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingTop: 0,
+    paddingBottom: 12,
+    backgroundColor: '#fff',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   filteredText: {
     fontSize: 14,
@@ -1426,8 +1494,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   noteInGroup: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 8,
   },
   noteTimeInfo: {
     flexDirection: 'row',
@@ -1471,8 +1542,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   noteSeparator: {
-    height: 1,
-    backgroundColor: '#f0f0f0',
-    marginTop: 8,
+    height: 0,
   },
 });
