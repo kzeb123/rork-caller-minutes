@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, TextInput } from 'react-native';
-import { Stack } from 'expo-router';
+import { View, Text, StyleSheet, SectionList, TextInput, SafeAreaView } from 'react-native';
 import { Users, Search } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import ContactCard from '@/components/ContactCard';
@@ -61,20 +60,11 @@ export default function ContactsScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: 'Contacts',
-          headerStyle: {
-            backgroundColor: '#F2F2F7',
-          },
-          headerTitleStyle: {
-            color: '#000',
-            fontSize: 17,
-            fontWeight: '600',
-          },
-        }} 
-      />
+    <SafeAreaView style={styles.container}>
+      {/* Custom Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Contacts</Text>
+      </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -105,7 +95,7 @@ export default function ContactsScreen() {
       )}
 
       <NoteModal />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -113,6 +103,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F2F2F7',
+  },
+  header: {
+    backgroundColor: '#F2F2F7',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#C6C6C8',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000',
   },
   list: {
     flex: 1,
@@ -152,19 +154,18 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     backgroundColor: '#F2F2F7',
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#C6C6C8',
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginVertical: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 10,
     gap: 8,
   },
   searchInput: {
