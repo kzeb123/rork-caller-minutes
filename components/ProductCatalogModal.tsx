@@ -271,7 +271,7 @@ export default function ProductCatalogModal({
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Import from PDF</Text>
-            {Platform.OS === 'web' && (
+            {Platform.OS === 'web' ? (
               <input
                 ref={fileInputRef as any}
                 type="file"
@@ -279,7 +279,7 @@ export default function ProductCatalogModal({
                 onChange={handleFileSelect}
                 style={hiddenInputStyle}
               />
-            )}
+            ) : null}
             <TouchableOpacity
               style={styles.uploadButton}
               onPress={handleUploadPDF}
