@@ -472,30 +472,19 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     setCallDirection('inbound');
   }, []);
 
-  // Date/time detection utility function
+  // Date/time detection utility function - simplified to only detect times
   const detectDateTimeInText = useCallback((text: string): DetectedDateTime[] => {
     const detections: DetectedDateTime[] = [];
     const now = new Date();
     
-    // Common date/time patterns
+    // Only look for time patterns in 12/24 hour format
     const patterns = [
-      // Time patterns
-      { regex: /\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/gi, type: 'time' as const },
-      { regex: /\b(\d{1,2})\s*(am|pm)\b/gi, type: 'time' as const },
-      
-      // Date patterns
-      { regex: /\b(tomorrow|tmrw)\b/gi, type: 'date' as const },
-      { regex: /\b(today)\b/gi, type: 'date' as const },
-      { regex: /\b(next week)\b/gi, type: 'date' as const },
-      { regex: /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi, type: 'date' as const },
-      { regex: /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/g, type: 'date' as const },
-      { regex: /\b(\d{1,2})-(\d{1,2})(?:-(\d{2,4}))?\b/g, type: 'date' as const },
-      { regex: /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:,?\s+(\d{4}))?\b/gi, type: 'date' as const },
-      { regex: /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\.?\s+(\d{1,2})(?:,?\s+(\d{4}))?\b/gi, type: 'date' as const },
-      
-      // Combined patterns
-      { regex: /\b(tomorrow|tmrw)\s+at\s+(\d{1,2}):(\d{2})\s*(am|pm)?\b/gi, type: 'datetime' as const },
-      { regex: /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+at\s+(\d{1,2}):(\d{2})\s*(am|pm)?\b/gi, type: 'datetime' as const },
+      // 24-hour format (e.g., 14:30, 09:00)
+      { regex: /\b([01]?\d|2[0-3]):([0-5]\d)\b/g, type: 'time' as const, is24Hour: true },
+      // 12-hour format with am/pm (e.g., 2:30pm, 9:00 AM)
+      { regex: /\b(1[0-2]|0?[1-9]):([0-5]\d)\s*(am|pm|AM|PM)\b/g, type: 'time' as const, is24Hour: false },
+      // 12-hour format without colon (e.g., 2pm, 9 AM)
+      { regex: /\b(1[0-2]|0?[1-9])\s*(am|pm|AM|PM)\b/g, type: 'time' as const, is24Hour: false },
     ];
     
     patterns.forEach(pattern => {
@@ -505,51 +494,61 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         let suggestedDate = new Date(now);
         
         try {
-          // Parse different date/time formats
-          if (matchText.toLowerCase().includes('tomorrow') || matchText.toLowerCase().includes('tmrw')) {
-            suggestedDate.setDate(now.getDate() + 1);
-          } else if (matchText.toLowerCase().includes('today')) {
-            // Keep current date
-          } else if (matchText.toLowerCase().includes('next week')) {
-            suggestedDate.setDate(now.getDate() + 7);
-          } else if (matchText.toLowerCase().match(/monday|tuesday|wednesday|thursday|friday|saturday|sunday/)) {
-            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-            const targetDay = dayNames.indexOf(matchText.toLowerCase().match(/monday|tuesday|wednesday|thursday|friday|saturday|sunday/)![0]);
-            const currentDay = now.getDay();
-            let daysUntilTarget = targetDay - currentDay;
-            if (daysUntilTarget <= 0) daysUntilTarget += 7; // Next occurrence
-            suggestedDate.setDate(now.getDate() + daysUntilTarget);
+          // Parse time
+          let hours = parseInt(match[1]);
+          let minutes = 0;
+          
+          if (match[2] && match[2].match(/\d+/)) {
+            minutes = parseInt(match[2]);
           }
           
-          // Handle time parsing
-          const timeMatch = matchText.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i) || matchText.match(/(\d{1,2})\s*(am|pm)/i);
-          if (timeMatch) {
-            let hours = parseInt(timeMatch[1]);
-            const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-            const ampm = timeMatch[3] || timeMatch[2];
-            
-            if (ampm && ampm.toLowerCase() === 'pm' && hours !== 12) {
+          // Handle 12-hour format with AM/PM
+          if (!pattern.is24Hour && match[3]) {
+            const ampm = match[3].toLowerCase();
+            if (ampm === 'pm' && hours !== 12) {
               hours += 12;
-            } else if (ampm && ampm.toLowerCase() === 'am' && hours === 12) {
+            } else if (ampm === 'am' && hours === 12) {
               hours = 0;
             }
-            
-            suggestedDate.setHours(hours, minutes, 0, 0);
+          } else if (!pattern.is24Hour && match[2] && !match[2].match(/\d+/)) {
+            // Handle format like "2pm" where match[2] is am/pm
+            const ampm = match[2].toLowerCase();
+            if (ampm === 'pm' && hours !== 12) {
+              hours += 12;
+            } else if (ampm === 'am' && hours === 12) {
+              hours = 0;
+            }
+          }
+          
+          // Set the time for today initially
+          suggestedDate.setHours(hours, minutes, 0, 0);
+          
+          // If the time has already passed today, set it for tomorrow
+          if (suggestedDate.getTime() <= now.getTime()) {
+            suggestedDate.setDate(suggestedDate.getDate() + 1);
           }
           
           detections.push({
             originalText: matchText,
             suggestedDate,
-            type: pattern.type,
-            confidence: 0.8
+            type: 'time',
+            confidence: 0.9
           });
         } catch (error) {
-          console.log('Error parsing date/time:', error);
+          console.log('Error parsing time:', error);
         }
       }
     });
     
-    return detections;
+    // Remove duplicate times (same hour and minute)
+    const uniqueDetections = detections.filter((detection, index, self) => {
+      return index === self.findIndex(d => 
+        d.suggestedDate.getHours() === detection.suggestedDate.getHours() &&
+        d.suggestedDate.getMinutes() === detection.suggestedDate.getMinutes()
+      );
+    });
+    
+    return uniqueDetections;
   }, []);
 
   const saveNote = useCallback((noteText: string, status: NoteStatus = 'follow-up', customStatus?: string) => {

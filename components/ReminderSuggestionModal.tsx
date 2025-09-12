@@ -123,7 +123,7 @@ export default function ReminderSuggestionModal() {
           </View>
 
           <Text style={styles.sectionTitle}>
-            I found {detectedDateTimes.length} date{detectedDateTimes.length > 1 ? 's' : ''}/time{detectedDateTimes.length > 1 ? 's' : ''} in your note:
+            Found {detectedDateTimes.length} time{detectedDateTimes.length > 1 ? 's' : ''} in your note:
           </Text>
 
           <View style={styles.detectionsList}>
@@ -146,9 +146,9 @@ export default function ReminderSuggestionModal() {
                   <View style={styles.detectionHeader}>
                     <View style={styles.detectionInfo}>
                       <View style={styles.detectionTypeContainer}>
-                        {getTypeIcon(detection.type)}
+                        <Clock size={16} color="#007AFF" />
                         <Text style={styles.detectionType}>
-                          {detection.type.charAt(0).toUpperCase() + detection.type.slice(1)}
+                          Time detected
                         </Text>
                       </View>
                       <Text style={styles.detectionOriginal}>
@@ -207,8 +207,7 @@ export default function ReminderSuggestionModal() {
           <View style={styles.infoSection}>
             <Bell size={20} color="#007AFF" />
             <Text style={styles.infoText}>
-              Tap on the dates/times above to select which ones you&apos;d like to create reminders for. 
-              You can customize the reminder titles by tapping the edit icon.
+              Select times to create reminders. Times are automatically set for today or tomorrow.
             </Text>
           </View>
         </ScrollView>
