@@ -25,6 +25,7 @@ export interface CallNote {
   tags?: string[];
   priority?: 'low' | 'medium' | 'high';
   category?: string;
+  folderId?: string; // for grouping notes into folders
 }
 
 export interface IncomingCall {
@@ -77,4 +78,20 @@ export interface DetectedDateTime {
   suggestedDate: Date;
   type: 'date' | 'time' | 'datetime';
   confidence: number;
+}
+
+export interface NoteFolder {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: Date;
+  description?: string;
+}
+
+export type FilterType = 'all' | 'status' | 'priority' | 'folder' | 'direction' | 'date';
+
+export interface NoteFilter {
+  type: FilterType;
+  value: string;
+  label: string;
 }

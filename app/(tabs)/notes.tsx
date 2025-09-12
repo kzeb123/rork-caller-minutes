@@ -1,18 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Animated } from 'react-native';
 import { Stack } from 'expo-router';
-import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle } from 'lucide-react-native';
+import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, X } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
-import { CallNote, NoteStatus } from '@/types/contact';
+import { CallNote, NoteStatus, NoteFolder, NoteFilter, FilterType } from '@/types/contact';
 import EditNoteModal from '@/components/EditNoteModal';
+import FolderManagementModal from '@/components/FolderManagementModal';
 
 export default function NotesScreen() {
-  const { notes, contacts, updateNote, deleteNote } = useContacts();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
+  const { notes, contacts, folders, updateNote, deleteNote } = useContacts();
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showSearch, setShowSearch] = useState<boolean>(false);
   const [editingNote, setEditingNote] = useState<CallNote | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [showFolderModal, setShowFolderModal] = useState<boolean>(false);
+  const [activeFilters, setActiveFilters] = useState<NoteFilter[]>([]);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [groupByFolder, setGroupByFolder] = useState<boolean>(true);
   const searchAnimation = new Animated.Value(0);
+  const filterAnimation = new Animated.Value(0);
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -73,17 +79,138 @@ export default function NotesScreen() {
     }
   };
 
+  const toggleFilters = () => {
+    const toValue = showFilters ? 0 : 1;
+    setShowFilters(!showFilters);
+    Animated.timing(filterAnimation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const addFilter = (type: FilterType, value: string, label: string) => {
+    const existingFilter = activeFilters.find(f => f.type === type && f.value === value);
+    if (!existingFilter) {
+      setActiveFilters([...activeFilters, { type, value, label }]);
+    }
+    setShowFilters(false);
+  };
+
+  const removeFilter = (filterToRemove: NoteFilter) => {
+    setActiveFilters(activeFilters.filter(f => 
+      !(f.type === filterToRemove.type && f.value === filterToRemove.value)
+    ));
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters([]);
+  };
+
+  const getFolderById = (folderId: string) => {
+    return folders.find(f => f.id === folderId);
+  };
+
   const filteredNotes = useMemo(() => {
-    if (!searchQuery.trim()) return notes;
-    const query = searchQuery.toLowerCase();
-    return notes.filter(note => 
-      note.contactName.toLowerCase().includes(query) ||
-      note.note.toLowerCase().includes(query) ||
-      getStatusText(note.status, note.customStatus).toLowerCase().includes(query) ||
-      (note.tags && note.tags.some(tag => tag.toLowerCase().includes(query))) ||
-      (note.category && note.category.toLowerCase().includes(query))
-    );
-  }, [notes, searchQuery]);
+    let filtered = [...notes];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(note => 
+        note.contactName.toLowerCase().includes(query) ||
+        note.note.toLowerCase().includes(query) ||
+        getStatusText(note.status, note.customStatus).toLowerCase().includes(query) ||
+        (note.tags && note.tags.some(tag => tag.toLowerCase().includes(query))) ||
+        (note.category && note.category.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply active filters
+    activeFilters.forEach(filter => {
+      switch (filter.type) {
+        case 'status':
+          filtered = filtered.filter(note => note.status === filter.value);
+          break;
+        case 'priority':
+          filtered = filtered.filter(note => note.priority === filter.value);
+          break;
+        case 'folder':
+          if (filter.value === 'no-folder') {
+            filtered = filtered.filter(note => !note.folderId);
+          } else {
+            filtered = filtered.filter(note => note.folderId === filter.value);
+          }
+          break;
+        case 'direction':
+          filtered = filtered.filter(note => note.callDirection === filter.value);
+          break;
+        case 'date':
+          const today = new Date();
+          switch (filter.value) {
+            case 'today':
+              filtered = filtered.filter(note => {
+                const createdDate = new Date(note.createdAt);
+                return createdDate.toDateString() === today.toDateString();
+              });
+              break;
+            case 'week':
+              const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+              filtered = filtered.filter(note => {
+                const createdDate = new Date(note.createdAt);
+                return createdDate >= weekAgo;
+              });
+              break;
+            case 'month':
+              const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+              filtered = filtered.filter(note => {
+                const createdDate = new Date(note.createdAt);
+                return createdDate >= monthAgo;
+              });
+              break;
+          }
+          break;
+      }
+    });
+
+    return filtered;
+  }, [notes, searchQuery, activeFilters]);
+
+  const groupedNotes = useMemo(() => {
+    if (!groupByFolder) {
+      return [{ folder: null, notes: filteredNotes }];
+    }
+
+    const groups: { folder: NoteFolder | null; notes: CallNote[] }[] = [];
+    const folderMap = new Map<string, CallNote[]>();
+    const noFolderNotes: CallNote[] = [];
+
+    filteredNotes.forEach(note => {
+      if (note.folderId) {
+        if (!folderMap.has(note.folderId)) {
+          folderMap.set(note.folderId, []);
+        }
+        folderMap.get(note.folderId)!.push(note);
+      } else {
+        noFolderNotes.push(note);
+      }
+    });
+
+    // Add folder groups
+    folders.forEach(folder => {
+      const folderNotes = folderMap.get(folder.id) || [];
+      if (folderNotes.length > 0) {
+        groups.push({ folder, notes: folderNotes });
+      }
+    });
+
+    // Add no folder group
+    if (noFolderNotes.length > 0) {
+      groups.push({ folder: null, notes: noFolderNotes });
+    }
+
+    return groups;
+  }, [filteredNotes, groupByFolder, folders]);
 
   const handleEditNote = (note: CallNote) => {
     setEditingNote(note);
@@ -222,6 +349,69 @@ export default function NotesScreen() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  const FilterChip = ({ filter }: { filter: NoteFilter }) => (
+    <View style={styles.filterChip}>
+      <Text style={styles.filterChipText}>{filter.label}</Text>
+      <TouchableOpacity onPress={() => removeFilter(filter)} style={styles.filterChipRemove}>
+        <X size={12} color="#007AFF" />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const FilterOption = ({ type, value, label, icon }: {
+    type: FilterType;
+    value: string;
+    label: string;
+    icon: React.ReactNode;
+  }) => (
+    <TouchableOpacity
+      style={styles.filterOption}
+      onPress={() => addFilter(type, value, label)}
+    >
+      <Text style={styles.filterOptionText}>{icon} {label}</Text>
+    </TouchableOpacity>
+  );
+
+  const FolderGroup = ({ folder, notes }: { folder: NoteFolder | null; notes: CallNote[] }) => {
+    const sortedGroupNotes = [...notes].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    return (
+      <View style={styles.folderGroup}>
+        {groupByFolder && (
+          <View style={styles.folderHeader}>
+            <View style={styles.folderInfo}>
+              <Folder 
+                size={16} 
+                color={folder?.color || '#999'} 
+                fill={folder?.color ? folder.color + '20' : '#f0f0f0'} 
+              />
+              <Text style={styles.folderTitle}>
+                {folder?.name || 'No Folder'} ({notes.length})
+              </Text>
+            </View>
+            {folder && (
+              <TouchableOpacity
+                style={styles.folderAction}
+                onPress={() => addFilter('folder', folder.id, folder.name)}
+              >
+                <Filter size={14} color="#007AFF" />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+        <View style={styles.folderNotes}>
+          {sortedGroupNotes.map((item) => (
+            <View key={item.id}>
+              {renderNote({ item })}
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   // Summary statistics
   const totalCalls = notes.length;
   const totalContacts = contacts.length;
@@ -318,9 +508,22 @@ export default function NotesScreen() {
         options={{ 
           title: 'Notes & Summary',
           headerRight: () => (
-            <TouchableOpacity onPress={toggleSearch} style={styles.searchButton}>
-              <Search size={20} color="#007AFF" />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity onPress={() => setShowFolderModal(true)} style={styles.headerButton}>
+                <Settings size={20} color="#007AFF" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={toggleFilters} style={styles.headerButton}>
+                <Filter size={20} color={showFilters ? '#007AFF' : '#666'} />
+                {activeFilters.length > 0 && (
+                  <View style={styles.filterBadge}>
+                    <Text style={styles.filterBadgeText}>{activeFilters.length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={toggleSearch} style={styles.headerButton}>
+                <Search size={20} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
           ),
         }} 
       />
@@ -351,6 +554,97 @@ export default function NotesScreen() {
         </View>
       </Animated.View>
 
+      {/* Filter Panel */}
+      <Animated.View 
+        style={[
+          styles.filterContainer,
+          {
+            height: filterAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 200],
+            }),
+            opacity: filterAnimation,
+          }
+        ]}
+      >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Status</Text>
+            <FilterOption type="status" value="follow-up" label="Follow-up" icon={<Tag size={14} color="#FF9500" />} />
+            <FilterOption type="status" value="waiting-reply" label="Waiting Reply" icon={<Tag size={14} color="#007AFF" />} />
+            <FilterOption type="status" value="closed" label="Closed" icon={<Tag size={14} color="#34C759" />} />
+          </View>
+          
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Priority</Text>
+            <FilterOption type="priority" value="high" label="High" icon={<Circle size={14} color="#FF3B30" />} />
+            <FilterOption type="priority" value="medium" label="Medium" icon={<Circle size={14} color="#FF9500" />} />
+            <FilterOption type="priority" value="low" label="Low" icon={<Circle size={14} color="#34C759" />} />
+          </View>
+          
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Direction</Text>
+            <FilterOption type="direction" value="inbound" label="Inbound" icon={<PhoneIncoming size={14} color="#34C759" />} />
+            <FilterOption type="direction" value="outbound" label="Outbound" icon={<PhoneOutgoing size={14} color="#007AFF" />} />
+          </View>
+          
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Folders</Text>
+            <FilterOption type="folder" value="no-folder" label="No Folder" icon={<Folder size={14} color="#999" />} />
+            {folders.map(folder => (
+              <FilterOption 
+                key={folder.id}
+                type="folder" 
+                value={folder.id} 
+                label={folder.name} 
+                icon={<Folder size={14} color={folder.color} />} 
+              />
+            ))}
+          </View>
+          
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Date</Text>
+            <FilterOption type="date" value="today" label="Today" icon={<Clock size={14} color="#007AFF" />} />
+            <FilterOption type="date" value="week" label="This Week" icon={<Clock size={14} color="#007AFF" />} />
+            <FilterOption type="date" value="month" label="This Month" icon={<Clock size={14} color="#007AFF" />} />
+          </View>
+        </ScrollView>
+      </Animated.View>
+
+      {/* Active Filters */}
+      {activeFilters.length > 0 && (
+        <View style={styles.activeFiltersContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.activeFiltersScroll}>
+            <View style={styles.activeFilters}>
+              {activeFilters.map((filter, index) => (
+                <FilterChip key={`${filter.type}-${filter.value}-${index}`} filter={filter} />
+              ))}
+              <TouchableOpacity onPress={clearAllFilters} style={styles.clearFiltersButton}>
+                <Text style={styles.clearFiltersText}>Clear All</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Group Toggle */}
+      <View style={styles.groupToggleContainer}>
+        <TouchableOpacity 
+          style={styles.groupToggle}
+          onPress={() => setGroupByFolder(!groupByFolder)}
+        >
+          <Folder size={16} color={groupByFolder ? '#007AFF' : '#666'} />
+          <Text style={[styles.groupToggleText, { color: groupByFolder ? '#007AFF' : '#666' }]}>
+            Group by Folder
+          </Text>
+          <ChevronDown 
+            size={16} 
+            color={groupByFolder ? '#007AFF' : '#666'} 
+            style={[{ transform: [{ rotate: groupByFolder ? '180deg' : '0deg' }] }]}
+          />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Summary Section */}
         <View style={styles.summarySection}>
@@ -363,15 +657,22 @@ export default function NotesScreen() {
 
         {/* Notes Section */}
         <View style={styles.notesSection}>
-          <Text style={styles.sectionTitle}>Call Notes</Text>
-          {sortedNotes.length === 0 ? (
+          <Text style={styles.sectionTitle}>
+            Call Notes ({filteredNotes.length})
+            {activeFilters.length > 0 && (
+              <Text style={styles.filteredText}> • Filtered</Text>
+            )}
+          </Text>
+          {filteredNotes.length === 0 ? (
             renderEmpty()
           ) : (
             <View style={styles.notesList}>
-              {sortedNotes.map((item) => (
-                <View key={item.id}>
-                  {renderNote({ item })}
-                </View>
+              {groupedNotes.map((group, index) => (
+                <FolderGroup 
+                  key={group.folder?.id || 'no-folder'} 
+                  folder={group.folder} 
+                  notes={group.notes} 
+                />
               ))}
             </View>
           )}
@@ -387,6 +688,11 @@ export default function NotesScreen() {
         }}
         onSave={handleSaveNote}
         onDelete={handleDeleteNote}
+      />
+      
+      <FolderManagementModal
+        visible={showFolderModal}
+        onClose={() => setShowFolderModal(false)}
       />
     </View>
   );
@@ -480,7 +786,6 @@ const styles = StyleSheet.create({
   },
   notesList: {
     paddingHorizontal: 16,
-    gap: 8,
   },
   list: {
     paddingVertical: 8,
@@ -559,14 +864,162 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  searchButton: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerButton: {
     padding: 4,
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#FF3B30',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
   },
   searchContainer: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
     overflow: 'hidden',
+  },
+  filterContainer: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+    overflow: 'hidden',
+  },
+  filterScroll: {
+    paddingHorizontal: 16,
+  },
+  filterSection: {
+    marginRight: 24,
+    paddingVertical: 12,
+  },
+  filterSectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  filterOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginBottom: 4,
+    gap: 6,
+  },
+  filterOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  activeFiltersContainer: {
+    backgroundColor: '#f8f9fa',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  activeFiltersScroll: {
+    paddingHorizontal: 16,
+  },
+  activeFilters: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    gap: 8,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF20',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#007AFF',
+  },
+  filterChipRemove: {
+    padding: 2,
+  },
+  clearFiltersButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#FF3B3020',
+  },
+  clearFiltersText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#FF3B30',
+  },
+  groupToggleContainer: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  groupToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  groupToggleText: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  folderGroup: {
+    marginBottom: 16,
+  },
+  folderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  folderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  folderTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  folderAction: {
+    padding: 4,
+  },
+  folderNotes: {
+    gap: 8,
+  },
+  filteredText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#007AFF',
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -640,10 +1093,7 @@ const styles = StyleSheet.create({
     color: '#999',
     fontStyle: 'italic',
   },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+
   editButton: {
     padding: 4,
   },

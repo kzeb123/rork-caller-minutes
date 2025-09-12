@@ -4,13 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback, useMemo } from 'react';
 import { Platform } from 'react-native';
 import * as Contacts from 'expo-contacts';
-import { Contact, CallNote, IncomingCall, ActiveCall, Reminder, Order, DetectedDateTime, NoteStatus } from '@/types/contact';
+import { Contact, CallNote, IncomingCall, ActiveCall, Reminder, Order, DetectedDateTime, NoteStatus, NoteFolder, NoteFilter } from '@/types/contact';
 
 const CONTACTS_KEY = 'call_notes_contacts';
 const NOTES_KEY = 'call_notes_notes';
 const REMINDERS_KEY = 'call_notes_reminders';
 const ORDERS_KEY = 'call_notes_orders';
 const NOTE_TEMPLATE_KEY = 'call_note_template';
+const FOLDERS_KEY = 'call_notes_folders';
 
 const DEFAULT_NOTE_TEMPLATE = `Call with [CONTACT_NAME] - [DATE]
 
@@ -91,6 +92,52 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<string> => {
       const stored = await AsyncStorage.getItem(NOTE_TEMPLATE_KEY);
       return stored || DEFAULT_NOTE_TEMPLATE;
+    }
+  });
+
+  const foldersQuery = useQuery({
+    queryKey: ['folders'],
+    queryFn: async (): Promise<NoteFolder[]> => {
+      const stored = await AsyncStorage.getItem(FOLDERS_KEY);
+      const folders = stored ? JSON.parse(stored) : [];
+      
+      // Add default folders if none exist
+      if (folders.length === 0) {
+        const defaultFolders: NoteFolder[] = [
+          {
+            id: 'work',
+            name: 'Work',
+            color: '#007AFF',
+            createdAt: new Date(),
+            description: 'Work-related calls'
+          },
+          {
+            id: 'personal',
+            name: 'Personal',
+            color: '#34C759',
+            createdAt: new Date(),
+            description: 'Personal calls'
+          },
+          {
+            id: 'sales',
+            name: 'Sales',
+            color: '#FF9500',
+            createdAt: new Date(),
+            description: 'Sales and business calls'
+          },
+          {
+            id: 'support',
+            name: 'Support',
+            color: '#5856D6',
+            createdAt: new Date(),
+            description: 'Customer support calls'
+          }
+        ];
+        await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(defaultFolders));
+        return defaultFolders;
+      }
+      
+      return folders;
     }
   });
 
@@ -307,6 +354,60 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
       queryClient.invalidateQueries({ queryKey: ['noteTemplate'] });
     }
   });
+
+  const addFolderMutation = useMutation({
+    mutationFn: async (folder: Omit<NoteFolder, 'id' | 'createdAt'>) => {
+      const folders = foldersQuery.data || [];
+      const newFolder: NoteFolder = {
+        ...folder,
+        id: Date.now().toString(),
+        createdAt: new Date(),
+      };
+      const updated = [...folders, newFolder];
+      await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(updated));
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+    }
+  });
+
+  const updateFolderMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<NoteFolder> }) => {
+      const folders = foldersQuery.data || [];
+      const updated = folders.map(folder => 
+        folder.id === id ? { ...folder, ...updates } : folder
+      );
+      await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(updated));
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+    }
+  });
+
+  const deleteFolderMutation = useMutation({
+    mutationFn: async (folderId: string) => {
+      const folders = foldersQuery.data || [];
+      const notes = notesQuery.data || [];
+      
+      // Remove folder reference from notes
+      const updatedNotes = notes.map(note => 
+        note.folderId === folderId ? { ...note, folderId: undefined } : note
+      );
+      await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(updatedNotes));
+      
+      // Remove folder
+      const updatedFolders = folders.filter(f => f.id !== folderId);
+      await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(updatedFolders));
+      
+      return { folders: updatedFolders, notes: updatedNotes };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['folders'] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+    }
+  });
   
   const { mutate: addNoteMutate } = addNoteMutation;
 
@@ -519,10 +620,12 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     await AsyncStorage.removeItem(NOTES_KEY);
     await AsyncStorage.removeItem(REMINDERS_KEY);
     await AsyncStorage.removeItem(ORDERS_KEY);
+    await AsyncStorage.removeItem(FOLDERS_KEY);
     queryClient.invalidateQueries({ queryKey: ['contacts'] });
     queryClient.invalidateQueries({ queryKey: ['notes'] });
     queryClient.invalidateQueries({ queryKey: ['reminders'] });
     queryClient.invalidateQueries({ queryKey: ['orders'] });
+    queryClient.invalidateQueries({ queryKey: ['folders'] });
   }, [queryClient]);
 
   const addFakeContactsMutation = useMutation({
@@ -685,8 +788,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     notes: notesQuery.data || [],
     reminders: remindersQuery.data || [],
     orders: ordersQuery.data || [],
+    folders: foldersQuery.data || [],
     noteTemplate: noteTemplateQuery.data || DEFAULT_NOTE_TEMPLATE,
-    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading,
+    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading || foldersQuery.isLoading,
     incomingCall,
     activeCall,
     showNoteModal,
@@ -709,6 +813,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     updateOrder: updateOrderMutation.mutate,
     deleteOrder: deleteOrderMutation.mutate,
     updateNoteTemplate: updateNoteTemplateMutation.mutate,
+    addFolder: addFolderMutation.mutate,
+    updateFolder: updateFolderMutation.mutate,
+    deleteFolder: deleteFolderMutation.mutate,
     openCallNoteModal,
     simulateIncomingCall,
     answerCall,
@@ -727,11 +834,13 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     notesQuery.data,
     remindersQuery.data,
     ordersQuery.data,
+    foldersQuery.data,
     noteTemplateQuery.data,
     contactsQuery.isLoading,
     notesQuery.isLoading,
     remindersQuery.isLoading,
     ordersQuery.isLoading,
+    foldersQuery.isLoading,
     noteTemplateQuery.isLoading,
     incomingCall,
     activeCall,
@@ -755,6 +864,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     updateOrderMutation.mutate,
     deleteOrderMutation.mutate,
     updateNoteTemplateMutation.mutate,
+    addFolderMutation.mutate,
+    updateFolderMutation.mutate,
+    deleteFolderMutation.mutate,
     openCallNoteModal,
     simulateIncomingCall,
     answerCall,

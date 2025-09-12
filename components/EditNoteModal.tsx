@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
-import { X, Save, Tag, Plus, Trash2, Circle, CheckCircle2 } from 'lucide-react-native';
-import { CallNote, NoteStatus } from '@/types/contact';
+import { X, Save, Tag, Plus, Trash2, Circle, CheckCircle2, Folder } from 'lucide-react-native';
+import { CallNote, NoteStatus, NoteFolder } from '@/types/contact';
+import { useContacts } from '@/hooks/contacts-store';
 
 interface EditNoteModalProps {
   visible: boolean;
@@ -24,6 +25,7 @@ const PRIORITY_LABELS = {
 };
 
 export default function EditNoteModal({ visible, note, onClose, onSave, onDelete }: EditNoteModalProps) {
+  const { folders } = useContacts();
   const [noteText, setNoteText] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<NoteStatus>('follow-up');
   const [customStatus, setCustomStatus] = useState('');
@@ -31,8 +33,10 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
   const [newTag, setNewTag] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [category, setCategory] = useState('');
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
 
   useEffect(() => {
     if (note) {
@@ -42,6 +46,7 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
       setTags(note.tags || []);
       setPriority(note.priority || 'medium');
       setCategory(note.category || '');
+      setSelectedFolderId(note.folderId);
     }
   }, [note]);
 
@@ -56,6 +61,7 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
       tags: tags.filter(tag => tag.trim()),
       priority,
       category: category.trim() || undefined,
+      folderId: selectedFolderId,
       updatedAt: new Date(),
     };
 
@@ -103,6 +109,15 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
       case 'other': return 'Other';
       default: return 'Unknown';
     }
+  };
+
+  const getSelectedFolder = () => {
+    return folders.find(f => f.id === selectedFolderId);
+  };
+
+  const getFolderDisplayText = () => {
+    const folder = getSelectedFolder();
+    return folder ? folder.name : 'No Folder';
   };
 
   if (!visible || !note) return null;
@@ -232,6 +247,63 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
                       </Text>
                     </View>
                     {priority === p && <CheckCircle2 size={16} color="#007AFF" />}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Folder Selection */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Folder</Text>
+            <TouchableOpacity 
+              style={styles.selector}
+              onPress={() => setShowFolderPicker(!showFolderPicker)}
+            >
+              <Folder 
+                size={16} 
+                color={getSelectedFolder()?.color || '#999'} 
+                fill={getSelectedFolder()?.color ? getSelectedFolder()!.color + '20' : '#f0f0f0'} 
+              />
+              <Text style={styles.selectorText}>
+                {getFolderDisplayText()}
+              </Text>
+            </TouchableOpacity>
+            
+            {showFolderPicker && (
+              <View style={styles.picker}>
+                <TouchableOpacity
+                  style={styles.pickerOption}
+                  onPress={() => {
+                    setSelectedFolderId(undefined);
+                    setShowFolderPicker(false);
+                  }}
+                >
+                  <View style={styles.folderOption}>
+                    <Folder size={16} color="#999" fill="#f0f0f0" />
+                    <Text style={[styles.pickerOptionText, !selectedFolderId && styles.selectedText]}>
+                      No Folder
+                    </Text>
+                  </View>
+                  {!selectedFolderId && <CheckCircle2 size={16} color="#007AFF" />}
+                </TouchableOpacity>
+                
+                {folders.map((folder) => (
+                  <TouchableOpacity
+                    key={folder.id}
+                    style={styles.pickerOption}
+                    onPress={() => {
+                      setSelectedFolderId(folder.id);
+                      setShowFolderPicker(false);
+                    }}
+                  >
+                    <View style={styles.folderOption}>
+                      <Folder size={16} color={folder.color} fill={folder.color + '20'} />
+                      <Text style={[styles.pickerOptionText, selectedFolderId === folder.id && styles.selectedText]}>
+                        {folder.name}
+                      </Text>
+                    </View>
+                    {selectedFolderId === folder.id && <CheckCircle2 size={16} color="#007AFF" />}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -402,6 +474,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   priorityOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  folderOption: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
