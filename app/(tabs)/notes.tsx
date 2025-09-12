@@ -17,7 +17,7 @@ export default function NotesScreen() {
   const [showFolderModal, setShowFolderModal] = useState<boolean>(false);
   const [activeFilters, setActiveFilters] = useState<NoteFilter[]>([]);
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [groupBy, setGroupBy] = useState<GroupByOption>('day');
+  const [groupBy, setGroupBy] = useState<GroupByOption>('none');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const searchAnimation = new Animated.Value(0);
   const filterAnimation = new Animated.Value(0);
@@ -179,15 +179,41 @@ export default function NotesScreen() {
   }, [notes, searchQuery, activeFilters]);
 
   const groupedNotes = useMemo(() => {
-    const groups: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based'; folderId?: string; date?: Date }[] = [];
+    const groups: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string }[] = [];
 
     if (groupBy === 'none') {
-      return [{
-        id: 'all',
-        title: 'All Notes',
-        notes: filteredNotes,
-        type: 'time-based' as const,
-      }];
+      // Group by contact name for collapsible view
+      const notesByContact = new Map<string, CallNote[]>();
+      
+      filteredNotes.forEach(note => {
+        const contactName = note.contactName;
+        if (!notesByContact.has(contactName)) {
+          notesByContact.set(contactName, []);
+        }
+        notesByContact.get(contactName)!.push(note);
+      });
+
+      notesByContact.forEach((contactNotes, contactName) => {
+        const sortedNotes = contactNotes.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        groups.push({
+          id: `contact-${contactName}`,
+          title: contactName,
+          notes: sortedNotes,
+          type: 'contact-based',
+          contactName,
+          date: sortedNotes[0].createdAt,
+        });
+      });
+
+      return groups.sort((a, b) => {
+        if (a.date && b.date) {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        }
+        return 0;
+      });
     }
 
     if (groupBy === 'folder') {
@@ -471,11 +497,21 @@ export default function NotesScreen() {
     });
   };
 
-  const NoteGroup = ({ group }: { group: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based'; folderId?: string; date?: Date } }) => {
+  const NoteGroup = ({ group }: { group: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string } }) => {
     const isExpanded = expandedGroups.has(group.id);
     const sortedGroupNotes = [...group.notes].sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
+
+    const getGroupSubtitle = () => {
+      if (group.type === 'contact-based') {
+        const latestNote = sortedGroupNotes[0];
+        if (latestNote) {
+          return `Latest: ${formatDate(latestNote.createdAt)}`;
+        }
+      }
+      return null;
+    };
 
     return (
       <View style={styles.noteGroup}>
@@ -490,6 +526,11 @@ export default function NotesScreen() {
             ) : (
               <ChevronRight size={20} color="#000" />
             )}
+            {group.type === 'contact-based' && (
+              <View style={styles.contactAvatar}>
+                <User size={16} color="#666" />
+              </View>
+            )}
             {group.type === 'folder-based' && group.folderId && (
               <View
                 style={[
@@ -498,16 +539,78 @@ export default function NotesScreen() {
                 ]}
               />
             )}
-            <Text style={styles.groupTitle}>{group.title}</Text>
+            <View style={styles.groupTitleContainer}>
+              <Text style={styles.groupTitle}>{group.title}</Text>
+              {getGroupSubtitle() && (
+                <Text style={styles.groupSubtitle}>{getGroupSubtitle()}</Text>
+              )}
+            </View>
           </View>
-          <Text style={styles.groupCount}>{group.notes.length}</Text>
+          <View style={styles.groupHeaderRight}>
+            <Text style={styles.groupCount}>{group.notes.length}</Text>
+          </View>
         </TouchableOpacity>
 
         {isExpanded && (
           <View style={styles.groupContent}>
-            {sortedGroupNotes.map((item) => (
-              <View key={item.id}>
-                {renderNote({ item })}
+            {sortedGroupNotes.map((item, index) => (
+              <View key={item.id} style={styles.noteInGroup}>
+                <View style={styles.noteHeader}>
+                  <View style={styles.noteTimeInfo}>
+                    <Clock size={12} color="#999" />
+                    <Text style={styles.noteTime}>{formatDate(item.createdAt)}</Text>
+                    <View style={styles.callDirectionIndicator}>
+                      {item.callDirection === 'inbound' ? (
+                        <PhoneIncoming size={12} color="#34c759" />
+                      ) : (
+                        <PhoneOutgoing size={12} color="#007AFF" />
+                      )}
+                      <Text style={styles.callDurationText}>{formatCallDuration(item.callDuration)}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={() => handleEditNote(item)} style={styles.editButton}>
+                    <Edit3 size={14} color="#007AFF" />
+                  </TouchableOpacity>
+                </View>
+                
+                {/* Status and Tags */}
+                <View style={styles.noteMetaRow}>
+                  <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+                    <Tag size={8} color={getStatusColor(item.status)} />
+                    <Text style={[styles.statusTagText, { color: getStatusColor(item.status) }]}>
+                      {getStatusText(item.status, item.customStatus)}
+                    </Text>
+                  </View>
+                  {item.priority && (
+                    <View style={styles.priorityIndicator}>
+                      <Circle size={6} color={getPriorityColor(item.priority)} fill={getPriorityColor(item.priority)} />
+                      <Text style={styles.priorityText}>{item.priority}</Text>
+                    </View>
+                  )}
+                </View>
+                
+                {/* Note Content */}
+                <TouchableOpacity onPress={() => handleEditNote(item)} style={styles.noteContentContainer}>
+                  <Text style={[styles.noteText, item.isAutoGenerated && styles.autoNoteText]} numberOfLines={3}>
+                    {item.note}
+                  </Text>
+                </TouchableOpacity>
+                
+                {/* Custom Tags */}
+                {item.tags && item.tags.length > 0 && (
+                  <View style={styles.customTagsContainer}>
+                    {item.tags.slice(0, 3).map((tag, tagIndex) => (
+                      <View key={tagIndex} style={styles.customTag}>
+                        <Text style={styles.customTagText}>{tag}</Text>
+                      </View>
+                    ))}
+                    {item.tags.length > 3 && (
+                      <Text style={styles.moreTagsText}>+{item.tags.length - 3}</Text>
+                    )}
+                  </View>
+                )}
+                
+                {index < sortedGroupNotes.length - 1 && <View style={styles.noteSeparator} />}
               </View>
             ))}
           </View>
@@ -750,7 +853,7 @@ export default function NotesScreen() {
                   groupBy === option && styles.groupByOptionTextActive,
                 ]}
               >
-                {option.charAt(0).toUpperCase() + option.slice(1)}
+                {option === 'none' ? 'Contact' : option.charAt(0).toUpperCase() + option.slice(1)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -1112,8 +1215,8 @@ const styles = StyleSheet.create({
     borderColor: '#e9ecef',
   },
   groupByOptionActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
   },
   groupByOptionText: {
     fontSize: 14,
@@ -1301,5 +1404,75 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#999',
     fontWeight: '500',
+  },
+  contactAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  groupTitleContainer: {
+    flex: 1,
+  },
+  groupSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  groupHeaderRight: {
+    alignItems: 'flex-end',
+  },
+  noteInGroup: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  noteTimeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  noteTime: {
+    fontSize: 12,
+    color: '#999',
+  },
+  callDirectionIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 8,
+  },
+  callDurationText: {
+    fontSize: 11,
+    color: '#666',
+  },
+  noteMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  priorityIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  noteContentContainer: {
+    marginBottom: 8,
+  },
+  customTagsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexWrap: 'wrap',
+  },
+  noteSeparator: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginTop: 8,
   },
 });
