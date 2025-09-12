@@ -8,7 +8,6 @@ interface TemplateSection {
   id: string;
   label: string;
   value: string;
-  enabled: boolean;
 }
 
 export default function NoteModal() {
@@ -28,14 +27,13 @@ export default function NoteModal() {
   useEffect(() => {
     if (showNoteModal && currentCallContact) {
       // Parse template into sections
-      const template = noteTemplate || 'Call with [CONTACT_NAME] - [DATE]\n\nPurpose of call:\n\nKey points discussed:\n\nAction items:\n\nNext steps:\n\nAdditional notes:';
+      const template = noteTemplate || 'Purpose of call:\n\nKey points discussed:\n\nAction items:\n\nNext steps:\n\nAdditional notes:';
       const lines = template.split('\n');
       const sections: TemplateSection[] = [];
       
-      // Skip the header line
       let currentSection: TemplateSection | null = null;
       
-      for (let i = 1; i < lines.length; i++) {
+      for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         if (line.endsWith(':')) {
           // This is a section header
@@ -47,8 +45,7 @@ export default function NoteModal() {
           currentSection = {
             id,
             label,
-            value: '',
-            enabled: true
+            value: ''
           };
         }
       }
@@ -61,11 +58,11 @@ export default function NoteModal() {
       // If no sections found, use defaults
       if (sections.length === 0) {
         sections.push(
-          { id: 'purpose', label: 'Purpose of call', value: '', enabled: true },
-          { id: 'keypoints', label: 'Key points discussed', value: '', enabled: true },
-          { id: 'action', label: 'Action items', value: '', enabled: true },
-          { id: 'nextsteps', label: 'Next steps', value: '', enabled: true },
-          { id: 'additional', label: 'Additional notes', value: '', enabled: true }
+          { id: 'purpose', label: 'Purpose of call', value: '' },
+          { id: 'keypoints', label: 'Key points discussed', value: '' },
+          { id: 'action', label: 'Action items', value: '' },
+          { id: 'nextsteps', label: 'Next steps', value: '' },
+          { id: 'additional', label: 'Additional notes', value: '' }
         );
       }
       
@@ -107,7 +104,7 @@ export default function NoteModal() {
   };
 
   const handleSave = () => {
-    // Build the note text from enabled sections
+    // Build the note text from sections with content
     const header = `Call with ${currentCallContact?.name} - ${new Date().toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -120,7 +117,7 @@ export default function NoteModal() {
     let noteText = header + '\n\n';
     
     templateSections.forEach(section => {
-      if (section.enabled && section.value.trim()) {
+      if (section.value.trim()) {
         noteText += `${section.label}:\n${section.value.trim()}\n\n`;
       }
     });
@@ -161,13 +158,7 @@ export default function NoteModal() {
     setTags([]);
   };
   
-  const toggleSection = (id: string) => {
-    setTemplateSections(prev => 
-      prev.map(section => 
-        section.id === id ? { ...section, enabled: !section.enabled } : section
-      )
-    );
-  };
+
   
   const updateSectionValue = (id: string, value: string) => {
     setTemplateSections(prev => 
@@ -226,7 +217,7 @@ export default function NoteModal() {
     }
   };
   
-  const hasContent = templateSections.some(s => s.enabled && s.value.trim());
+  const hasContent = templateSections.some(s => s.value.trim());
 
   if (!showNoteModal || !currentCallContact) return null;
 
@@ -457,24 +448,16 @@ export default function NoteModal() {
                   style={styles.sectionHeader}
                   onPress={() => toggleSectionExpanded(section.id)}
                 >
-                  <View style={styles.sectionHeaderLeft}>
-                    <TouchableOpacity
-                      style={[styles.checkbox, section.enabled && styles.checkboxChecked]}
-                      onPress={() => toggleSection(section.id)}
-                    >
-                      {section.enabled && <Check size={14} color="#fff" />}
-                    </TouchableOpacity>
-                    <Text style={[styles.sectionLabel, !section.enabled && styles.sectionLabelDisabled]}>
-                      {section.label}
-                    </Text>
-                  </View>
+                  <Text style={styles.sectionLabel}>
+                    {section.label}
+                  </Text>
                   {expandedSections.has(section.id) ? 
                     <ChevronUp size={20} color="#666" /> : 
                     <ChevronDown size={20} color="#666" />
                   }
                 </TouchableOpacity>
                 
-                {expandedSections.has(section.id) && section.enabled && (
+                {expandedSections.has(section.id) && (
                   <View style={styles.sectionContent}>
                     <TextInput
                       style={styles.sectionInput}
@@ -833,33 +816,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
   },
-  sectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    marginRight: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
   sectionLabel: {
     fontSize: 16,
     fontWeight: '500',
     color: '#000',
     flex: 1,
-  },
-  sectionLabelDisabled: {
-    color: '#999',
   },
   sectionContent: {
     paddingHorizontal: 16,
