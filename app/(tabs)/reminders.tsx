@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, SafeAreaView, Animated, AppState } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, SafeAreaView, Animated, AppState, SectionList } from 'react-native';
 import { Stack } from 'expo-router';
-import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2, Archive, Cloud, Search, Clock, Filter } from 'lucide-react-native';
+import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2, Archive, Cloud, Search, Clock, Filter, Phone, Package, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { Contact, Reminder, Order } from '@/types/contact';
 import GroupedView, { GroupByOption } from '@/components/GroupedView';
@@ -19,7 +19,10 @@ export default function RemindersScreen() {
   const [contactSearch, setContactSearch] = useState<string>('');
   const [groupBy, setGroupBy] = useState<GroupByOption>('day');
   const [showGroupByModal, setShowGroupByModal] = useState<boolean>(false);
+  const [showCallReminders, setShowCallReminders] = useState<boolean>(true);
   const [showOrderReminders, setShowOrderReminders] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'calls' | 'orders'>('all');
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({ calls: true, orders: true });
   const fadeAnim = new Animated.Value(0);
 
   // Parse time from description
@@ -119,29 +122,54 @@ export default function RemindersScreen() {
     }
   };
 
-  const handleReminderToggle = (reminder: Reminder) => {
+  const handleReminderToggle = (reminder: any) => {
     if (!reminder.isCompleted) {
       // When completing a reminder, show the completion modal
       setCompletedReminder(reminder);
       setShowCompletionModal(true);
     } else {
       // When unchecking, just update directly
-      updateReminder({ 
-        id: reminder.id, 
-        updates: { isCompleted: false } 
-      });
+      if (reminder.isOrder) {
+        // Handle order reminder completion
+        const order = orders.find(o => o.id === reminder.orderId);
+        if (order) {
+          updateOrder({ 
+            id: order.id, 
+            updates: { reminderSent: false } 
+          });
+        }
+      } else {
+        updateReminder({ 
+          id: reminder.id, 
+          updates: { isCompleted: false } 
+        });
+      }
     }
   };
 
   const handleArchiveReminder = () => {
     if (completedReminder) {
-      updateReminder({ 
-        id: completedReminder.id, 
-        updates: { 
-          isCompleted: true,
-          isArchived: true 
-        } 
-      });
+      if ((completedReminder as any).isOrder) {
+        // Handle order reminder archiving
+        const order = orders.find(o => o.id === (completedReminder as any).orderId);
+        if (order) {
+          updateOrder({ 
+            id: order.id, 
+            updates: { 
+              reminderSent: true,
+              status: 'delivered' 
+            } 
+          });
+        }
+      } else {
+        updateReminder({ 
+          id: completedReminder.id, 
+          updates: { 
+            isCompleted: true,
+            isArchived: true 
+          } 
+        });
+      }
       setShowCompletionModal(false);
       setCompletedReminder(null);
     }
@@ -149,7 +177,21 @@ export default function RemindersScreen() {
 
   const handleDeleteCompletedReminder = () => {
     if (completedReminder) {
-      deleteReminder(completedReminder.id);
+      if ((completedReminder as any).isOrder) {
+        // Handle order reminder deletion
+        const order = orders.find(o => o.id === (completedReminder as any).orderId);
+        if (order) {
+          updateOrder({ 
+            id: order.id, 
+            updates: { 
+              reminderDate: undefined,
+              reminderSent: false 
+            } 
+          });
+        }
+      } else {
+        deleteReminder(completedReminder.id);
+      }
       setShowCompletionModal(false);
       setCompletedReminder(null);
     }
@@ -157,10 +199,21 @@ export default function RemindersScreen() {
 
   const handleKeepReminder = () => {
     if (completedReminder) {
-      updateReminder({ 
-        id: completedReminder.id, 
-        updates: { isCompleted: true } 
-      });
+      if ((completedReminder as any).isOrder) {
+        // Handle order reminder keeping
+        const order = orders.find(o => o.id === (completedReminder as any).orderId);
+        if (order) {
+          updateOrder({ 
+            id: order.id, 
+            updates: { reminderSent: true } 
+          });
+        }
+      } else {
+        updateReminder({ 
+          id: completedReminder.id, 
+          updates: { isCompleted: true } 
+        });
+      }
       setShowCompletionModal(false);
       setCompletedReminder(null);
     }
@@ -372,64 +425,82 @@ export default function RemindersScreen() {
     </Modal>
   );
 
-  const CompletionModal = () => (
-    <Modal
-      visible={showCompletionModal}
-      animationType="fade"
-      transparent={true}
-      onRequestClose={() => setShowCompletionModal(false)}
-    >
-      <View style={styles.completionModalOverlay}>
-        <View style={styles.completionModalContainer}>
-          <View style={styles.completionModalHeader}>
-            <CheckCircle size={32} color="#34C759" />
-            <Text style={styles.completionModalTitle}>Reminder Completed!</Text>
-            <Text style={styles.completionModalSubtitle}>
-              What would you like to do with this reminder?
-            </Text>
-          </View>
-
-          <View style={styles.completionModalContent}>
-            {completedReminder && (
-              <View style={styles.completedReminderInfo}>
-                <Text style={styles.completedReminderTitle}>{completedReminder.title}</Text>
-                <Text style={styles.completedReminderContact}>{completedReminder.contactName}</Text>
+  const CompletionModal = () => {
+    const isOrderReminder = completedReminder && (completedReminder as any).isOrder;
+    const modalTitle = isOrderReminder ? 'Order Reminder Completed!' : 'Call Reminder Completed!';
+    const modalIcon = isOrderReminder ? Package : Phone;
+    const IconComponent = modalIcon;
+    
+    return (
+      <Modal
+        visible={showCompletionModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowCompletionModal(false)}
+      >
+        <View style={styles.completionModalOverlay}>
+          <View style={[styles.completionModalContainer, isOrderReminder && styles.orderCompletionModal]}>
+            <View style={styles.completionModalHeader}>
+              <View style={[styles.completionIconWrapper, isOrderReminder && styles.orderCompletionIcon]}>
+                <IconComponent size={24} color="#fff" />
               </View>
-            )}
+              <Text style={styles.completionModalTitle}>{modalTitle}</Text>
+              <Text style={styles.completionModalSubtitle}>
+                What would you like to do with this {isOrderReminder ? 'order' : 'call'} reminder?
+              </Text>
+            </View>
 
-            <View style={styles.completionActions}>
-              <TouchableOpacity 
-                style={[styles.completionActionButton, styles.archiveButton]}
-                onPress={handleArchiveReminder}
-              >
-                <Archive size={20} color="#fff" />
-                <Text style={styles.completionActionText}>Archive</Text>
-                <Text style={styles.completionActionSubtext}>Save to cloud/archive</Text>
-              </TouchableOpacity>
+            <View style={styles.completionModalContent}>
+              {completedReminder && (
+                <View style={styles.completedReminderInfo}>
+                  <Text style={styles.completedReminderTitle}>{completedReminder.title}</Text>
+                  <Text style={styles.completedReminderContact}>{completedReminder.contactName}</Text>
+                  {isOrderReminder && (completedReminder as any).items && (
+                    <Text style={styles.orderItemsCount}>
+                      {(completedReminder as any).items.length} items • ${(completedReminder as any).totalAmount?.toFixed(2)}
+                    </Text>
+                  )}
+                </View>
+              )}
 
-              <TouchableOpacity 
-                style={[styles.completionActionButton, styles.deleteButton]}
-                onPress={handleDeleteCompletedReminder}
-              >
-                <Trash2 size={20} color="#fff" />
-                <Text style={styles.completionActionText}>Delete</Text>
-                <Text style={styles.completionActionSubtext}>Remove permanently</Text>
-              </TouchableOpacity>
+              <View style={styles.completionActions}>
+                <TouchableOpacity 
+                  style={[styles.completionActionButton, isOrderReminder ? styles.deliveredButton : styles.archiveButton]}
+                  onPress={handleArchiveReminder}
+                >
+                  {isOrderReminder ? <Package size={20} color="#fff" /> : <Archive size={20} color="#fff" />}
+                  <Text style={styles.completionActionText}>
+                    {isOrderReminder ? 'Mark Delivered' : 'Archive'}
+                  </Text>
+                  <Text style={styles.completionActionSubtext}>
+                    {isOrderReminder ? 'Order completed' : 'Save to archive'}
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.completionActionButton, styles.keepButton]}
-                onPress={handleKeepReminder}
-              >
-                <CheckCircle size={20} color="#fff" />
-                <Text style={styles.completionActionText}>Keep</Text>
-                <Text style={styles.completionActionSubtext}>Mark as completed</Text>
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.completionActionButton, styles.deleteButton]}
+                  onPress={handleDeleteCompletedReminder}
+                >
+                  <Trash2 size={20} color="#fff" />
+                  <Text style={styles.completionActionText}>Delete</Text>
+                  <Text style={styles.completionActionSubtext}>Remove reminder</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.completionActionButton, styles.keepButton]}
+                  onPress={handleKeepReminder}
+                >
+                  <CheckCircle size={20} color="#fff" />
+                  <Text style={styles.completionActionText}>Keep</Text>
+                  <Text style={styles.completionActionSubtext}>Mark as completed</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
-      </View>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
@@ -454,7 +525,12 @@ export default function RemindersScreen() {
     </View>
   );
 
-  // Combine reminders and order reminders
+  // Separate call reminders and order reminders
+  const callReminders = useMemo(() => {
+    if (!showCallReminders) return [];
+    return reminders.filter(r => !r.isArchived);
+  }, [reminders, showCallReminders]);
+
   const orderReminders = useMemo(() => {
     if (!showOrderReminders) return [];
     
@@ -464,39 +540,238 @@ export default function RemindersScreen() {
         id: `order-${order.id}`,
         contactId: order.contactId,
         contactName: order.contactName,
-        title: `Order #${order.id.slice(-6)} - ${order.items.length} items`,
-        description: order.notes || `Total: ${order.totalAmount.toFixed(2)}`,
+        title: `Order #${order.id.slice(-6)}`,
+        description: order.notes || `${order.items.length} items - Total: ${order.totalAmount.toFixed(2)}`,
         dueDate: new Date(order.reminderDate!),
         isCompleted: order.status === 'delivered',
         isArchived: false,
         createdAt: new Date(order.createdAt),
         isOrder: true,
         orderId: order.id,
+        items: order.items,
+        totalAmount: order.totalAmount,
       }));
   }, [orders, showOrderReminders]);
 
-  const allReminders = useMemo(() => {
-    return [...reminders, ...orderReminders].sort((a, b) => {
-      if (a.isCompleted !== b.isCompleted) {
-        return a.isCompleted ? 1 : -1;
-      }
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    });
-  }, [reminders, orderReminders]);
+  const getFilteredReminders = () => {
+    switch (activeTab) {
+      case 'calls':
+        return callReminders;
+      case 'orders':
+        return orderReminders;
+      case 'all':
+      default:
+        return [...callReminders, ...orderReminders].sort((a, b) => {
+          if (a.isCompleted !== b.isCompleted) {
+            return a.isCompleted ? 1 : -1;
+          }
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        });
+    }
+  };
 
+  const allReminders = getFilteredReminders();
   const pendingReminders = allReminders.filter(r => !r.isCompleted);
   const completedReminders = allReminders.filter(r => r.isCompleted);
   const overdueReminders = pendingReminders.filter(r => new Date(r.dueDate) < new Date());
   const todayReminders = pendingReminders.filter(r => new Date(r.dueDate).toDateString() === new Date().toDateString());
 
+  // Stats for each type
+  const callStats = {
+    pending: callReminders.filter(r => !r.isCompleted).length,
+    completed: callReminders.filter(r => r.isCompleted).length,
+    overdue: callReminders.filter(r => !r.isCompleted && new Date(r.dueDate) < new Date()).length,
+    today: callReminders.filter(r => !r.isCompleted && new Date(r.dueDate).toDateString() === new Date().toDateString()).length,
+  };
+
+  const orderStats = {
+    pending: orderReminders.filter(r => !r.isCompleted).length,
+    completed: orderReminders.filter(r => r.isCompleted).length,
+    overdue: orderReminders.filter(r => !r.isCompleted && new Date(r.dueDate) < new Date()).length,
+    today: orderReminders.filter(r => !r.isCompleted && new Date(r.dueDate).toDateString() === new Date().toDateString()).length,
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const renderReminderCard = (reminder: any) => {
+    const isOverdue = new Date(reminder.dueDate) < new Date() && !reminder.isCompleted;
+    const isToday = new Date(reminder.dueDate).toDateString() === new Date().toDateString();
+    const contact = contacts.find(c => c.id === reminder.contactId);
+    const isOrder = reminder.isOrder;
+    
+    return (
+      <View key={reminder.id} style={[
+        styles.reminderCard,
+        reminder.isCompleted && styles.completedReminderCard,
+        isOverdue && styles.overdueReminderCard,
+        isOrder && styles.orderReminderCard
+      ]}>
+        <TouchableOpacity 
+          style={styles.reminderCheckbox}
+          onPress={() => handleReminderToggle(reminder)}
+        >
+          {reminder.isCompleted ? (
+            <CheckCircle size={24} color="#34C759" />
+          ) : (
+            <Circle size={24} color={isOverdue ? "#FF3B30" : isOrder ? "#FF9500" : "#8E8E93"} />
+          )}
+        </TouchableOpacity>
+        
+        <View style={styles.reminderContent}>
+          <View style={styles.reminderHeader}>
+            {isOrder ? <Package size={14} color="#FF9500" /> : <Phone size={14} color="#007AFF" />}
+            <Text style={[
+              styles.reminderTitle,
+              reminder.isCompleted && styles.completedReminderTitle
+            ]}>
+              {reminder.title}
+            </Text>
+          </View>
+          
+          <View style={styles.reminderMeta}>
+            <View style={styles.reminderMetaItem}>
+              <User size={14} color="#8E8E93" />
+              <Text style={styles.reminderMetaText}>
+                {contact ? contact.name : reminder.contactName}
+                {contact && contact.phoneNumber && (
+                  <Text style={styles.phoneText}> • {contact.phoneNumber}</Text>
+                )}
+              </Text>
+            </View>
+            
+            <View style={styles.reminderMetaItem}>
+              <Calendar size={14} color={isOverdue ? "#FF3B30" : isToday ? "#FF9500" : "#8E8E93"} />
+              <Text style={[
+                styles.reminderMetaText,
+                isOverdue && styles.overdueText,
+                isToday && styles.todayText
+              ]}>
+                {isToday ? 'Today' : new Date(reminder.dueDate).toLocaleDateString()}
+                {' • '}
+                {new Date(reminder.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+            
+            {isOverdue && !reminder.isCompleted && (
+              <View style={styles.reminderMetaItem}>
+                <AlertCircle size={14} color="#FF3B30" />
+                <Text style={styles.overdueText}>Overdue</Text>
+              </View>
+            )}
+          </View>
+          
+          {reminder.description && (
+            <Text style={[
+              styles.reminderDescription,
+              reminder.isCompleted && styles.completedReminderDescription
+            ]}>
+              {reminder.description}
+            </Text>
+          )}
+        </View>
+        
+        <View style={styles.reminderActions}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => {
+              if (isOrder) {
+                Alert.alert(
+                  'Delete Order Reminder',
+                  'Are you sure you want to delete this order reminder?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { 
+                      text: 'Delete', 
+                      style: 'destructive', 
+                      onPress: () => {
+                        const order = orders.find(o => o.id === reminder.orderId);
+                        if (order) {
+                          updateOrder({ 
+                            id: order.id, 
+                            updates: { 
+                              reminderDate: undefined,
+                              reminderSent: false 
+                            } 
+                          });
+                        }
+                      }
+                    }
+                  ]
+                );
+              } else {
+                Alert.alert(
+                  'Delete Call Reminder',
+                  'Are you sure you want to delete this call reminder?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: () => deleteReminder(reminder.id) }
+                  ]
+                );
+              }
+            }}
+          >
+            <Trash2 size={18} color="#FF3B30" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Reminders' }} />
       
-      {allReminders.length === 0 ? (
+      {callReminders.length === 0 && orderReminders.length === 0 ? (
         renderEmpty()
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Tab Selector */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+              onPress={() => setActiveTab('all')}
+            >
+              <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>All</Text>
+              <View style={[styles.tabBadge, activeTab === 'all' && styles.activeTabBadge]}>
+                <Text style={[styles.tabBadgeText, activeTab === 'all' && styles.activeTabBadgeText]}>
+                  {callReminders.length + orderReminders.length}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'calls' && styles.activeTab]}
+              onPress={() => setActiveTab('calls')}
+            >
+              <Phone size={16} color={activeTab === 'calls' ? '#007AFF' : '#666'} />
+              <Text style={[styles.tabText, activeTab === 'calls' && styles.activeTabText]}>Calls</Text>
+              <View style={[styles.tabBadge, activeTab === 'calls' && styles.activeTabBadge]}>
+                <Text style={[styles.tabBadgeText, activeTab === 'calls' && styles.activeTabBadgeText]}>
+                  {callReminders.length}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'orders' && styles.activeTab]}
+              onPress={() => setActiveTab('orders')}
+            >
+              <Package size={16} color={activeTab === 'orders' ? '#007AFF' : '#666'} />
+              <Text style={[styles.tabText, activeTab === 'orders' && styles.activeTabText]}>Orders</Text>
+              <View style={[styles.tabBadge, activeTab === 'orders' && styles.activeTabBadge]}>
+                <Text style={[styles.tabBadgeText, activeTab === 'orders' && styles.activeTabBadgeText]}>
+                  {orderReminders.length}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Stats Section */}
           <View style={styles.statsSection}>
             <View style={styles.statsGrid}>
               <View style={styles.statCard}>
@@ -518,117 +793,87 @@ export default function RemindersScreen() {
             </View>
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>All Reminders</Text>
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={() => setShowAddModal(true)}
-              >
-                <Plus size={16} color="#fff" />
-                <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.remindersList}>
-              {allReminders.map((reminder: any) => {
-                const isOverdue = new Date(reminder.dueDate) < new Date() && !reminder.isCompleted;
-                const isToday = new Date(reminder.dueDate).toDateString() === new Date().toDateString();
-                const contact = contacts.find(c => c.id === reminder.contactId);
-                
-                return (
-                  <View key={reminder.id} style={[
-                    styles.reminderCard,
-                    reminder.isCompleted && styles.completedReminderCard,
-                    isOverdue && styles.overdueReminderCard
-                  ]}>
-                    <TouchableOpacity 
-                      style={styles.reminderCheckbox}
-                      onPress={() => handleReminderToggle(reminder)}
-                    >
-                      {reminder.isCompleted ? (
-                        <CheckCircle size={24} color="#34C759" />
-                      ) : (
-                        <Circle size={24} color={isOverdue ? "#FF3B30" : "#8E8E93"} />
-                      )}
-                    </TouchableOpacity>
-                    
-                    <View style={styles.reminderContent}>
-                      <Text style={[
-                        styles.reminderTitle,
-                        reminder.isCompleted && styles.completedReminderTitle
-                      ]}>
-                        {reminder.title}
-                      </Text>
-                      
-                      <View style={styles.reminderMeta}>
-                        <View style={styles.reminderMetaItem}>
-                          <User size={14} color="#8E8E93" />
-                          <Text style={styles.reminderMetaText}>
-                            {contact ? contact.name : reminder.contactName}
-                            {contact && contact.phoneNumber && (
-                              <Text style={styles.phoneText}> • {contact.phoneNumber}</Text>
-                            )}
-                          </Text>
-                        </View>
-                        
-                        <View style={styles.reminderMetaItem}>
-                          <Calendar size={14} color={isOverdue ? "#FF3B30" : isToday ? "#FF9500" : "#8E8E93"} />
-                          <Text style={[
-                            styles.reminderMetaText,
-                            isOverdue && styles.overdueText,
-                            isToday && styles.todayText
-                          ]}>
-                            {isToday ? 'Today' : new Date(reminder.dueDate).toLocaleDateString()}
-                          </Text>
-                        </View>
-                        
-                        {isOverdue && !reminder.isCompleted && (
-                          <View style={styles.reminderMetaItem}>
-                            <AlertCircle size={14} color="#FF3B30" />
-                            <Text style={styles.overdueText}>Overdue</Text>
-                          </View>
-                        )}
+          {/* Reminders List */}
+          {activeTab === 'all' ? (
+            <>
+              {/* Call Reminders Section */}
+              {callReminders.length > 0 && (
+                <View style={styles.section}>
+                  <TouchableOpacity 
+                    style={styles.sectionHeader}
+                    onPress={() => toggleSection('calls')}
+                  >
+                    <View style={styles.sectionTitleContainer}>
+                      <Phone size={18} color="#007AFF" />
+                      <Text style={styles.sectionTitle}>Call Reminders</Text>
+                      <View style={styles.sectionBadge}>
+                        <Text style={styles.sectionBadgeText}>{callStats.pending}</Text>
                       </View>
-                      
-                      {reminder.description && (
-                        <Text style={[
-                          styles.reminderDescription,
-                          reminder.isCompleted && styles.completedReminderDescription
-                        ]}>
-                          {reminder.description}
-                        </Text>
-                      )}
                     </View>
-                    
-                    <View style={styles.reminderActions}>
-                      <TouchableOpacity 
-                        style={styles.actionButton}
-                        onPress={() => {
-                          Alert.alert(
-                            'Delete Reminder',
-                            'Are you sure you want to delete this reminder?',
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              { text: 'Delete', style: 'destructive', onPress: () => deleteReminder(reminder.id) }
-                            ]
-                          );
-                        }}
-                      >
-                        <Trash2 size={18} color="#FF3B30" />
-                      </TouchableOpacity>
+                    {expandedSections.calls ? <ChevronUp size={20} color="#666" /> : <ChevronDown size={20} color="#666" />}
+                  </TouchableOpacity>
+
+                  {expandedSections.calls && (
+                    <View style={styles.remindersList}>
+                      {callReminders.map((reminder: any) => renderReminderCard(reminder))}
                     </View>
-                  </View>
-                );
-              })}
+                  )}
+                </View>
+              )}
+
+              {/* Order Reminders Section */}
+              {orderReminders.length > 0 && (
+                <View style={styles.section}>
+                  <TouchableOpacity 
+                    style={styles.sectionHeader}
+                    onPress={() => toggleSection('orders')}
+                  >
+                    <View style={styles.sectionTitleContainer}>
+                      <Package size={18} color="#FF9500" />
+                      <Text style={styles.sectionTitle}>Order Reminders</Text>
+                      <View style={[styles.sectionBadge, { backgroundColor: '#FF950020' }]}>
+                        <Text style={[styles.sectionBadgeText, { color: '#FF9500' }]}>{orderStats.pending}</Text>
+                      </View>
+                    </View>
+                    {expandedSections.orders ? <ChevronUp size={20} color="#666" /> : <ChevronDown size={20} color="#666" />}
+                  </TouchableOpacity>
+
+                  {expandedSections.orders && (
+                    <View style={styles.remindersList}>
+                      {orderReminders.map((reminder: any) => renderReminderCard(reminder))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>
+                  {activeTab === 'calls' ? 'Call Reminders' : 'Order Reminders'}
+                </Text>
+                {activeTab === 'calls' && (
+                  <TouchableOpacity 
+                    style={styles.addButton}
+                    onPress={() => setShowAddModal(true)}
+                  >
+                    <Plus size={16} color="#fff" />
+                    <Text style={styles.addButtonText}>Add</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.remindersList}>
+                {allReminders.map((reminder: any) => renderReminderCard(reminder))}
+              </View>
             </View>
-          </View>
+          )}
 
           <View style={styles.infoSection}>
             <View style={styles.infoCard}>
               <Bell size={20} color="#007AFF" />
               <Text style={styles.infoText}>
-                Set reminders to follow up with contacts after calls. Reminders help you maintain better relationships and never miss important follow-ups.
+                Manage reminders for both calls and orders. Never miss important follow-ups or deliveries.
               </Text>
             </View>
           </View>
@@ -1138,5 +1383,108 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
     marginLeft: 8,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    gap: 8,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    gap: 6,
+  },
+  activeTab: {
+    backgroundColor: '#007AFF10',
+    borderColor: '#007AFF',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#007AFF',
+  },
+  tabBadge: {
+    backgroundColor: '#66666620',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 20,
+    alignItems: 'center',
+  },
+  activeTabBadge: {
+    backgroundColor: '#007AFF20',
+  },
+  tabBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeTabBadgeText: {
+    color: '#007AFF',
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  sectionBadge: {
+    backgroundColor: '#007AFF20',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  sectionBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  orderReminderCard: {
+    borderColor: '#FF9500',
+    backgroundColor: '#FF950008',
+  },
+  reminderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  orderCompletionModal: {
+    borderTopWidth: 3,
+    borderTopColor: '#FF9500',
+  },
+  completionIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  orderCompletionIcon: {
+    backgroundColor: '#FF9500',
+  },
+  orderItemsCount: {
+    fontSize: 13,
+    color: '#FF9500',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  deliveredButton: {
+    backgroundColor: '#FF9500',
   },
 });
