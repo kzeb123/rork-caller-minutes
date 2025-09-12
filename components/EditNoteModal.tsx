@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
-import { X, Save, Tag, Plus, Trash2, Circle, CheckCircle2, Folder } from 'lucide-react-native';
+import { X, Save, Tag, Plus, Trash2, Circle, CheckCircle2, Folder, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { CallNote, NoteStatus, NoteFolder } from '@/types/contact';
 import { useContacts } from '@/hooks/contacts-store';
 
@@ -44,6 +44,7 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
   const [showFolderPicker, setShowFolderPicker] = useState(false);
   const [showTagPicker, setShowTagPicker] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   const parseNoteIntoFields = (noteContent: string, template: string): TemplateField[] => {
     const fields: TemplateField[] = [];
@@ -121,6 +122,9 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
       // Parse note into template fields
       const fields = parseNoteIntoFields(note.note, noteTemplate);
       setTemplateFields(fields);
+      
+      // Expand all sections by default
+      setExpandedSections(new Set(fields.map(f => f.id)));
       
       setSelectedStatus(note.status);
       setCustomStatus(note.customStatus || '');
@@ -206,6 +210,18 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  const toggleSectionExpanded = (fieldId: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fieldId)) {
+        newSet.delete(fieldId);
+      } else {
+        newSet.add(fieldId);
+      }
+      return newSet;
+    });
+  };
+
   const getStatusText = (status: NoteStatus, customStatus?: string) => {
     if (status === 'other' && customStatus) return customStatus;
     switch (status) {
@@ -270,20 +286,43 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
           </Text>
           
           {/* Template Fields */}
-          {templateFields.map((field) => (
-            <View key={field.id} style={styles.section}>
-              <Text style={styles.sectionLabel}>{field.label}</Text>
-              <TextInput
-                style={styles.noteInput}
-                placeholder={`Enter ${field.label.toLowerCase()}...`}
-                placeholderTextColor="#999"
-                multiline
-                textAlignVertical="top"
-                value={field.value}
-                onChangeText={(text) => updateFieldValue(field.id, text)}
-              />
-            </View>
-          ))}
+          <Text style={styles.sectionTitle}>Call Notes</Text>
+          <Text style={styles.sectionDescription}>
+            Fill in the sections that apply to your call
+          </Text>
+          
+          <View style={styles.templateSections}>
+            {templateFields.map((field, index) => (
+              <View key={field.id} style={[styles.templateSection, index === templateFields.length - 1 && styles.lastTemplateSection]}>
+                <TouchableOpacity 
+                  style={styles.sectionHeader}
+                  onPress={() => toggleSectionExpanded(field.id)}
+                >
+                  <Text style={styles.templateSectionLabel}>
+                    {field.label}
+                  </Text>
+                  {expandedSections.has(field.id) ? 
+                    <ChevronUp size={20} color="#666" /> : 
+                    <ChevronDown size={20} color="#666" />
+                  }
+                </TouchableOpacity>
+                
+                {expandedSections.has(field.id) && (
+                  <View style={styles.sectionContent}>
+                    <TextInput
+                      style={styles.sectionInput}
+                      placeholder={`Enter ${field.label.toLowerCase()}...`}
+                      placeholderTextColor="#999"
+                      multiline
+                      textAlignVertical="top"
+                      value={field.value}
+                      onChangeText={(text) => updateFieldValue(field.id, text)}
+                    />
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
 
           {/* Status Selection */}
           <View style={styles.section}>
@@ -664,6 +703,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
     fontWeight: '500',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  templateSections: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    overflow: 'hidden',
+    marginBottom: 24,
+  },
+  templateSection: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  lastTemplateSection: {
+    borderBottomWidth: 0,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  templateSectionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    flex: 1,
+  },
+  sectionContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  sectionInput: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#000',
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   addTagContainer: {
     flexDirection: 'row',
