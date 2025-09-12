@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -36,7 +36,6 @@ export default function ProductCatalogModal({
   const [newProductPrice, setNewProductPrice] = useState<string>('');
   const [newProductDescription, setNewProductDescription] = useState<string>('');
   const [newProductSku, setNewProductSku] = useState<string>('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize state from editingCatalog when it changes
   React.useEffect(() => {
@@ -51,8 +50,12 @@ export default function ProductCatalogModal({
 
   const handleUploadPDF = async () => {
     if (Platform.OS === 'web') {
-      // For web, trigger the file input
-      fileInputRef.current?.click();
+      // For web, create and trigger a file input dynamically
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/pdf';
+      input.onchange = handleFileSelect as any;
+      input.click();
     } else {
       // For mobile, show alert that PDF upload is not supported
       Alert.alert(
@@ -64,7 +67,7 @@ export default function ProductCatalogModal({
   };
 
   const handleFileSelect = async (event: any) => {
-    const file = event.target.files?.[0];
+    const file = event.target?.files?.[0] || event.currentTarget?.files?.[0];
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
@@ -271,15 +274,6 @@ export default function ProductCatalogModal({
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Import from PDF</Text>
-            {Platform.OS === 'web' && (
-              <input
-                ref={fileInputRef as any}
-                type="file"
-                accept="application/pdf"
-                onChange={handleFileSelect}
-                style={hiddenInputStyle}
-              />
-            )}
             <TouchableOpacity
               style={styles.uploadButton}
               onPress={handleUploadPDF}
@@ -402,8 +396,6 @@ export default function ProductCatalogModal({
     </Modal>
   );
 }
-
-const hiddenInputStyle = { display: 'none' } as any;
 
 const styles = StyleSheet.create({
   container: {

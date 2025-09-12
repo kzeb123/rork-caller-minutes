@@ -454,15 +454,38 @@ export default function RemindersScreen() {
     </View>
   );
 
-  const sortedReminders = reminders.sort((a, b) => {
-    if (a.isCompleted !== b.isCompleted) {
-      return a.isCompleted ? 1 : -1;
-    }
-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-  });
+  // Combine reminders and order reminders
+  const orderReminders = useMemo(() => {
+    if (!showOrderReminders) return [];
+    
+    return orders
+      .filter(order => order.reminderDate && !order.reminderSent)
+      .map(order => ({
+        id: `order-${order.id}`,
+        contactId: order.contactId,
+        contactName: order.contactName,
+        title: `Order #${order.id.slice(-6)} - ${order.items.length} items`,
+        description: order.notes || `Total: ${order.totalAmount.toFixed(2)}`,
+        dueDate: new Date(order.reminderDate!),
+        isCompleted: order.status === 'delivered',
+        isArchived: false,
+        createdAt: new Date(order.createdAt),
+        isOrder: true,
+        orderId: order.id,
+      }));
+  }, [orders, showOrderReminders]);
 
-  const pendingReminders = reminders.filter(r => !r.isCompleted);
-  const completedReminders = reminders.filter(r => r.isCompleted);
+  const allReminders = useMemo(() => {
+    return [...reminders, ...orderReminders].sort((a, b) => {
+      if (a.isCompleted !== b.isCompleted) {
+        return a.isCompleted ? 1 : -1;
+      }
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+  }, [reminders, orderReminders]);
+
+  const pendingReminders = allReminders.filter(r => !r.isCompleted);
+  const completedReminders = allReminders.filter(r => r.isCompleted);
   const overdueReminders = pendingReminders.filter(r => new Date(r.dueDate) < new Date());
   const todayReminders = pendingReminders.filter(r => new Date(r.dueDate).toDateString() === new Date().toDateString());
 
@@ -470,7 +493,7 @@ export default function RemindersScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Reminders' }} />
       
-      {reminders.length === 0 ? (
+      {allReminders.length === 0 ? (
         renderEmpty()
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -508,7 +531,7 @@ export default function RemindersScreen() {
             </View>
 
             <View style={styles.remindersList}>
-              {sortedReminders.map((reminder) => {
+              {allReminders.map((reminder: any) => {
                 const isOverdue = new Date(reminder.dueDate) < new Date() && !reminder.isCompleted;
                 const isToday = new Date(reminder.dueDate).toDateString() === new Date().toDateString();
                 const contact = contacts.find(c => c.id === reminder.contactId);
