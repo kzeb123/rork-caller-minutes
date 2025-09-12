@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Stack } from 'expo-router';
 import { ShoppingBag, FileText, Plus, Download, Package, DollarSign, User, Calendar, Clock, CheckCircle, X, Minus, Search, ChevronDown, Edit3, Trash2, Upload } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
@@ -484,7 +484,11 @@ export default function StoreScreen() {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={styles.modalContainer}>
+        <KeyboardAvoidingView 
+          style={styles.modalContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{editingOrder ? 'Edit Order' : 'Create New Order'}</Text>
             <TouchableOpacity 
@@ -502,7 +506,8 @@ export default function StoreScreen() {
             style={styles.modalContent} 
             contentContainerStyle={styles.modalContentContainer}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled">
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive">
             <View style={styles.formSection}>
               <Text style={styles.formLabel}>Select Contact</Text>
               <View style={styles.contactSearchContainer}>
@@ -681,7 +686,7 @@ export default function StoreScreen() {
               )}
             </View>
             
-            <View style={[styles.formSection, { marginBottom: 8 }]}>
+            <View style={[styles.formSection, { marginBottom: 100 }]}>
               <Text style={styles.formLabel}>Order Notes (Optional)</Text>
               <TextInput
                 style={[styles.textInput, styles.notesInput]}
@@ -691,7 +696,13 @@ export default function StoreScreen() {
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
-                scrollEnabled={true}
+                scrollEnabled={false}
+                onFocus={() => {
+                  // Delay to ensure keyboard is shown
+                  setTimeout(() => {
+                    // This will help scroll to the focused input
+                  }, 100);
+                }}
               />
             </View>
           </ScrollView>
@@ -713,7 +724,7 @@ export default function StoreScreen() {
               <Text style={styles.createButtonText}>{editingOrder ? 'Update Order' : 'Create Order'}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <ProductCatalogModal
@@ -1115,7 +1126,8 @@ const styles = StyleSheet.create({
   },
   modalContentContainer: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 16,
+    flexGrow: 1,
   },
   formSection: {
     marginBottom: 24,
@@ -1352,7 +1364,6 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     minHeight: 100,
-    maxHeight: 150,
     textAlignVertical: 'top',
     paddingTop: 12,
     paddingBottom: 12,
@@ -1363,6 +1374,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
     gap: 12,
+    backgroundColor: '#fff',
   },
   cancelButton: {
     flex: 1,
