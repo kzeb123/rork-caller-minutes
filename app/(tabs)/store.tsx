@@ -203,12 +203,15 @@ export default function StoreScreen() {
     // Parse reminder date and time from notes if present
     let reminderDate = orderReminderDate;
     let reminderTime = orderReminderTime;
+    let showReminderPopup = false;
     
     if (orderNotes && !reminderDate) {
       const timePatterns = [
         /\b(\d{1,2})\s*[:.]\s*(\d{2})\s*(am|pm)?\b/i,
         /\b(\d{1,2})\s*(am|pm)\b/i,
         /\bat\s+(\d{1,2})\s*[:.]?\s*(\d{0,2})\s*(am|pm)?\b/i,
+        /\b(1[0-2]|0?[1-9]):([0-5]\d)\s*(am|pm|AM|PM)\b/i,
+        /\b([01]?\d|2[0-3]):([0-5]\d)\b/i,
       ];
       
       for (const pattern of timePatterns) {
@@ -226,8 +229,15 @@ export default function StoreScreen() {
           
           const date = new Date();
           date.setHours(hours, minutes, 0, 0);
+          
+          // If the time has already passed today, set it for tomorrow
+          if (date.getTime() <= new Date().getTime()) {
+            date.setDate(date.getDate() + 1);
+          }
+          
           reminderDate = date;
           reminderTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          showReminderPopup = true;
           break;
         }
       }
@@ -247,7 +257,16 @@ export default function StoreScreen() {
           reminderTime: reminderTime || undefined,
         }
       });
-      Alert.alert('Success', 'Order updated successfully!');
+      
+      if (showReminderPopup && reminderDate) {
+        Alert.alert(
+          'Reminder Set!',
+          `Order reminder has been set for ${reminderDate.toLocaleDateString()} at ${reminderTime}. You can view and manage this reminder in the Reminders tab.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Success', 'Order updated successfully!');
+      }
     } else {
       // Create new order
       addOrder({
@@ -260,7 +279,16 @@ export default function StoreScreen() {
         reminderDate: reminderDate || undefined,
         reminderTime: reminderTime || undefined,
       });
-      Alert.alert('Success', 'Order created successfully!');
+      
+      if (showReminderPopup && reminderDate) {
+        Alert.alert(
+          'Order Created with Reminder!',
+          `Order has been created and a reminder has been set for ${reminderDate.toLocaleDateString()} at ${reminderTime}. You can view and manage this reminder in the Reminders tab.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Success', 'Order created successfully!');
+      }
     }
 
     setShowOrderModal(false);
@@ -817,7 +845,7 @@ export default function StoreScreen() {
               <Text style={styles.formLabel}>Order Notes (Optional)</Text>
               <TextInput
                 style={[styles.textInput, styles.notesInput]}
-                placeholder="Add any special instructions or notes..."
+                placeholder="Add any special instructions or notes... (e.g., 'Deliver at 3pm' or 'Call at 14:30')"
                 value={orderNotes}
                 onChangeText={setOrderNotes}
                 multiline
@@ -831,6 +859,50 @@ export default function StoreScreen() {
                   }, 100);
                 }}
               />
+              {orderNotes && (() => {
+                const timePatterns = [
+                  /\b(\d{1,2})\s*[:.]\s*(\d{2})\s*(am|pm)?\b/i,
+                  /\b(\d{1,2})\s*(am|pm)\b/i,
+                  /\bat\s+(\d{1,2})\s*[:.]?\s*(\d{0,2})\s*(am|pm)?\b/i,
+                  /\b(1[0-2]|0?[1-9]):([0-5]\d)\s*(am|pm|AM|PM)\b/i,
+                  /\b([01]?\d|2[0-3]):([0-5]\d)\b/i,
+                ];
+                
+                let detectedTime = null;
+                for (const pattern of timePatterns) {
+                  const match = orderNotes.match(pattern);
+                  if (match) {
+                    let hours = parseInt(match[1]);
+                    let minutes = match[2] ? parseInt(match[2]) : 0;
+                    const meridiem = match[3] || match[match.length - 1];
+                    
+                    if (meridiem) {
+                      const isPM = meridiem.toLowerCase() === 'pm';
+                      if (isPM && hours < 12) hours += 12;
+                      if (!isPM && hours === 12) hours = 0;
+                    }
+                    
+                    const date = new Date();
+                    date.setHours(hours, minutes, 0, 0);
+                    
+                    if (date.getTime() <= new Date().getTime()) {
+                      date.setDate(date.getDate() + 1);
+                    }
+                    
+                    detectedTime = date;
+                    break;
+                  }
+                }
+                
+                return detectedTime ? (
+                  <View style={styles.timeDetected}>
+                    <Clock size={14} color="#007AFF" />
+                    <Text style={styles.timeDetectedText}>
+                      Reminder will be set for: {detectedTime.toLocaleDateString()} at {detectedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                ) : null;
+              })()}
             </View>
           </ScrollView>
           
@@ -1599,5 +1671,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#fff',
+  },
+  timeDetected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: '#007AFF10',
+    borderRadius: 8,
+    gap: 6,
+  },
+  timeDetectedText: {
+    fontSize: 13,
+    color: '#007AFF',
+    fontWeight: '500',
   },
 });
