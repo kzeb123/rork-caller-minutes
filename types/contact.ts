@@ -131,3 +131,10 @@ export interface NoteFilter {
   value: string;
   label: string;
 }
+
+export interface NoteSettings {
+  showDuration?: boolean;
+  showDirection?: boolean;
+  passwordProtected?: boolean;
+  password?: string;
+}

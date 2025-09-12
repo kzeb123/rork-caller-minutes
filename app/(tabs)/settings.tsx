@@ -13,7 +13,7 @@ interface TemplateSection {
 }
 
 export default function SettingsScreen() {
-  const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts, presetTags, updatePresetTags } = useContacts();
+  const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts, presetTags, updatePresetTags, noteSettings, updateNoteSettings } = useContacts();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -21,6 +21,9 @@ export default function SettingsScreen() {
   const [editableTags, setEditableTags] = useState<string[]>([]);
   const [newTagText, setNewTagText] = useState('');
   const [showAddTag, setShowAddTag] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   // Parse existing template or use default sections
   const parseTemplateToSections = (template: string): TemplateSection[] => {
@@ -331,6 +334,66 @@ export default function SettingsScreen() {
               onPress={handleEditTags}
             />
           </View>
+          
+          <View style={[styles.settingsGroup, { marginTop: 12 }]}>
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleLeft}>
+                <Text style={styles.toggleTitle}>Show Call Duration</Text>
+                <Text style={styles.toggleSubtitle}>Display duration in call notes</Text>
+              </View>
+              <Switch
+                value={noteSettings?.showDuration ?? true}
+                onValueChange={(value) => updateNoteSettings({ showDuration: value })}
+                trackColor={{ false: '#767577', true: '#007AFF' }}
+                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
+              />
+            </View>
+            
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleLeft}>
+                <Text style={styles.toggleTitle}>Show Call Direction</Text>
+                <Text style={styles.toggleSubtitle}>Display incoming/outgoing status</Text>
+              </View>
+              <Switch
+                value={noteSettings?.showDirection ?? true}
+                onValueChange={(value) => updateNoteSettings({ showDirection: value })}
+                trackColor={{ false: '#767577', true: '#007AFF' }}
+                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
+              />
+            </View>
+            
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleLeft}>
+                <Text style={styles.toggleTitle}>Password Protected Notes</Text>
+                <Text style={styles.toggleSubtitle}>Require password to view notes</Text>
+              </View>
+              <Switch
+                value={noteSettings?.passwordProtected ?? false}
+                onValueChange={(value) => {
+                  if (value) {
+                    setShowPasswordModal(true);
+                  } else {
+                    Alert.alert(
+                      'Remove Password Protection',
+                      'Are you sure you want to remove password protection from your notes?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Remove',
+                          style: 'destructive',
+                          onPress: () => {
+                            updateNoteSettings({ passwordProtected: false, password: undefined });
+                          },
+                        },
+                      ]
+                    );
+                  }
+                }}
+                trackColor={{ false: '#767577', true: '#007AFF' }}
+                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
+              />
+            </View>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -560,6 +623,93 @@ export default function SettingsScreen() {
               <Text style={styles.templateSaveButtonText}>Save Tags</Text>
             </TouchableOpacity>
           </View>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showPasswordModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.templateModalContainer}>
+          <View style={styles.templateHeader}>
+            <TouchableOpacity onPress={() => {
+              setShowPasswordModal(false);
+              setPassword('');
+              setConfirmPassword('');
+            }}>
+              <X size={24} color="#007AFF" />
+            </TouchableOpacity>
+            
+            <Text style={styles.templateTitle}>Set Password</Text>
+            
+            <View style={{ width: 24 }} />
+          </View>
+
+          <KeyboardAvoidingView 
+            style={styles.passwordContent}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <Text style={styles.passwordDescription}>
+              Set a password to protect your call notes. You'll need to enter this password to view notes.
+            </Text>
+            
+            <View style={styles.passwordInputContainer}>
+              <Text style={styles.passwordLabel}>Password</Text>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Enter password"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            
+            <View style={styles.passwordInputContainer}>
+              <Text style={styles.passwordLabel}>Confirm Password</Text>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Confirm password"
+                placeholderTextColor="#999"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            
+            {password && confirmPassword && password !== confirmPassword && (
+              <Text style={styles.passwordError}>Passwords do not match</Text>
+            )}
+            
+            <TouchableOpacity
+              style={[
+                styles.passwordSaveButton,
+                (!password || !confirmPassword || password !== confirmPassword) && styles.passwordSaveButtonDisabled
+              ]}
+              onPress={() => {
+                if (password && confirmPassword && password === confirmPassword) {
+                  updateNoteSettings({ passwordProtected: true, password });
+                  setShowPasswordModal(false);
+                  setPassword('');
+                  setConfirmPassword('');
+                  Alert.alert('Password Set', 'Your notes are now password protected.');
+                }
+              }}
+              disabled={!password || !confirmPassword || password !== confirmPassword}
+            >
+              <Text style={[
+                styles.passwordSaveButtonText,
+                (!password || !confirmPassword || password !== confirmPassword) && styles.passwordSaveButtonTextDisabled
+              ]}>
+                Set Password
+              </Text>
+            </TouchableOpacity>
+          </KeyboardAvoidingView>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -926,5 +1076,79 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '500',
+  },
+  toggleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  toggleLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  toggleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 2,
+  },
+  toggleSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  passwordContent: {
+    flex: 1,
+    padding: 20,
+  },
+  passwordDescription: {
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 22,
+    marginBottom: 32,
+  },
+  passwordInputContainer: {
+    marginBottom: 20,
+  },
+  passwordLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  passwordInput: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#000',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+  },
+  passwordError: {
+    color: '#FF3B30',
+    fontSize: 14,
+    marginTop: -12,
+    marginBottom: 20,
+  },
+  passwordSaveButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 32,
+  },
+  passwordSaveButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  passwordSaveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  passwordSaveButtonTextDisabled: {
+    color: '#999',
   },
 });
