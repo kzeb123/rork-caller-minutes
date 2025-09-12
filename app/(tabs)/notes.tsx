@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Animated, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Animated, SafeAreaView, Modal } from 'react-native';
 import { Stack } from 'expo-router';
-import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, ChevronRight, X, Plus } from 'lucide-react-native';
+import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, ChevronRight, ChevronUp, X, Plus, CheckCircle } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { CallNote, NoteStatus, NoteFolder, NoteFilter, FilterType, GroupByOption } from '@/types/contact';
 import EditNoteModal from '@/components/EditNoteModal';
@@ -23,6 +23,7 @@ export default function NotesScreen() {
   const [activeFilters, setActiveFilters] = useState<NoteFilter[]>([]);
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [groupBy, setGroupBy] = useState<GroupByOption>('day');
+  const [showGroupByModal, setShowGroupByModal] = useState<boolean>(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const searchAnimation = new Animated.Value(0);
   const filterAnimation = new Animated.Value(0);
@@ -1326,28 +1327,14 @@ export default function NotesScreen() {
       {/* Group By Options */}
       <View style={styles.groupByWrapper}>
         <View style={styles.groupByContainer}>
-          <Text style={styles.groupByLabel}>Group by:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupByScroll}>
-            {(['day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map(option => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.groupByOption,
-                  groupBy === option && styles.groupByOptionActive,
-                ]}
-                onPress={() => setGroupBy(option)}
-              >
-                <Text
-                  style={[
-                    styles.groupByOptionText,
-                    groupBy === option && styles.groupByOptionTextActive,
-                  ]}
-                >
-                  {option === 'day' ? 'Day' : option.charAt(0).toUpperCase() + option.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <TouchableOpacity 
+            style={styles.groupByButton}
+            onPress={() => setShowGroupByModal(true)}
+          >
+            <Filter size={16} color="#007AFF" />
+            <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
+            <ChevronDown size={16} color="#007AFF" />
+          </TouchableOpacity>
         </View>
         
         {/* Search Bar under Group By */}
@@ -1528,6 +1515,45 @@ export default function NotesScreen() {
         visible={showFolderModal}
         onClose={() => setShowFolderModal(false)}
       />
+
+      {/* Group By Modal */}
+      <Modal
+        visible={showGroupByModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowGroupByModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowGroupByModal(false)}
+        >
+          <View style={styles.groupByModalContainer}>
+            <Text style={styles.groupByModalTitle}>Group Notes By</Text>
+            {(['none', 'day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.groupByModalOption,
+                  groupBy === option && styles.selectedGroupByOption
+                ]}
+                onPress={() => {
+                  setGroupBy(option);
+                  setShowGroupByModal(false);
+                }}
+              >
+                <Text style={[
+                  styles.groupByModalOptionText,
+                  groupBy === option && styles.selectedGroupByOptionText
+                ]}>
+                  {option === 'none' ? 'No Grouping' : option.charAt(0).toUpperCase() + option.slice(1)}
+                </Text>
+                {groupBy === option && <CheckCircle size={20} color="#007AFF" />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1823,6 +1849,22 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  groupByButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  groupByButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#007AFF',
   },
   groupSearchContainer: {
     paddingHorizontal: 16,
@@ -2380,5 +2422,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#3C3C43',
     fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  groupByModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    width: '90%',
+    maxWidth: 350,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  groupByModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  groupByModalOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  selectedGroupByOption: {
+    backgroundColor: '#007AFF10',
+  },
+  groupByModalOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedGroupByOptionText: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
 });
