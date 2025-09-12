@@ -102,7 +102,8 @@ export default function CallGroupManager({
       return groups;
     }
 
-    const notesByDate = new Map<string, CallNote[]>();
+    // For time-based grouping, first group by time period, then by contact within each period
+    const notesByTimePeriod = new Map<string, CallNote[]>();
     
     notes.forEach(note => {
       const date = new Date(note.callStartTime);
@@ -150,22 +151,56 @@ export default function CallGroupManager({
           title = date.toDateString();
       }
 
-      if (!notesByDate.has(key)) {
-        notesByDate.set(key, []);
+      if (!notesByTimePeriod.has(key)) {
+        notesByTimePeriod.set(key, []);
       }
-      notesByDate.get(key)!.push(note);
+      notesByTimePeriod.get(key)!.push(note);
     });
 
-    notesByDate.forEach((notesInGroup, key) => {
+    // Now create groups with contact-based subgrouping for time periods
+    notesByTimePeriod.forEach((notesInPeriod, key) => {
+      // Group notes by contact within this time period
+      const notesByContact = new Map<string, CallNote[]>();
+      
+      notesInPeriod.forEach(note => {
+        const contactKey = note.contactName;
+        if (!notesByContact.has(contactKey)) {
+          notesByContact.set(contactKey, []);
+        }
+        notesByContact.get(contactKey)!.push(note);
+      });
+
+      // Create subgroups for each contact
+      const contactGroups: CallGroup[] = [];
+      notesByContact.forEach((contactNotes, contactName) => {
+        contactGroups.push({
+          id: `${key}-${contactName}`,
+          title: contactName,
+          notes: contactNotes.sort((a, b) => 
+            new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
+          ),
+          type: 'contact-based',
+          contactName,
+        });
+      });
+
+      // Sort contact groups by most recent call
+      contactGroups.sort((a, b) => {
+        const aLatest = Math.max(...a.notes.map(n => new Date(n.callStartTime).getTime()));
+        const bLatest = Math.max(...b.notes.map(n => new Date(n.callStartTime).getTime()));
+        return bLatest - aLatest;
+      });
+
       const [title] = key.split('|');
       groups.push({
         id: key,
         title: title || key,
-        notes: notesInGroup.sort((a, b) => 
+        notes: notesInPeriod.sort((a, b) => 
           new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
         ),
         type: 'time-based',
-        date: notesInGroup[0].callStartTime,
+        date: notesInPeriod[0].callStartTime,
+        subGroups: contactGroups,
       });
     });
 
@@ -348,7 +383,7 @@ export default function CallGroupManager({
           },
         ]}
       >
-        <View>{noteContent}</View>
+        {noteContent}
       </Animated.View>
     );
   };
@@ -445,9 +480,44 @@ export default function CallGroupManager({
 
               {isExpanded && (
                 <View style={styles.groupContent}>
-                  {group.notes.map(note => (
-                    <View key={note.id}>{renderNote(note)}</View>
-                  ))}
+                  {group.type === 'time-based' && group.subGroups ? (
+                    // Render contact-based subgroups for time periods
+                    group.subGroups.map(subGroup => {
+                      const subGroupExpanded = expandedGroups.has(subGroup.id);
+                      return (
+                        <View key={subGroup.id} style={styles.subGroup}>
+                          <TouchableOpacity
+                            style={styles.subGroupHeader}
+                            onPress={() => toggleGroup(subGroup.id)}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.subGroupHeaderLeft}>
+                              {subGroupExpanded ? (
+                                <ChevronDown size={16} color="#666" />
+                              ) : (
+                                <ChevronRight size={16} color="#666" />
+                              )}
+                              <Text style={styles.subGroupTitle}>{subGroup.title}</Text>
+                            </View>
+                            <Text style={styles.subGroupCount}>{subGroup.notes.length}</Text>
+                          </TouchableOpacity>
+                          
+                          {subGroupExpanded && (
+                            <View style={styles.subGroupContent}>
+                              {subGroup.notes.map(note => (
+                                <View key={note.id}>{renderNote(note)}</View>
+                              ))}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })
+                  ) : (
+                    // Render notes directly for folder-based or simple grouping
+                    group.notes.map(note => (
+                      <View key={note.id}>{renderNote(note)}</View>
+                    ))
+                  )}
                 </View>
               )}
             </View>
@@ -804,5 +874,41 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  subGroup: {
+    marginBottom: 8,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  subGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F0F0F0',
+  },
+  subGroupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  subGroupTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  subGroupCount: {
+    fontSize: 12,
+    color: '#8E8E93',
+    backgroundColor: '#E0E0E0',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  subGroupContent: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
 });

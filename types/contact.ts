@@ -98,8 +98,10 @@ export interface CallGroup {
   title: string;
   date?: Date;
   notes: CallNote[];
-  type: 'time-based' | 'folder-based';
+  type: 'time-based' | 'folder-based' | 'contact-based';
   folderId?: string;
+  contactName?: string;
+  subGroups?: CallGroup[];
 }
 
 export type FilterType = 'all' | 'status' | 'priority' | 'folder' | 'direction' | 'date';
