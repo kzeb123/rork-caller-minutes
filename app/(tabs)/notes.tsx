@@ -12,6 +12,8 @@ export default function NotesScreen() {
   const { notes, contacts, folders, updateNote, deleteNote } = useContacts();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showSearch, setShowSearch] = useState<boolean>(false);
+  const searchOpacity = new Animated.Value(0);
+  const searchTranslateY = new Animated.Value(-20);
   const [editingNote, setEditingNote] = useState<CallNote | null>(null);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [showFolderModal, setShowFolderModal] = useState<boolean>(false);
@@ -71,11 +73,28 @@ export default function NotesScreen() {
   const toggleSearch = () => {
     const toValue = showSearch ? 0 : 1;
     setShowSearch(!showSearch);
-    Animated.timing(searchAnimation, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
+    
+    // Apple-style animation with spring effect
+    Animated.parallel([
+      Animated.timing(searchAnimation, {
+        toValue,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      Animated.spring(searchOpacity, {
+        toValue,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 10,
+      }),
+      Animated.spring(searchTranslateY, {
+        toValue: toValue ? 0 : -20,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 10,
+      })
+    ]).start();
+    
     if (showSearch) {
       setSearchQuery('');
     }
@@ -908,30 +927,52 @@ export default function NotesScreen() {
         }} 
       />
 
-      {/* Search Bar */}
+      {/* Search Bar with Apple-style animation */}
       <Animated.View 
         style={[
           styles.searchContainer,
           {
             height: searchAnimation.interpolate({
               inputRange: [0, 1],
-              outputRange: [0, 60],
+              outputRange: [0, 70],
             }),
-            opacity: searchAnimation,
           }
         ]}
       >
-        <View style={styles.searchInputContainer}>
-          <Search size={16} color="#999" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search notes, contacts, or status..."
-            placeholderTextColor="#999"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoFocus={showSearch}
-          />
-        </View>
+        <Animated.View 
+          style={[
+            styles.searchInputWrapper,
+            {
+              opacity: searchOpacity,
+              transform: [{ translateY: searchTranslateY }],
+            }
+          ]}
+        >
+          <View style={styles.searchInputContainer}>
+            <Search size={18} color="#8E8E93" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search contacts, keywords, or notes..."
+              placeholderTextColor="#8E8E93"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus={showSearch}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <X size={18} color="#8E8E93" />
+              </TouchableOpacity>
+            )}
+          </View>
+          {searchQuery.length > 0 && (
+            <View style={styles.searchResults}>
+              <Text style={styles.searchResultsText}>
+                {filteredNotes.length} result{filteredNotes.length !== 1 ? 's' : ''} found
+              </Text>
+            </View>
+          )}
+        </Animated.View>
       </Animated.View>
 
       {/* Filter Panel */}
@@ -1285,6 +1326,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e9ecef',
     overflow: 'hidden',
   },
+  searchInputWrapper: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
   filterContainer: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -1459,18 +1505,26 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginVertical: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 10,
+    gap: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#000',
+    fontWeight: '400',
+  },
+  searchResults: {
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  searchResultsText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
   },
   callDetails: {
     marginBottom: 8,

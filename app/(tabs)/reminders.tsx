@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, SafeAreaView } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, SafeAreaView, Animated } from 'react-native';
 import { Stack } from 'expo-router';
-import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2, Archive, Cloud } from 'lucide-react-native';
+import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2, Archive, Cloud, Search, Clock } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { Contact, Reminder } from '@/types/contact';
 
@@ -15,6 +15,41 @@ export default function RemindersScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
   const [completedReminder, setCompletedReminder] = useState<Reminder | null>(null);
+  const [contactSearch, setContactSearch] = useState<string>('');
+  const fadeAnim = new Animated.Value(0);
+
+  // Parse time from description
+  const parseTimeFromDescription = (description: string): Date | null => {
+    if (!description) return null;
+    
+    // Match various time formats
+    const timePatterns = [
+      /\b(\d{1,2})\s*[:.]\s*(\d{2})\s*(am|pm)?\b/i, // 12:30, 12.30, 12:30pm
+      /\b(\d{1,2})\s*(am|pm)\b/i, // 3pm, 10am
+      /\bat\s+(\d{1,2})\s*[:.]?\s*(\d{0,2})\s*(am|pm)?\b/i, // at 3, at 3:30pm
+    ];
+    
+    for (const pattern of timePatterns) {
+      const match = description.match(pattern);
+      if (match) {
+        let hours = parseInt(match[1]);
+        let minutes = match[2] ? parseInt(match[2]) : 0;
+        const meridiem = match[3] || match[match.length - 1];
+        
+        if (meridiem) {
+          const isPM = meridiem.toLowerCase() === 'pm';
+          if (isPM && hours < 12) hours += 12;
+          if (!isPM && hours === 12) hours = 0;
+        }
+        
+        const date = new Date(selectedDate);
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+      }
+    }
+    
+    return null;
+  };
 
   const handleAddReminder = () => {
     if (!newReminderTitle.trim() || !selectedContactId) {
@@ -28,12 +63,16 @@ export default function RemindersScreen() {
       return;
     }
 
+    // Check if description contains time and update selectedDate
+    const parsedTime = parseTimeFromDescription(newReminderDescription);
+    const finalDate = parsedTime || selectedDate;
+    
     addReminder({
       contactId: contact.id,
       contactName: contact.name,
       title: newReminderTitle.trim(),
       description: newReminderDescription.trim(),
-      dueDate: selectedDate,
+      dueDate: finalDate,
       isCompleted: false,
     });
 
@@ -91,36 +130,102 @@ export default function RemindersScreen() {
     }
   };
 
-  const ContactPicker = ({ selectedId, onSelect }: { selectedId: string; onSelect: (id: string) => void }) => (
-    <View style={styles.contactPicker}>
-      <Text style={styles.inputLabel}>Contact *</Text>
-      {contacts.length === 0 ? (
-        <View style={styles.noContactsContainer}>
-          <Text style={styles.noContactsText}>No contacts available. Add contacts first.</Text>
-        </View>
-      ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.contactScrollView}>
-          {contacts.map((contact) => (
-            <TouchableOpacity
-              key={contact.id}
-              style={[
-                styles.contactChip,
-                selectedId === contact.id && styles.selectedContactChip
-              ]}
-              onPress={() => onSelect(contact.id)}
-            >
-              <Text style={[
-                styles.contactChipText,
-                selectedId === contact.id && styles.selectedContactChipText
-              ]}>
-                {contact.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
+  // Filter contacts based on search
+  const filteredContacts = useMemo(() => {
+    if (!contactSearch.trim()) return contacts;
+    const query = contactSearch.toLowerCase();
+    return contacts.filter(contact => 
+      contact.name.toLowerCase().includes(query) ||
+      contact.phoneNumber.toLowerCase().includes(query)
+    );
+  }, [contacts, contactSearch]);
+
+  const ContactPicker = ({ selectedId, onSelect }: { selectedId: string; onSelect: (id: string) => void }) => {
+    const selectedContact = contacts.find(c => c.id === selectedId);
+    
+    return (
+      <View style={styles.contactPicker}>
+        <Text style={styles.inputLabel}>Contact *</Text>
+        {contacts.length === 0 ? (
+          <View style={styles.noContactsContainer}>
+            <Text style={styles.noContactsText}>No contacts available. Add contacts first.</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.contactSearchContainer}>
+              <Search size={16} color="#8E8E93" />
+              <TextInput
+                style={styles.contactSearchInput}
+                placeholder="Search contacts..."
+                placeholderTextColor="#8E8E93"
+                value={contactSearch}
+                onChangeText={setContactSearch}
+              />
+              {contactSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setContactSearch('')}>
+                  <X size={16} color="#8E8E93" />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            {selectedContact && (
+              <View style={styles.selectedContactCard}>
+                <User size={16} color="#007AFF" />
+                <Text style={styles.selectedContactName}>{selectedContact.name}</Text>
+                <TouchableOpacity onPress={() => onSelect('')}>
+                  <X size={16} color="#666" />
+                </TouchableOpacity>
+              </View>
+            )}
+            
+            <ScrollView style={styles.contactScrollView} showsVerticalScrollIndicator={false}>
+              {filteredContacts.map((contact) => (
+                <TouchableOpacity
+                  key={contact.id}
+                  style={[
+                    styles.contactItem,
+                    selectedId === contact.id && styles.selectedContactItem
+                  ]}
+                  onPress={() => {
+                    onSelect(contact.id);
+                    setContactSearch('');
+                    // Animate selection
+                    Animated.sequence([
+                      Animated.timing(fadeAnim, {
+                        toValue: 1,
+                        duration: 200,
+                        useNativeDriver: true,
+                      }),
+                      Animated.timing(fadeAnim, {
+                        toValue: 0,
+                        duration: 200,
+                        useNativeDriver: true,
+                      })
+                    ]).start();
+                  }}
+                >
+                  <View style={styles.contactItemContent}>
+                    <Text style={[
+                      styles.contactItemName,
+                      selectedId === contact.id && styles.selectedContactItemName
+                    ]}>
+                      {contact.name}
+                    </Text>
+                    <Text style={styles.contactItemPhone}>
+                      {contact.phoneNumber}
+                    </Text>
+                  </View>
+                  {selectedId === contact.id && (
+                    <CheckCircle size={20} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        )}
+      </View>
+    );
+  };
 
   const DatePicker = ({ date, onDateChange }: { date: Date; onDateChange: (date: Date) => void }) => {
     const today = new Date();
@@ -202,11 +307,26 @@ export default function RemindersScreen() {
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={newReminderDescription}
-              onChangeText={setNewReminderDescription}
-              placeholder="Enter description (optional)"
+              onChangeText={(text) => {
+                setNewReminderDescription(text);
+                // Auto-detect time in description
+                const detectedTime = parseTimeFromDescription(text);
+                if (detectedTime) {
+                  setSelectedDate(detectedTime);
+                }
+              }}
+              placeholder="Enter description (e.g., 'Call at 3pm' or 'Meeting at 14:30')"
               multiline={true}
               numberOfLines={3}
             />
+            {parseTimeFromDescription(newReminderDescription) && (
+              <View style={styles.timeDetected}>
+                <Clock size={14} color="#007AFF" />
+                <Text style={styles.timeDetectedText}>
+                  Time detected: {parseTimeFromDescription(newReminderDescription)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+            )}
           </View>
 
           <ContactPicker selectedId={selectedContactId} onSelect={setSelectedContactId} />
@@ -727,8 +847,68 @@ const styles = StyleSheet.create({
   contactPicker: {
     marginBottom: 20,
   },
+  contactSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    gap: 8,
+  },
+  contactSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000',
+  },
+  selectedContactCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF15',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF30',
+  },
+  selectedContactName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
   contactScrollView: {
-    maxHeight: 50,
+    maxHeight: 200,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
+  },
+  selectedContactItem: {
+    backgroundColor: '#F0F8FF',
+  },
+  contactItemContent: {
+    flex: 1,
+  },
+  contactItemName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    marginBottom: 2,
+  },
+  selectedContactItemName: {
+    color: '#007AFF',
+  },
+  contactItemPhone: {
+    fontSize: 14,
+    color: '#8E8E93',
   },
   contactChip: {
     backgroundColor: '#f8f9fa',
@@ -798,6 +978,21 @@ const styles = StyleSheet.create({
   phoneText: {
     fontSize: 11,
     color: '#999',
+  },
+  timeDetected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: '#007AFF10',
+    borderRadius: 8,
+    gap: 6,
+  },
+  timeDetectedText: {
+    fontSize: 13,
+    color: '#007AFF',
+    fontWeight: '500',
   },
   completionModalOverlay: {
     flex: 1,

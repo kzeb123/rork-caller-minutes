@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
-import { ShoppingBag, FileText, Plus, Download, Package, DollarSign, User, Calendar, Clock, CheckCircle, X, Minus, Search, ChevronDown } from 'lucide-react-native';
+import { ShoppingBag, FileText, Plus, Download, Package, DollarSign, User, Calendar, Clock, CheckCircle, X, Minus, Search, ChevronDown, Edit3, Trash2 } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { OrderItem, Order } from '@/types/contact';
 
 export default function StoreScreen() {
   const { contacts, orders, addOrder, updateOrder, deleteOrder } = useContacts();
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<string>('');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [orderNotes, setOrderNotes] = useState<string>('');
@@ -33,6 +34,7 @@ export default function StoreScreen() {
     setNewItemQuantity('1');
     setContactSearch('');
     setShowContactDropdown(false);
+    setEditingOrder(null);
   };
 
   const addItemToOrder = () => {
@@ -97,6 +99,18 @@ export default function StoreScreen() {
 
   const selectedContact = contacts.find(c => c.id === selectedContactId);
 
+  const handleEditOrder = (order: Order) => {
+    setEditingOrder(order);
+    setSelectedContactId(order.contactId);
+    setOrderItems([...order.items]);
+    setOrderNotes(order.notes || '');
+    const contact = contacts.find(c => c.id === order.contactId);
+    if (contact) {
+      setContactSearch(contact.name);
+    }
+    setShowOrderModal(true);
+  };
+
   const selectContact = (contact: any) => {
     setSelectedContactId(contact.id);
     setContactSearch(contact.name);
@@ -122,16 +136,32 @@ export default function StoreScreen() {
 
     const totalAmount = calculateTotal();
 
-    addOrder({
-      contactId: selectedContactId,
-      contactName: selectedContact.name,
-      items: orderItems,
-      totalAmount,
-      status: 'pending',
-      notes: orderNotes.trim() || undefined,
-    });
+    if (editingOrder) {
+      // Update existing order
+      updateOrder({
+        id: editingOrder.id,
+        updates: {
+          contactId: selectedContactId,
+          contactName: selectedContact.name,
+          items: orderItems,
+          totalAmount,
+          notes: orderNotes.trim() || undefined,
+        }
+      });
+      Alert.alert('Success', 'Order updated successfully!');
+    } else {
+      // Create new order
+      addOrder({
+        contactId: selectedContactId,
+        contactName: selectedContact.name,
+        items: orderItems,
+        totalAmount,
+        status: 'pending',
+        notes: orderNotes.trim() || undefined,
+      });
+      Alert.alert('Success', 'Order created successfully!');
+    }
 
-    Alert.alert('Success', 'Order created successfully!');
     setShowOrderModal(false);
     resetOrderForm();
   };
@@ -347,9 +377,17 @@ export default function StoreScreen() {
                       </View>
                       
                       <View style={styles.orderActions}>
+                        <TouchableOpacity 
+                          style={[styles.actionButton, { backgroundColor: '#007AFF' }]}
+                          onPress={() => handleEditOrder(order)}
+                        >
+                          <Edit3 size={14} color="#fff" />
+                          <Text style={styles.actionButtonText}>Edit</Text>
+                        </TouchableOpacity>
+                        
                         {order.status === 'pending' && (
                           <TouchableOpacity 
-                            style={[styles.actionButton, { backgroundColor: '#007AFF' }]}
+                            style={[styles.actionButton, { backgroundColor: '#FF9500' }]}
                             onPress={() => updateOrderStatus(order.id, 'confirmed')}
                           >
                             <Text style={styles.actionButtonText}>Confirm</Text>
@@ -384,7 +422,7 @@ export default function StoreScreen() {
                             );
                           }}
                         >
-                          <Text style={styles.actionButtonText}>Delete</Text>
+                          <Trash2 size={14} color="#fff" />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -402,7 +440,7 @@ export default function StoreScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Create New Order</Text>
+            <Text style={styles.modalTitle}>{editingOrder ? 'Edit Order' : 'Create New Order'}</Text>
             <TouchableOpacity 
               style={styles.closeButton}
               onPress={() => {
@@ -606,7 +644,7 @@ export default function StoreScreen() {
               style={styles.createButton}
               onPress={createOrder}
             >
-              <Text style={styles.createButtonText}>Create Order</Text>
+              <Text style={styles.createButtonText}>{editingOrder ? 'Update Order' : 'Create Order'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -912,12 +950,16 @@ const styles = StyleSheet.create({
   },
   orderActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
+    flexWrap: 'wrap',
   },
   actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 6,
+    gap: 4,
   },
   actionButtonText: {
     color: '#fff',
