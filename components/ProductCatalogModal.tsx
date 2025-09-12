@@ -271,7 +271,7 @@ export default function ProductCatalogModal({
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Import from PDF</Text>
-            {Platform.OS === 'web' ? (
+            {Platform.OS === 'web' && (
               <input
                 ref={fileInputRef as any}
                 type="file"
@@ -279,7 +279,7 @@ export default function ProductCatalogModal({
                 onChange={handleFileSelect}
                 style={hiddenInputStyle}
               />
-            ) : null}
+            )}
             <TouchableOpacity
               style={styles.uploadButton}
               onPress={handleUploadPDF}
@@ -288,10 +288,10 @@ export default function ProductCatalogModal({
               {isProcessing ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <>
+                <View style={styles.uploadButtonContent}>
                   <Upload size={20} color="#fff" />
                   <Text style={styles.uploadButtonText}>Upload PDF</Text>
-                </>
+                </View>
               )}
             </TouchableOpacity>
             <Text style={styles.helpText}>
@@ -455,13 +455,16 @@ const styles = StyleSheet.create({
   },
   uploadButton: {
     backgroundColor: '#FF6B35',
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
     borderRadius: 8,
-    gap: 8,
     marginBottom: 8,
+  },
+  uploadButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   uploadButtonText: {
     color: '#fff',
