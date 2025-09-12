@@ -542,6 +542,17 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     const detections: DetectedDateTime[] = [];
     const now = new Date();
     
+    // Skip the header line that contains "Call with [CONTACT_NAME] - [DATE]"
+    // Split text into lines and process only lines after the header
+    const lines = text.split('\n');
+    let textToProcess = text;
+    
+    // If the first line matches the call header pattern, exclude it from detection
+    if (lines.length > 0 && lines[0].match(/^Call with .* - /)) {
+      // Process all lines except the first one
+      textToProcess = lines.slice(1).join('\n');
+    }
+    
     // Only look for time patterns in 12/24 hour format
     const patterns = [
       // 24-hour format (e.g., 14:30, 09:00)
@@ -554,7 +565,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     
     patterns.forEach(pattern => {
       let match;
-      while ((match = pattern.regex.exec(text)) !== null) {
+      while ((match = pattern.regex.exec(textToProcess)) !== null) {
         const matchText = match[0];
         let suggestedDate = new Date(now);
         
