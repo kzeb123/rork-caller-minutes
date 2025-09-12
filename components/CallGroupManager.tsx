@@ -47,7 +47,7 @@ export default function CallGroupManager({
   const [folderName, setFolderName] = useState('');
   const [folderDescription, setFolderDescription] = useState('');
   const [folderType, setFolderType] = useState<'general' | 'sales-run'>('general');
-  const [selectedColor, setSelectedColor] = useState(COLORS.primary);
+  const [selectedColor, setSelectedColor] = useState(COLORS?.primary || '#007AFF');
   const [draggedNote, setDraggedNote] = useState<CallNote | null>(null);
   const dragAnimation = useRef(new Animated.ValueXY()).current;
 
@@ -194,7 +194,7 @@ export default function CallGroupManager({
     setFolderName('');
     setFolderDescription('');
     setFolderType('sales-run');
-    setSelectedColor(COLORS.primary);
+    setSelectedColor(COLORS?.primary || '#007AFF');
     setShowFolderModal(true);
   };
 
@@ -434,7 +434,7 @@ export default function CallGroupManager({
                     <View
                       style={[
                         styles.folderIndicator,
-                        { backgroundColor: folders.find(f => f.id === group.folderId)?.color || COLORS.primary },
+                        { backgroundColor: folders.find(f => f.id === group.folderId)?.color || COLORS?.primary || '#007AFF' },
                       ]}
                     />
                   )}
@@ -490,7 +490,7 @@ export default function CallGroupManager({
 
             <Text style={styles.colorLabel}>Choose Color:</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorPicker}>
-              {Object.values(COLORS).map((color: string) => (
+              {Object.values(COLORS || {}).map((color: string) => (
                 <TouchableOpacity
                   key={color}
                   style={[
@@ -564,8 +564,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5EA',
   },
   groupByOptionActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS?.primary || '#007AFF',
+    borderColor: COLORS?.primary || '#007AFF',
   },
   groupByOptionText: {
     fontSize: 14,
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   addFolderButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.success,
+    backgroundColor: COLORS?.success || '#34C759',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -795,10 +795,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   saveButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS?.primary || '#007AFF',
   },
   deleteButton: {
-    backgroundColor: COLORS.danger,
+    backgroundColor: COLORS?.danger || '#FF3B30',
   },
   modalButtonText: {
     color: '#fff',
