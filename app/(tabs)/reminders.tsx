@@ -52,12 +52,24 @@ export default function RemindersScreen() {
   };
 
   const handleAddReminder = () => {
-    if (!newReminderTitle.trim() || !selectedContactId) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    console.log('handleAddReminder called');
+    console.log('Title:', newReminderTitle);
+    console.log('Selected Contact ID:', selectedContactId);
+    console.log('Contacts available:', contacts.length);
+    
+    if (!newReminderTitle.trim()) {
+      Alert.alert('Error', 'Please enter a reminder title');
+      return;
+    }
+    
+    if (!selectedContactId) {
+      Alert.alert('Error', 'Please select a contact');
       return;
     }
 
     const contact = contacts.find(c => c.id === selectedContactId);
+    console.log('Found contact:', contact);
+    
     if (!contact) {
       Alert.alert('Error', 'Selected contact not found');
       return;
@@ -67,7 +79,7 @@ export default function RemindersScreen() {
     const parsedTime = parseTimeFromDescription(newReminderDescription);
     const finalDate = parsedTime || selectedDate;
     
-    addReminder({
+    console.log('Creating reminder with data:', {
       contactId: contact.id,
       contactName: contact.name,
       title: newReminderTitle.trim(),
@@ -75,12 +87,32 @@ export default function RemindersScreen() {
       dueDate: finalDate,
       isCompleted: false,
     });
-
-    setNewReminderTitle('');
-    setNewReminderDescription('');
-    setSelectedContactId('');
-    setSelectedDate(new Date());
-    setShowAddModal(false);
+    
+    try {
+      addReminder({
+        contactId: contact.id,
+        contactName: contact.name,
+        title: newReminderTitle.trim(),
+        description: newReminderDescription.trim(),
+        dueDate: finalDate,
+        isCompleted: false,
+      });
+      
+      console.log('Reminder added successfully');
+      
+      // Reset form
+      setNewReminderTitle('');
+      setNewReminderDescription('');
+      setSelectedContactId('');
+      setSelectedDate(new Date());
+      setContactSearch('');
+      setShowAddModal(false);
+      
+      Alert.alert('Success', 'Reminder created successfully!');
+    } catch (error) {
+      console.error('Error adding reminder:', error);
+      Alert.alert('Error', 'Failed to create reminder. Please try again.');
+    }
   };
 
   const handleReminderToggle = (reminder: Reminder) => {
