@@ -793,16 +793,34 @@ export default function RemindersScreen() {
             </View>
           </View>
 
+          {/* Group By Selector */}
+          <View style={styles.groupBySection}>
+            <TouchableOpacity 
+              style={styles.groupByButton}
+              onPress={() => setShowGroupByModal(true)}
+            >
+              <Filter size={16} color="#007AFF" />
+              <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
+              <ChevronDown size={16} color="#007AFF" />
+            </TouchableOpacity>
+            {activeTab === 'calls' && (
+              <TouchableOpacity 
+                style={styles.addButton}
+                onPress={() => setShowAddModal(true)}
+              >
+                <Plus size={16} color="#fff" />
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* Reminders List */}
           {activeTab === 'all' ? (
             <>
               {/* Call Reminders Section */}
               {callReminders.length > 0 && (
                 <View style={styles.section}>
-                  <TouchableOpacity 
-                    style={styles.sectionHeader}
-                    onPress={() => toggleSection('calls')}
-                  >
+                  <View style={styles.sectionHeader}>
                     <View style={styles.sectionTitleContainer}>
                       <Phone size={18} color="#007AFF" />
                       <Text style={styles.sectionTitle}>Call Reminders</Text>
@@ -810,24 +828,21 @@ export default function RemindersScreen() {
                         <Text style={styles.sectionBadgeText}>{callStats.pending}</Text>
                       </View>
                     </View>
-                    {expandedSections.calls ? <ChevronUp size={20} color="#666" /> : <ChevronDown size={20} color="#666" />}
-                  </TouchableOpacity>
-
-                  {expandedSections.calls && (
-                    <View style={styles.remindersList}>
-                      {callReminders.map((reminder: any) => renderReminderCard(reminder))}
-                    </View>
-                  )}
+                  </View>
+                  <GroupedView
+                    items={callReminders}
+                    groupBy={groupBy}
+                    renderItem={renderReminderCard}
+                    itemType="reminder"
+                    emptyMessage="No call reminders"
+                  />
                 </View>
               )}
 
               {/* Order Reminders Section */}
               {orderReminders.length > 0 && (
                 <View style={styles.section}>
-                  <TouchableOpacity 
-                    style={styles.sectionHeader}
-                    onPress={() => toggleSection('orders')}
-                  >
+                  <View style={styles.sectionHeader}>
                     <View style={styles.sectionTitleContainer}>
                       <Package size={18} color="#FF9500" />
                       <Text style={styles.sectionTitle}>Order Reminders</Text>
@@ -835,14 +850,14 @@ export default function RemindersScreen() {
                         <Text style={[styles.sectionBadgeText, { color: '#FF9500' }]}>{orderStats.pending}</Text>
                       </View>
                     </View>
-                    {expandedSections.orders ? <ChevronUp size={20} color="#666" /> : <ChevronDown size={20} color="#666" />}
-                  </TouchableOpacity>
-
-                  {expandedSections.orders && (
-                    <View style={styles.remindersList}>
-                      {orderReminders.map((reminder: any) => renderReminderCard(reminder))}
-                    </View>
-                  )}
+                  </View>
+                  <GroupedView
+                    items={orderReminders}
+                    groupBy={groupBy}
+                    renderItem={renderReminderCard}
+                    itemType="reminder"
+                    emptyMessage="No order reminders"
+                  />
                 </View>
               )}
             </>
@@ -852,20 +867,14 @@ export default function RemindersScreen() {
                 <Text style={styles.sectionTitle}>
                   {activeTab === 'calls' ? 'Call Reminders' : 'Order Reminders'}
                 </Text>
-                {activeTab === 'calls' && (
-                  <TouchableOpacity 
-                    style={styles.addButton}
-                    onPress={() => setShowAddModal(true)}
-                  >
-                    <Plus size={16} color="#fff" />
-                    <Text style={styles.addButtonText}>Add</Text>
-                  </TouchableOpacity>
-                )}
               </View>
-
-              <View style={styles.remindersList}>
-                {allReminders.map((reminder: any) => renderReminderCard(reminder))}
-              </View>
+              <GroupedView
+                items={allReminders}
+                groupBy={groupBy}
+                renderItem={renderReminderCard}
+                itemType="reminder"
+                emptyMessage={`No ${activeTab} reminders`}
+              />
             </View>
           )}
 
@@ -882,6 +891,45 @@ export default function RemindersScreen() {
 
       <AddReminderModal />
       <CompletionModal />
+
+      {/* Group By Modal */}
+      <Modal
+        visible={showGroupByModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowGroupByModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowGroupByModal(false)}
+        >
+          <View style={styles.groupByModalContainer}>
+            <Text style={styles.groupByModalTitle}>Group Reminders By</Text>
+            {(['none', 'day', 'week', 'month', 'year'] as GroupByOption[]).map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.groupByOption,
+                  groupBy === option && styles.selectedGroupByOption
+                ]}
+                onPress={() => {
+                  setGroupBy(option);
+                  setShowGroupByModal(false);
+                }}
+              >
+                <Text style={[
+                  styles.groupByOptionText,
+                  groupBy === option && styles.selectedGroupByOptionText
+                ]}>
+                  {option === 'none' ? 'No Grouping' : option.charAt(0).toUpperCase() + option.slice(1)}
+                </Text>
+                {groupBy === option && <CheckCircle size={20} color="#007AFF" />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1486,5 +1534,74 @@ const styles = StyleSheet.create({
   },
   deliveredButton: {
     backgroundColor: '#FF9500',
+  },
+  groupBySection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  groupByButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  groupByButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#007AFF',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  groupByModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    width: '90%',
+    maxWidth: 350,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  groupByModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  groupByOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  selectedGroupByOption: {
+    backgroundColor: '#007AFF10',
+  },
+  groupByOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedGroupByOptionText: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
 });
