@@ -1,16 +1,47 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView, SafeAreaView, Switch } from 'react-native';
 import { Stack } from 'expo-router';
-import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save } from 'lucide-react-native';
+import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save, Check, ChevronRight } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import AddContactModal from '@/components/AddContactModal';
+
+interface TemplateSection {
+  id: string;
+  label: string;
+  enabled: boolean;
+  custom?: boolean;
+}
 
 export default function SettingsScreen() {
   const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts } = useContacts();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [templateText, setTemplateText] = useState('');
+  
+  // Parse existing template or use default sections
+  const parseTemplateToSections = (template: string): TemplateSection[] => {
+    const defaultSections: TemplateSection[] = [
+      { id: 'purpose', label: 'Purpose of call', enabled: true },
+      { id: 'keypoints', label: 'Key points discussed', enabled: true },
+      { id: 'action', label: 'Action items', enabled: true },
+      { id: 'nextsteps', label: 'Next steps', enabled: true },
+      { id: 'additional', label: 'Additional notes', enabled: true },
+    ];
+    
+    // Check which sections exist in the current template
+    defaultSections.forEach(section => {
+      section.enabled = template.toLowerCase().includes(section.label.toLowerCase());
+    });
+    
+    return defaultSections;
+  };
+  
+  const [templateSections, setTemplateSections] = useState<TemplateSection[]>(() => 
+    parseTemplateToSections(noteTemplate)
+  );
+  const [customPrompts, setCustomPrompts] = useState<string[]>([]);
+  const [newPromptText, setNewPromptText] = useState('');
+  const [showAddPrompt, setShowAddPrompt] = useState(false);
 
   const handleImportContacts = async () => {
     if (Platform.OS === 'web') {
@@ -102,19 +133,56 @@ export default function SettingsScreen() {
   };
 
   const handleEditTemplate = () => {
-    setTemplateText(noteTemplate);
+    setTemplateSections(parseTemplateToSections(noteTemplate));
     setShowTemplateModal(true);
   };
 
   const handleSaveTemplate = () => {
-    updateNoteTemplate(templateText);
+    // Build template from enabled sections
+    let template = 'Call with [CONTACT_NAME] - [DATE]\n\n';
+    
+    templateSections.forEach(section => {
+      if (section.enabled) {
+        template += `${section.label}:\n\n`;
+      }
+    });
+    
+    // Add custom prompts
+    customPrompts.forEach(prompt => {
+      template += `${prompt}:\n\n`;
+    });
+    
+    updateNoteTemplate(template.trim());
     setShowTemplateModal(false);
     Alert.alert('Template Updated', 'Your call note template has been updated successfully.');
   };
 
   const handleCloseTemplate = () => {
     setShowTemplateModal(false);
-    setTemplateText('');
+    setTemplateSections(parseTemplateToSections(noteTemplate));
+    setCustomPrompts([]);
+    setNewPromptText('');
+    setShowAddPrompt(false);
+  };
+  
+  const toggleSection = (id: string) => {
+    setTemplateSections(prev => 
+      prev.map(section => 
+        section.id === id ? { ...section, enabled: !section.enabled } : section
+      )
+    );
+  };
+  
+  const addCustomPrompt = () => {
+    if (newPromptText.trim()) {
+      setCustomPrompts(prev => [...prev, newPromptText.trim()]);
+      setNewPromptText('');
+      setShowAddPrompt(false);
+    }
+  };
+  
+  const removeCustomPrompt = (index: number) => {
+    setCustomPrompts(prev => prev.filter((_, i) => i !== index));
   };
 
 
@@ -250,45 +318,122 @@ export default function SettingsScreen() {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <KeyboardAvoidingView 
-          style={styles.templateModalContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+        <SafeAreaView style={styles.templateModalContainer}>
           <View style={styles.templateHeader}>
             <TouchableOpacity onPress={handleCloseTemplate}>
               <X size={24} color="#007AFF" />
             </TouchableOpacity>
             
-            <Text style={styles.templateTitle}>Edit Note Template</Text>
+            <Text style={styles.templateTitle}>Template Settings</Text>
             
             <TouchableOpacity onPress={handleSaveTemplate}>
               <Save size={24} color="#007AFF" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.templateContent}>
+          <ScrollView style={styles.templateContent} showsVerticalScrollIndicator={false}>
+            <Text style={styles.templateSectionTitle}>Default Sections</Text>
             <Text style={styles.templateDescription}>
-              Customize your default call note template. Use [CONTACT_NAME] and [DATE] as placeholders.
+              Select which sections to include in your call notes
             </Text>
             
-            <TextInput
-              style={styles.templateInput}
-              placeholder="Enter your template..."
-              placeholderTextColor="#999"
-              multiline
-              textAlignVertical="top"
-              value={templateText}
-              onChangeText={setTemplateText}
-              autoFocus
-            />
-          </View>
+            <View style={styles.templateSections}>
+              {templateSections.map(section => (
+                <TouchableOpacity
+                  key={section.id}
+                  style={styles.templateSectionItem}
+                  onPress={() => toggleSection(section.id)}
+                >
+                  <View style={styles.templateSectionLeft}>
+                    <View style={[styles.checkbox, section.enabled && styles.checkboxChecked]}>
+                      {section.enabled && <Check size={16} color="#fff" />}
+                    </View>
+                    <Text style={styles.templateSectionLabel}>{section.label}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            <View style={styles.customPromptsSection}>
+              <Text style={styles.templateSectionTitle}>Custom Prompts</Text>
+              <Text style={styles.templateDescription}>
+                Add your own custom prompts to the template
+              </Text>
+              
+              {customPrompts.map((prompt, index) => (
+                <View key={index} style={styles.customPromptItem}>
+                  <Text style={styles.customPromptText}>{prompt}</Text>
+                  <TouchableOpacity onPress={() => removeCustomPrompt(index)}>
+                    <X size={20} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              
+              {showAddPrompt ? (
+                <View style={styles.addPromptContainer}>
+                  <TextInput
+                    style={styles.addPromptInput}
+                    placeholder="Enter custom prompt..."
+                    placeholderTextColor="#999"
+                    value={newPromptText}
+                    onChangeText={setNewPromptText}
+                    autoFocus
+                    onSubmitEditing={addCustomPrompt}
+                  />
+                  <View style={styles.addPromptButtons}>
+                    <TouchableOpacity 
+                      style={styles.addPromptButton} 
+                      onPress={() => {
+                        setShowAddPrompt(false);
+                        setNewPromptText('');
+                      }}
+                    >
+                      <Text style={styles.addPromptButtonCancel}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.addPromptButton, styles.addPromptButtonPrimary]} 
+                      onPress={addCustomPrompt}
+                    >
+                      <Text style={styles.addPromptButtonAdd}>Add</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.addCustomPromptButton}
+                  onPress={() => setShowAddPrompt(true)}
+                >
+                  <Plus size={20} color="#007AFF" />
+                  <Text style={styles.addCustomPromptText}>Add Custom Prompt</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <View style={styles.templatePreviewSection}>
+              <Text style={styles.templateSectionTitle}>Preview</Text>
+              <View style={styles.templatePreview}>
+                <Text style={styles.templatePreviewText}>Call with [CONTACT_NAME] - [DATE]</Text>
+                <Text style={styles.templatePreviewText}>\n</Text>
+                {templateSections.filter(s => s.enabled).map(section => (
+                  <Text key={section.id} style={styles.templatePreviewText}>
+                    {section.label}:\n\n
+                  </Text>
+                ))}
+                {customPrompts.map((prompt, index) => (
+                  <Text key={`custom-${index}`} style={styles.templatePreviewText}>
+                    {prompt}:\n\n
+                  </Text>
+                ))}
+              </View>
+            </View>
+          </ScrollView>
 
           <View style={styles.templateFooter}>
             <TouchableOpacity style={styles.templateSaveButton} onPress={handleSaveTemplate}>
               <Text style={styles.templateSaveButtonText}>Save Template</Text>
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -417,33 +562,153 @@ const styles = StyleSheet.create({
   },
   templateContent: {
     flex: 1,
-    padding: 20,
+  },
+  templateSectionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 24,
+    marginBottom: 8,
+    marginHorizontal: 20,
   },
   templateDescription: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
     marginBottom: 16,
-    lineHeight: 22,
+    marginHorizontal: 20,
+    lineHeight: 20,
   },
-  templateInput: {
-    flex: 1,
+  templateSections: {
     backgroundColor: '#fff',
+    marginHorizontal: 16,
     borderRadius: 12,
-    padding: 16,
+    overflow: 'hidden',
+  },
+  templateSectionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  templateSectionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  templateSectionLabel: {
     fontSize: 16,
     color: '#000',
+  },
+  customPromptsSection: {
+    marginTop: 8,
+  },
+  customPromptItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 12,
+  },
+  customPromptText: {
+    fontSize: 16,
+    color: '#000',
+    flex: 1,
+  },
+  addCustomPromptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e1e5e9',
-    textAlignVertical: 'top',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed' as const,
+  },
+  addCustomPromptText: {
+    fontSize: 16,
+    color: '#007AFF',
+    marginLeft: 8,
+  },
+  addPromptContainer: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  addPromptInput: {
+    fontSize: 16,
+    color: '#000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+    paddingBottom: 8,
+    marginBottom: 12,
+  },
+  addPromptButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  addPromptButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  addPromptButtonPrimary: {
+    backgroundColor: '#007AFF',
+  },
+  addPromptButtonCancel: {
+    fontSize: 15,
+    color: '#666',
+  },
+  addPromptButtonAdd: {
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  templatePreviewSection: {
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  templatePreview: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  templatePreviewText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   templateFooter: {
     padding: 20,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    backgroundColor: '#f8f9fa',
+    borderTopWidth: 1,
+    borderTopColor: '#e1e5e9',
   },
   templateSaveButton: {
     backgroundColor: '#007AFF',
