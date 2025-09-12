@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { Stack } from 'expo-router';
-import { ShoppingBag, FileText, Plus, Download, Package, DollarSign, User, Calendar, Clock, CheckCircle, X, Minus } from 'lucide-react-native';
+import { ShoppingBag, FileText, Plus, Download, Package, DollarSign, User, Calendar, Clock, CheckCircle, X, Minus, Search, ChevronDown } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { OrderItem, Order } from '@/types/contact';
 
@@ -15,6 +15,8 @@ export default function StoreScreen() {
   const [newItemDescription, setNewItemDescription] = useState<string>('');
   const [newItemPrice, setNewItemPrice] = useState<string>('');
   const [newItemQuantity, setNewItemQuantity] = useState<string>('1');
+  const [contactSearch, setContactSearch] = useState<string>('');
+  const [showContactDropdown, setShowContactDropdown] = useState<boolean>(false);
 
   const totalOrders = orders.length;
   const pendingOrders = orders.filter(order => order.status === 'pending').length;
@@ -29,6 +31,8 @@ export default function StoreScreen() {
     setNewItemDescription('');
     setNewItemPrice('');
     setNewItemQuantity('1');
+    setContactSearch('');
+    setShowContactDropdown(false);
   };
 
   const addItemToOrder = () => {
@@ -81,6 +85,22 @@ export default function StoreScreen() {
 
   const calculateTotal = () => {
     return orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const filteredContacts = useMemo(() => {
+    if (!contactSearch.trim()) return contacts;
+    return contacts.filter(contact => 
+      contact.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
+      contact.phoneNumber.toLowerCase().includes(contactSearch.toLowerCase())
+    );
+  }, [contacts, contactSearch]);
+
+  const selectedContact = contacts.find(c => c.id === selectedContactId);
+
+  const selectContact = (contact: any) => {
+    setSelectedContactId(contact.id);
+    setContactSearch(contact.name);
+    setShowContactDropdown(false);
   };
 
   const createOrder = () => {
@@ -397,25 +417,82 @@ export default function StoreScreen() {
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             <View style={styles.formSection}>
               <Text style={styles.formLabel}>Select Contact</Text>
-              <View style={styles.contactsList}>
-                {contacts.map((contact) => (
-                  <TouchableOpacity
-                    key={contact.id}
-                    style={[
-                      styles.contactOption,
-                      selectedContactId === contact.id && styles.selectedContactOption
-                    ]}
-                    onPress={() => setSelectedContactId(contact.id)}
-                  >
-                    <Text style={[
-                      styles.contactOptionText,
-                      selectedContactId === contact.id && styles.selectedContactOptionText
-                    ]}>
-                      {contact.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={styles.contactSearchContainer}>
+                <TouchableOpacity 
+                  style={styles.contactSearchInput}
+                  onPress={() => setShowContactDropdown(!showContactDropdown)}
+                >
+                  <View style={styles.searchInputContent}>
+                    <Search size={16} color="#666" />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="Search contacts..."
+                      value={contactSearch}
+                      onChangeText={(text) => {
+                        setContactSearch(text);
+                        setShowContactDropdown(true);
+                        if (!text.trim()) {
+                          setSelectedContactId('');
+                        }
+                      }}
+                      onFocus={() => setShowContactDropdown(true)}
+                    />
+                    <ChevronDown size={16} color="#666" />
+                  </View>
+                </TouchableOpacity>
+                
+                {showContactDropdown && (
+                  <View style={styles.contactDropdown}>
+                    <ScrollView style={styles.contactDropdownScroll} nestedScrollEnabled>
+                      {filteredContacts.length > 0 ? (
+                        filteredContacts.map((contact) => (
+                          <TouchableOpacity
+                            key={contact.id}
+                            style={[
+                              styles.contactDropdownItem,
+                              selectedContactId === contact.id && styles.selectedContactDropdownItem
+                            ]}
+                            onPress={() => selectContact(contact)}
+                          >
+                            <View style={styles.contactDropdownItemContent}>
+                              <Text style={[
+                                styles.contactDropdownItemName,
+                                selectedContactId === contact.id && styles.selectedContactDropdownItemText
+                              ]}>
+                                {contact.name}
+                              </Text>
+                              <Text style={[
+                                styles.contactDropdownItemPhone,
+                                selectedContactId === contact.id && styles.selectedContactDropdownItemText
+                              ]}>
+                                {contact.phoneNumber}
+                              </Text>
+                            </View>
+                            {selectedContactId === contact.id && (
+                              <CheckCircle size={16} color="#007AFF" />
+                            )}
+                          </TouchableOpacity>
+                        ))
+                      ) : (
+                        <View style={styles.noContactsFound}>
+                          <Text style={styles.noContactsText}>No contacts found</Text>
+                        </View>
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
+              
+              {selectedContact && (
+                <View style={styles.selectedContactDisplay}>
+                  <Text style={styles.selectedContactLabel}>Order for:</Text>
+                  <View style={styles.selectedContactInfo}>
+                    <User size={16} color="#007AFF" />
+                    <Text style={styles.selectedContactName}>{selectedContact.name}</Text>
+                    <Text style={styles.selectedContactPhone}>{selectedContact.phoneNumber}</Text>
+                  </View>
+                </View>
+              )}
             </View>
             
             <View style={styles.formSection}>
@@ -879,29 +956,115 @@ const styles = StyleSheet.create({
     color: '#000',
     marginBottom: 12,
   },
-  contactsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  contactSearchContainer: {
+    position: 'relative',
+    zIndex: 1000,
   },
-  contactOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+  contactSearchInput: {
     borderWidth: 1,
     borderColor: '#e9ecef',
-    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    backgroundColor: '#fff',
   },
-  selectedContactOption: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+  searchInputContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
   },
-  contactOptionText: {
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000',
+  },
+  contactDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 1001,
+  },
+  contactDropdownScroll: {
+    maxHeight: 200,
+  },
+  contactDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  selectedContactDropdownItem: {
+    backgroundColor: '#f0f8ff',
+  },
+  contactDropdownItemContent: {
+    flex: 1,
+  },
+  contactDropdownItemName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    marginBottom: 2,
+  },
+  contactDropdownItemPhone: {
     fontSize: 14,
     color: '#666',
   },
-  selectedContactOptionText: {
-    color: '#fff',
+  selectedContactDropdownItemText: {
+    color: '#007AFF',
+  },
+  noContactsFound: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noContactsText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  selectedContactDisplay: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF' + '30',
+  },
+  selectedContactLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  selectedContactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectedContactName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  selectedContactPhone: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 'auto',
   },
   addItemForm: {
     gap: 12,
