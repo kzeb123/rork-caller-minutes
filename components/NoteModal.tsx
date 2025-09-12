@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { X, Save, Clock, Phone, Tag, Check, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { X, Save, Clock, Phone, Tag, Check, ChevronDown, ChevronUp, AlertCircle, Plus } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { NoteStatus } from '@/types/contact';
 
@@ -18,6 +18,11 @@ export default function NoteModal() {
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [templateSections, setTemplateSections] = useState<TemplateSection[]>([]);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [selectedPriority, setSelectedPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [showPriorityPicker, setShowPriorityPicker] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
+  const [showTagInput, setShowTagInput] = useState(false);
 
   useEffect(() => {
     if (showNoteModal && currentCallContact) {
@@ -68,6 +73,11 @@ export default function NoteModal() {
       setSelectedStatus('follow-up');
       setCustomStatus('');
       setShowStatusPicker(false);
+      setSelectedPriority('medium');
+      setShowPriorityPicker(false);
+      setTags([]);
+      setNewTag('');
+      setShowTagInput(false);
     }
   }, [showNoteModal, currentCallContact, noteTemplate]);
   
@@ -115,7 +125,7 @@ export default function NoteModal() {
     
     if (noteText.trim() !== header.trim()) {
       const finalCustomStatus = selectedStatus === 'other' ? customStatus.trim() : undefined;
-      saveNote(noteText.trim(), selectedStatus, finalCustomStatus);
+      saveNote(noteText.trim(), selectedStatus, finalCustomStatus, selectedPriority, tags);
     } else {
       // No content added, just close
       closeNoteModal();
@@ -131,6 +141,11 @@ export default function NoteModal() {
     setSelectedStatus('follow-up');
     setCustomStatus('');
     setShowStatusPicker(false);
+    setSelectedPriority('medium');
+    setShowPriorityPicker(false);
+    setTags([]);
+    setNewTag('');
+    setShowTagInput(false);
     closeNoteModal();
   };
 
@@ -139,6 +154,8 @@ export default function NoteModal() {
     setTemplateSections([]);
     setSelectedStatus('follow-up');
     setCustomStatus('');
+    setSelectedPriority('medium');
+    setTags([]);
   };
   
   const toggleSection = (id: string) => {
@@ -167,6 +184,36 @@ export default function NoteModal() {
       }
       return newSet;
     });
+  };
+  
+  const addTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags([...tags, newTag.trim()]);
+      setNewTag('');
+      setShowTagInput(false);
+    }
+  };
+  
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+  
+  const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
+    switch (priority) {
+      case 'high': return '#FF3B30';
+      case 'medium': return '#FF9500';
+      case 'low': return '#34C759';
+      default: return '#FF9500';
+    }
+  };
+  
+  const getPriorityLabel = (priority: 'low' | 'medium' | 'high') => {
+    switch (priority) {
+      case 'high': return 'High Priority';
+      case 'medium': return 'Medium Priority';
+      case 'low': return 'Low Priority';
+      default: return 'Medium Priority';
+    }
   };
   
   const hasContent = templateSections.some(s => s.enabled && s.value.trim());
@@ -272,6 +319,88 @@ export default function NoteModal() {
                 )}
               </View>
             )}
+          </View>
+          
+          {/* Priority Selection */}
+          <View style={styles.statusSection}>
+            <Text style={styles.statusLabel}>Priority</Text>
+            <TouchableOpacity 
+              style={styles.statusSelector}
+              onPress={() => setShowPriorityPicker(!showPriorityPicker)}
+            >
+              <AlertCircle size={16} color={getPriorityColor(selectedPriority)} />
+              <Text style={styles.statusText}>
+                {getPriorityLabel(selectedPriority)}
+              </Text>
+              <ChevronDown size={16} color="#666" />
+            </TouchableOpacity>
+            
+            {showPriorityPicker && (
+              <View style={styles.statusPicker}>
+                {(['high', 'medium', 'low'] as const).map((priority) => (
+                  <TouchableOpacity
+                    key={priority}
+                    style={styles.statusOption}
+                    onPress={() => {
+                      setSelectedPriority(priority);
+                      setShowPriorityPicker(false);
+                    }}
+                  >
+                    <View style={styles.priorityOptionContent}>
+                      <AlertCircle size={16} color={getPriorityColor(priority)} />
+                      <Text style={[styles.statusOptionText, selectedPriority === priority && styles.selectedStatusText]}>
+                        {getPriorityLabel(priority)}
+                      </Text>
+                    </View>
+                    {selectedPriority === priority && <Check size={16} color="#007AFF" />}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+          
+          {/* Tags Section */}
+          <View style={styles.statusSection}>
+            <Text style={styles.statusLabel}>Tags</Text>
+            <View style={styles.tagsContainer}>
+              {tags.map((tag) => (
+                <View key={tag} style={styles.tag}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                  <TouchableOpacity onPress={() => removeTag(tag)} style={styles.tagRemove}>
+                    <X size={14} color="#666" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              
+              {showTagInput ? (
+                <View style={styles.tagInputContainer}>
+                  <TextInput
+                    style={styles.tagInput}
+                    placeholder="Enter tag..."
+                    placeholderTextColor="#999"
+                    value={newTag}
+                    onChangeText={setNewTag}
+                    onSubmitEditing={addTag}
+                    onBlur={() => {
+                      if (newTag.trim()) {
+                        addTag();
+                      } else {
+                        setShowTagInput(false);
+                      }
+                    }}
+                    autoFocus
+                  />
+                </View>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.addTagButton}
+                  onPress={() => setShowTagInput(true)}
+                >
+                  <Plus size={16} color="#007AFF" />
+                  <Text style={styles.addTagText}>Add Tag</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
           
           <Text style={styles.sectionTitle}>Call Notes</Text>
@@ -518,6 +647,64 @@ const styles = StyleSheet.create({
     color: '#333',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e1e5e9',
+  },
+  priorityOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  tagText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  tagRemove: {
+    padding: 2,
+  },
+  addTagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f4f8',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+  },
+  addTagText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  tagInputContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  tagInput: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    fontSize: 14,
+    color: '#333',
+    minWidth: 80,
   },
   sectionTitle: {
     fontSize: 18,

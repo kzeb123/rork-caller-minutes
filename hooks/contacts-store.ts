@@ -627,7 +627,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     return uniqueDetections;
   }, []);
 
-  const saveNote = useCallback((noteText: string, status: NoteStatus = 'follow-up', customStatus?: string) => {
+  const saveNote = useCallback((noteText: string, status: NoteStatus = 'follow-up', customStatus?: string, priority?: 'low' | 'medium' | 'high', tags?: string[]) => {
     if (currentCallContact && callStartTime && callEndTime) {
       const duration = Math.floor((callEndTime.getTime() - callStartTime.getTime()) / 1000);
       const finalNote = noteText.trim() || 'No note was taken';
@@ -644,6 +644,8 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         callDirection,
         status,
         customStatus,
+        priority: priority || 'medium',
+        tags: tags || [],
         createdAt: new Date(),
       };
       
@@ -658,6 +660,8 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         callDirection,
         status,
         customStatus,
+        priority: priority || 'medium',
+        tags: tags || [],
       });
       
       // Detect dates/times in the note text if it's not auto-generated
