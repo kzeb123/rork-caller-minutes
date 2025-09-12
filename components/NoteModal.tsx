@@ -1,25 +1,75 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { X, Save, Clock, Phone, Tag, Check } from 'lucide-react-native';
+import { X, Save, Clock, Phone, Tag, Check, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { NoteStatus } from '@/types/contact';
 
+interface TemplateSection {
+  id: string;
+  label: string;
+  value: string;
+  enabled: boolean;
+}
+
 export default function NoteModal() {
-  const { showNoteModal, currentCallContact, callStartTime, callEndTime, closeNoteModal, saveNote, getFormattedNoteTemplate } = useContacts();
-  const [noteText, setNoteText] = useState('');
+  const { showNoteModal, currentCallContact, callStartTime, callEndTime, closeNoteModal, saveNote, noteTemplate } = useContacts();
   const [selectedStatus, setSelectedStatus] = useState<NoteStatus>('follow-up');
   const [customStatus, setCustomStatus] = useState('');
   const [showStatusPicker, setShowStatusPicker] = useState(false);
+  const [templateSections, setTemplateSections] = useState<TemplateSection[]>([]);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (showNoteModal && currentCallContact) {
-      const template = getFormattedNoteTemplate(currentCallContact.name);
-      setNoteText(template);
+      // Parse template into sections
+      const template = noteTemplate || 'Call with [CONTACT_NAME] - [DATE]\n\nPurpose of call:\n\nKey points discussed:\n\nAction items:\n\nNext steps:\n\nAdditional notes:';
+      const lines = template.split('\n');
+      const sections: TemplateSection[] = [];
+      
+      // Skip the header line
+      let currentSection: TemplateSection | null = null;
+      
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.endsWith(':')) {
+          // This is a section header
+          if (currentSection) {
+            sections.push(currentSection);
+          }
+          const label = line.slice(0, -1);
+          const id = label.toLowerCase().replace(/\s+/g, '-');
+          currentSection = {
+            id,
+            label,
+            value: '',
+            enabled: true
+          };
+        }
+      }
+      
+      // Add the last section
+      if (currentSection) {
+        sections.push(currentSection);
+      }
+      
+      // If no sections found, use defaults
+      if (sections.length === 0) {
+        sections.push(
+          { id: 'purpose', label: 'Purpose of call', value: '', enabled: true },
+          { id: 'keypoints', label: 'Key points discussed', value: '', enabled: true },
+          { id: 'action', label: 'Action items', value: '', enabled: true },
+          { id: 'nextsteps', label: 'Next steps', value: '', enabled: true },
+          { id: 'additional', label: 'Additional notes', value: '', enabled: true }
+        );
+      }
+      
+      setTemplateSections(sections);
+      setExpandedSections(new Set(sections.map(s => s.id)));
       setSelectedStatus('follow-up');
       setCustomStatus('');
       setShowStatusPicker(false);
     }
-  }, [showNoteModal, currentCallContact, getFormattedNoteTemplate]);
+  }, [showNoteModal, currentCallContact, noteTemplate]);
   
   const formatCallDuration = () => {
     if (!callStartTime || !callEndTime) return '0s';
@@ -45,19 +95,39 @@ export default function NoteModal() {
   };
 
   const handleSave = () => {
-    if (noteText.trim()) {
+    // Build the note text from enabled sections
+    const header = `Call with ${currentCallContact?.name} - ${new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`;
+    
+    let noteText = header + '\n\n';
+    
+    templateSections.forEach(section => {
+      if (section.enabled && section.value.trim()) {
+        noteText += `${section.label}:\n${section.value.trim()}\n\n`;
+      }
+    });
+    
+    if (noteText.trim() !== header.trim()) {
       const finalCustomStatus = selectedStatus === 'other' ? customStatus.trim() : undefined;
       saveNote(noteText.trim(), selectedStatus, finalCustomStatus);
-      setNoteText('');
-      setSelectedStatus('follow-up');
-      setCustomStatus('');
     } else {
+      // No content added, just close
       closeNoteModal();
     }
+    
+    setTemplateSections([]);
+    setSelectedStatus('follow-up');
+    setCustomStatus('');
   };
 
   const handleClose = () => {
-    setNoteText('');
+    setTemplateSections([]);
     setSelectedStatus('follow-up');
     setCustomStatus('');
     setShowStatusPicker(false);
@@ -66,10 +136,40 @@ export default function NoteModal() {
 
   const handleSkip = () => {
     saveNote('', 'closed');
-    setNoteText('');
+    setTemplateSections([]);
     setSelectedStatus('follow-up');
     setCustomStatus('');
   };
+  
+  const toggleSection = (id: string) => {
+    setTemplateSections(prev => 
+      prev.map(section => 
+        section.id === id ? { ...section, enabled: !section.enabled } : section
+      )
+    );
+  };
+  
+  const updateSectionValue = (id: string, value: string) => {
+    setTemplateSections(prev => 
+      prev.map(section => 
+        section.id === id ? { ...section, value } : section
+      )
+    );
+  };
+  
+  const toggleSectionExpanded = (id: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+  
+  const hasContent = templateSections.some(s => s.enabled && s.value.trim());
 
   if (!showNoteModal || !currentCallContact) return null;
 
@@ -120,13 +220,9 @@ export default function NoteModal() {
             </View>
           </View>
           
-          <Text style={styles.promptText}>
-            Do you want to take a note for this contact?
-          </Text>
-          
           {/* Status Selection */}
           <View style={styles.statusSection}>
-            <Text style={styles.statusLabel}>Status</Text>
+            <Text style={styles.statusLabel}>Call Status</Text>
             <TouchableOpacity 
               style={styles.statusSelector}
               onPress={() => setShowStatusPicker(!showStatusPicker)}
@@ -138,6 +234,7 @@ export default function NoteModal() {
                  selectedStatus === 'waiting-reply' ? 'Waiting Reply' :
                  selectedStatus === 'closed' ? 'Closed' : 'Other'}
               </Text>
+              <ChevronDown size={16} color="#666" />
             </TouchableOpacity>
             
             {showStatusPicker && (
@@ -177,17 +274,52 @@ export default function NoteModal() {
             )}
           </View>
           
-          <TextInput
-            style={styles.noteInput}
-            placeholder="Add a note about this call..."
-            placeholderTextColor="#999"
-            multiline
-            textAlignVertical="top"
-            value={noteText}
-            onChangeText={setNoteText}
-            autoFocus={!showStatusPicker}
-            returnKeyType="default"
-          />
+          <Text style={styles.sectionTitle}>Call Notes</Text>
+          <Text style={styles.sectionDescription}>
+            Fill in the sections that apply to your call
+          </Text>
+          
+          {/* Template Sections */}
+          <View style={styles.templateSections}>
+            {templateSections.map((section, index) => (
+              <View key={section.id} style={[styles.templateSection, index === templateSections.length - 1 && styles.lastSection]}>
+                <TouchableOpacity 
+                  style={styles.sectionHeader}
+                  onPress={() => toggleSectionExpanded(section.id)}
+                >
+                  <View style={styles.sectionHeaderLeft}>
+                    <TouchableOpacity
+                      style={[styles.checkbox, section.enabled && styles.checkboxChecked]}
+                      onPress={() => toggleSection(section.id)}
+                    >
+                      {section.enabled && <Check size={14} color="#fff" />}
+                    </TouchableOpacity>
+                    <Text style={[styles.sectionLabel, !section.enabled && styles.sectionLabelDisabled]}>
+                      {section.label}
+                    </Text>
+                  </View>
+                  {expandedSections.has(section.id) ? 
+                    <ChevronUp size={20} color="#666" /> : 
+                    <ChevronDown size={20} color="#666" />
+                  }
+                </TouchableOpacity>
+                
+                {expandedSections.has(section.id) && section.enabled && (
+                  <View style={styles.sectionContent}>
+                    <TextInput
+                      style={styles.sectionInput}
+                      placeholder={`Enter ${section.label.toLowerCase()}...`}
+                      placeholderTextColor="#999"
+                      multiline
+                      textAlignVertical="top"
+                      value={section.value}
+                      onChangeText={(text) => updateSectionValue(section.id, text)}
+                    />
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
         </ScrollView>
 
         <View style={styles.footer}>
@@ -196,11 +328,11 @@ export default function NoteModal() {
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.saveButton, !noteText.trim() && styles.saveButtonDisabled]} 
+            style={[styles.saveButton, !hasContent && styles.saveButtonDisabled]} 
             onPress={handleSave}
-            disabled={!noteText.trim() || (selectedStatus === 'other' && !customStatus.trim())}
+            disabled={!hasContent && (selectedStatus === 'other' && !customStatus.trim())}
           >
-            <Text style={[styles.saveButtonText, (!noteText.trim() || (selectedStatus === 'other' && !customStatus.trim())) && styles.saveButtonTextDisabled]}>
+            <Text style={[styles.saveButtonText, (!hasContent && (selectedStatus === 'other' && !customStatus.trim())) && styles.saveButtonTextDisabled]}>
               Save Note
             </Text>
           </TouchableOpacity>
@@ -386,5 +518,79 @@ const styles = StyleSheet.create({
     color: '#333',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e1e5e9',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  templateSections: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    overflow: 'hidden',
+  },
+  templateSection: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  lastSection: {
+    borderBottomWidth: 0,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    flex: 1,
+  },
+  sectionLabelDisabled: {
+    color: '#999',
+  },
+  sectionContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  sectionInput: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#000',
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
 });
