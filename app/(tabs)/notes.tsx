@@ -23,6 +23,7 @@ export default function NotesScreen() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const searchAnimation = new Animated.Value(0);
   const filterAnimation = new Animated.Value(0);
+  const [groupSearchQuery, setGroupSearchQuery] = useState<string>('');
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -178,9 +179,38 @@ export default function NotesScreen() {
   const filteredNotes = useMemo(() => {
     let filtered = [...notes];
 
-    // Apply search filter with enhanced matching
+    // Apply search filter with enhanced matching (from header search)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(note => {
+        // Contact name matching
+        const contactMatch = note.contactName.toLowerCase().includes(query);
+        
+        // Note content matching (word boundaries for better relevance)
+        const noteWords = note.note.toLowerCase().split(/\s+/);
+        const noteMatch = noteWords.some(word => 
+          word.includes(query) || note.note.toLowerCase().includes(query)
+        );
+        
+        // Status matching
+        const statusMatch = getStatusText(note.status, note.customStatus).toLowerCase().includes(query);
+        
+        // Tags matching
+        const tagsMatch = note.tags && note.tags.some(tag => tag.toLowerCase().includes(query));
+        
+        // Category matching
+        const categoryMatch = note.category && note.category.toLowerCase().includes(query);
+        
+        // Phone number matching (if searching for numbers)
+        const phoneMatch = contacts.find(c => c.id === note.contactId)?.phoneNumber.includes(query);
+        
+        return contactMatch || noteMatch || statusMatch || tagsMatch || categoryMatch || phoneMatch;
+      });
+    }
+    
+    // Apply group search filter (from search bar under group by)
+    if (groupSearchQuery.trim()) {
+      const query = groupSearchQuery.toLowerCase();
       filtered = filtered.filter(note => {
         // Contact name matching
         const contactMatch = note.contactName.toLowerCase().includes(query);
@@ -255,7 +285,7 @@ export default function NotesScreen() {
     });
 
     return filtered;
-  }, [notes, searchQuery, activeFilters]);
+  }, [notes, searchQuery, groupSearchQuery, activeFilters, contacts]);
 
   const groupedNotes = useMemo(() => {
     const groups: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string; subGroups?: any[] }[] = [];
@@ -1123,29 +1153,51 @@ export default function NotesScreen() {
       )}
 
       {/* Group By Options */}
-      <View style={styles.groupByContainer}>
-        <Text style={styles.groupByLabel}>Group by:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupByScroll}>
-          {(['day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map(option => (
-            <TouchableOpacity
-              key={option}
-              style={[
-                styles.groupByOption,
-                groupBy === option && styles.groupByOptionActive,
-              ]}
-              onPress={() => setGroupBy(option)}
-            >
-              <Text
+      <View style={styles.groupByWrapper}>
+        <View style={styles.groupByContainer}>
+          <Text style={styles.groupByLabel}>Group by:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupByScroll}>
+            {(['day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map(option => (
+              <TouchableOpacity
+                key={option}
                 style={[
-                  styles.groupByOptionText,
-                  groupBy === option && styles.groupByOptionTextActive,
+                  styles.groupByOption,
+                  groupBy === option && styles.groupByOptionActive,
                 ]}
+                onPress={() => setGroupBy(option)}
               >
-                {option === 'day' ? 'Day' : option.charAt(0).toUpperCase() + option.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                <Text
+                  style={[
+                    styles.groupByOptionText,
+                    groupBy === option && styles.groupByOptionTextActive,
+                  ]}
+                >
+                  {option === 'day' ? 'Day' : option.charAt(0).toUpperCase() + option.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+        
+        {/* Search Bar under Group By */}
+        <View style={styles.groupSearchContainer}>
+          <View style={styles.groupSearchInputWrapper}>
+            <Search size={16} color="#8E8E93" />
+            <TextInput
+              style={styles.groupSearchInput}
+              placeholder="Search contacts or keywords..."
+              placeholderTextColor="#8E8E93"
+              value={groupSearchQuery}
+              onChangeText={setGroupSearchQuery}
+              returnKeyType="search"
+            />
+            {groupSearchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setGroupSearchQuery('')}>
+                <X size={16} color="#8E8E93" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -1480,14 +1532,36 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FF3B30',
   },
-  groupByContainer: {
+  groupByWrapper: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
+  },
+  groupByContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  groupSearchContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  groupSearchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+    gap: 8,
+  },
+  groupSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '400',
   },
   groupByLabel: {
     fontSize: 14,
