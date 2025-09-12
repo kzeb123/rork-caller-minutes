@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { X, Save, Clock, Phone, Tag, Check } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { NoteStatus } from '@/types/contact';
@@ -82,6 +82,7 @@ export default function NoteModal() {
       <KeyboardAvoidingView 
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={handleClose}>
@@ -95,7 +96,12 @@ export default function NoteModal() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
+        <ScrollView 
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={styles.contactName}>{currentCallContact.name}</Text>
           <Text style={styles.contactPhone}>{currentCallContact.phoneNumber}</Text>
           
@@ -180,8 +186,9 @@ export default function NoteModal() {
             value={noteText}
             onChangeText={setNoteText}
             autoFocus={!showStatusPicker}
+            returnKeyType="default"
           />
-        </View>
+        </ScrollView>
 
         <View style={styles.footer}>
           <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
@@ -226,7 +233,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 24,
+    paddingBottom: 40,
   },
   contactName: {
     fontSize: 26,
@@ -263,7 +273,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   noteInput: {
-    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
@@ -277,7 +286,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-    minHeight: 200,
+    minHeight: 250,
+    maxHeight: 400,
   },
   footer: {
     flexDirection: 'row',

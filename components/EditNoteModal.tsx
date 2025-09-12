@@ -131,6 +131,7 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
       <KeyboardAvoidingView 
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose}>
@@ -151,7 +152,12 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
           </View>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+        >
           <Text style={styles.contactName}>{note.contactName}</Text>
           <Text style={styles.contactPhone}>
             {new Date(note.callStartTime).toLocaleDateString()} • {new Date(note.callStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -323,7 +329,7 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
           </View>
 
           {/* Tags */}
-          <View style={styles.section}>
+          <View style={[styles.section, styles.lastSection]}>
             <Text style={styles.sectionLabel}>Tags</Text>
             <View style={styles.tagsContainer}>
               {tags.map((tag, index) => (
@@ -343,6 +349,7 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
                 value={newTag}
                 onChangeText={setNewTag}
                 onSubmitEditing={addTag}
+                returnKeyType="done"
               />
               <TouchableOpacity onPress={addTag} style={styles.addTagButton}>
                 <Plus size={16} color="#007AFF" />
@@ -366,6 +373,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e1e5e9',
@@ -388,7 +396,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 100 : 40,
   },
   contactName: {
     fontSize: 24,
@@ -403,6 +414,9 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+  },
+  lastSection: {
+    marginBottom: 40,
   },
   sectionLabel: {
     fontSize: 16,
