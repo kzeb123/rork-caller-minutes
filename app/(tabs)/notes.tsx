@@ -1316,20 +1316,8 @@ export default function NotesScreen() {
         </View>
       )}
 
-      {/* Group By Options */}
+      {/* Search Bar */}
       <View style={styles.groupByWrapper}>
-        <View style={styles.groupByContainer}>
-          <TouchableOpacity 
-            style={styles.groupByButton}
-            onPress={() => setShowGroupByModal(true)}
-          >
-            <Filter size={16} color="#007AFF" />
-            <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
-            <ChevronDown size={16} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-        
-        {/* Search Bar under Group By */}
         <View style={styles.groupSearchContainer}>
           <View style={styles.groupSearchInputWrapper}>
             <Search size={16} color="#8E8E93" />
@@ -1455,8 +1443,17 @@ export default function NotesScreen() {
           <Text style={styles.sectionTitle}>Summary</Text>
           {renderSummarySection()}
           
-          {/* Filter Button under Summary */}
+          {/* Group By Options under Summary */}
           <View style={styles.filterButtonContainer}>
+            <TouchableOpacity 
+              style={styles.groupByButton}
+              onPress={() => setShowGroupByModal(true)}
+            >
+              <Filter size={16} color="#007AFF" />
+              <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
+              <ChevronDown size={16} color="#007AFF" />
+            </TouchableOpacity>
+            
             <TouchableOpacity onPress={toggleFilters} style={styles.filterButton}>
               <Filter size={20} color={showFilters ? '#007AFF' : '#666'} />
               <Text style={[styles.filterButtonText, { color: showFilters ? '#007AFF' : '#666' }]}>Filters</Text>
@@ -1579,6 +1576,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
+    flexDirection: 'row',
+    gap: 12,
   },
   filterButton: {
     flexDirection: 'row',
@@ -1590,6 +1589,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
     position: 'relative',
+    flex: 1,
   },
   filterButtonText: {
     fontSize: 16,
@@ -1878,13 +1878,13 @@ const styles = StyleSheet.create({
   groupByButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    flex: 1,
   },
   groupByButtonText: {
     fontSize: 14,
@@ -1893,7 +1893,7 @@ const styles = StyleSheet.create({
   },
   groupSearchContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingVertical: 12,
   },
   groupSearchInputWrapper: {
     flexDirection: 'row',
