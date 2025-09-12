@@ -24,9 +24,15 @@ const PRIORITY_LABELS = {
   high: 'High',
 };
 
+interface TemplateField {
+  id: string;
+  label: string;
+  value: string;
+}
+
 export default function EditNoteModal({ visible, note, onClose, onSave, onDelete }: EditNoteModalProps) {
-  const { folders } = useContacts();
-  const [noteText, setNoteText] = useState('');
+  const { folders, noteTemplate, presetTags } = useContacts();
+  const [templateFields, setTemplateFields] = useState<TemplateField[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<NoteStatus>('follow-up');
   const [customStatus, setCustomStatus] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -37,10 +43,85 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
   const [showFolderPicker, setShowFolderPicker] = useState(false);
+  const [showTagPicker, setShowTagPicker] = useState(false);
+
+  const parseNoteIntoFields = (noteContent: string, template: string): TemplateField[] => {
+    const fields: TemplateField[] = [];
+    
+    // Get template sections (excluding the header line)
+    const templateLines = template.split('\n').filter(line => line.trim());
+    const templateSections = templateLines.filter(line => line.endsWith(':'));
+    
+    // Parse the note content
+    const noteLines = noteContent.split('\n');
+    let currentSection = '';
+    let currentContent: string[] = [];
+    
+    // Skip the header line if it exists
+    let startIndex = 0;
+    if (noteLines[0]?.match(/^Call with .* - /)) {
+      startIndex = 1;
+    }
+    
+    for (let i = startIndex; i < noteLines.length; i++) {
+      const line = noteLines[i];
+      
+      // Check if this line is a section header
+      const isSection = templateSections.some(section => 
+        line.trim() === section || line.trim() === section.replace(':', '')
+      );
+      
+      if (isSection) {
+        // Save previous section if exists
+        if (currentSection) {
+          fields.push({
+            id: currentSection.toLowerCase().replace(/[^a-z0-9]/g, ''),
+            label: currentSection,
+            value: currentContent.join('\n').trim()
+          });
+        }
+        
+        // Start new section
+        currentSection = line.trim().replace(':', '');
+        currentContent = [];
+      } else if (currentSection) {
+        // Add content to current section
+        currentContent.push(line);
+      }
+    }
+    
+    // Save last section
+    if (currentSection) {
+      fields.push({
+        id: currentSection.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        label: currentSection,
+        value: currentContent.join('\n').trim()
+      });
+    }
+    
+    // Add any missing template sections
+    templateSections.forEach(section => {
+      const sectionLabel = section.replace(':', '');
+      const sectionId = sectionLabel.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      if (!fields.find(f => f.id === sectionId)) {
+        fields.push({
+          id: sectionId,
+          label: sectionLabel,
+          value: ''
+        });
+      }
+    });
+    
+    return fields;
+  };
 
   useEffect(() => {
-    if (note) {
-      setNoteText(note.note);
+    if (note && noteTemplate) {
+      // Parse note into template fields
+      const fields = parseNoteIntoFields(note.note, noteTemplate);
+      setTemplateFields(fields);
+      
       setSelectedStatus(note.status);
       setCustomStatus(note.customStatus || '');
       setTags(note.tags || []);
@@ -48,10 +129,19 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
       setCategory(note.category || '');
       setSelectedFolderId(note.folderId);
     }
-  }, [note]);
+  }, [note, noteTemplate]);
 
   const handleSave = () => {
-    if (!note || !noteText.trim()) return;
+    if (!note) return;
+
+    // Reconstruct the note text from template fields
+    let noteText = `Call with ${note.contactName} - ${new Date(note.callStartTime).toLocaleDateString()}\n\n`;
+    
+    templateFields.forEach(field => {
+      if (field.value.trim()) {
+        noteText += `${field.label}:\n${field.value}\n\n`;
+      }
+    });
 
     const finalCustomStatus = selectedStatus === 'other' ? customStatus.trim() : undefined;
     const updatedNote: Partial<CallNote> = {
@@ -67,6 +157,14 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
 
     onSave(updatedNote);
     onClose();
+  };
+
+  const updateFieldValue = (fieldId: string, value: string) => {
+    setTemplateFields(prev => 
+      prev.map(field => 
+        field.id === fieldId ? { ...field, value } : field
+      )
+    );
   };
 
   const handleDelete = () => {
@@ -93,6 +191,14 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
     if (newTag.trim() && !tags.includes(newTag.trim())) {
       setTags([...tags, newTag.trim()]);
       setNewTag('');
+    }
+  };
+
+  const togglePresetTag = (tag: string) => {
+    if (tags.includes(tag)) {
+      setTags(tags.filter(t => t !== tag));
+    } else {
+      setTags([...tags, tag]);
     }
   };
 
@@ -163,19 +269,21 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
             {new Date(note.callStartTime).toLocaleDateString()} • {new Date(note.callStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
           
-          {/* Note Text */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Note</Text>
-            <TextInput
-              style={styles.noteInput}
-              placeholder="Add your note here..."
-              placeholderTextColor="#999"
-              multiline
-              textAlignVertical="top"
-              value={noteText}
-              onChangeText={setNoteText}
-            />
-          </View>
+          {/* Template Fields */}
+          {templateFields.map((field) => (
+            <View key={field.id} style={styles.section}>
+              <Text style={styles.sectionLabel}>{field.label}</Text>
+              <TextInput
+                style={styles.noteInput}
+                placeholder={`Enter ${field.label.toLowerCase()}...`}
+                placeholderTextColor="#999"
+                multiline
+                textAlignVertical="top"
+                value={field.value}
+                onChangeText={(text) => updateFieldValue(field.id, text)}
+              />
+            </View>
+          ))}
 
           {/* Status Selection */}
           <View style={styles.section}>
@@ -331,30 +439,63 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
           {/* Tags */}
           <View style={[styles.section, styles.lastSection]}>
             <Text style={styles.sectionLabel}>Tags</Text>
-            <View style={styles.tagsContainer}>
-              {tags.map((tag, index) => (
-                <View key={index} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag}</Text>
-                  <TouchableOpacity onPress={() => removeTag(tag)}>
-                    <X size={14} color="#666" />
+            <TouchableOpacity 
+              style={styles.selector}
+              onPress={() => setShowTagPicker(!showTagPicker)}
+            >
+              <Tag size={16} color="#007AFF" />
+              <Text style={styles.selectorText}>
+                {tags.length > 0 ? `${tags.length} tag${tags.length > 1 ? 's' : ''} selected` : 'Select tags'}
+              </Text>
+            </TouchableOpacity>
+            
+            {showTagPicker && (
+              <View style={styles.picker}>
+                {presetTags.map((tag) => (
+                  <TouchableOpacity
+                    key={tag}
+                    style={styles.pickerOption}
+                    onPress={() => togglePresetTag(tag)}
+                  >
+                    <Text style={[styles.pickerOptionText, tags.includes(tag) && styles.selectedText]}>
+                      {tag}
+                    </Text>
+                    {tags.includes(tag) && <CheckCircle2 size={16} color="#007AFF" />}
+                  </TouchableOpacity>
+                ))}
+                
+                <View style={styles.addTagContainer}>
+                  <TextInput
+                    style={styles.customInput}
+                    placeholder="Add custom tag..."
+                    placeholderTextColor="#999"
+                    value={newTag}
+                    onChangeText={setNewTag}
+                    onSubmitEditing={() => {
+                      addTag();
+                      setShowTagPicker(false);
+                    }}
+                    returnKeyType="done"
+                  />
+                  <TouchableOpacity onPress={addTag} style={styles.addTagButton}>
+                    <Plus size={16} color="#007AFF" />
                   </TouchableOpacity>
                 </View>
-              ))}
-            </View>
-            <View style={styles.addTagContainer}>
-              <TextInput
-                style={styles.tagInput}
-                placeholder="Add a tag..."
-                placeholderTextColor="#999"
-                value={newTag}
-                onChangeText={setNewTag}
-                onSubmitEditing={addTag}
-                returnKeyType="done"
-              />
-              <TouchableOpacity onPress={addTag} style={styles.addTagButton}>
-                <Plus size={16} color="#007AFF" />
-              </TouchableOpacity>
-            </View>
+              </View>
+            )}
+            
+            {tags.length > 0 && (
+              <View style={styles.tagsContainer}>
+                {tags.map((tag, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                    <TouchableOpacity onPress={() => removeTag(tag)}>
+                      <X size={14} color="#666" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -432,7 +573,7 @@ const styles = StyleSheet.create({
     color: '#000',
     borderWidth: 1,
     borderColor: '#e1e5e9',
-    minHeight: 120,
+    minHeight: 100,
     textAlignVertical: 'top',
   },
   input: {
@@ -508,7 +649,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 12,
+    marginTop: 12,
   },
   tag: {
     flexDirection: 'row',
@@ -528,16 +669,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  tagInput: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 8,
     padding: 12,
-    fontSize: 16,
-    color: '#000',
-    borderWidth: 1,
-    borderColor: '#e1e5e9',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e1e5e9',
   },
   addTagButton: {
     backgroundColor: '#007AFF',
