@@ -1,12 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, SafeAreaView, Animated } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, SafeAreaView, Animated, AppState } from 'react-native';
 import { Stack } from 'expo-router';
-import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2, Archive, Cloud, Search, Clock } from 'lucide-react-native';
+import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2, Archive, Cloud, Search, Clock, Filter } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
-import { Contact, Reminder } from '@/types/contact';
+import { Contact, Reminder, Order } from '@/types/contact';
+import GroupedView, { GroupByOption } from '@/components/GroupedView';
 
 export default function RemindersScreen() {
-  const { reminders, contacts, addReminder, updateReminder, deleteReminder } = useContacts();
+  const { reminders, contacts, orders, addReminder, updateReminder, deleteReminder, updateOrder } = useContacts();
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [editingReminder, setEditingReminder] = useState<string | null>(null);
   const [newReminderTitle, setNewReminderTitle] = useState<string>('');
@@ -16,6 +17,9 @@ export default function RemindersScreen() {
   const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
   const [completedReminder, setCompletedReminder] = useState<Reminder | null>(null);
   const [contactSearch, setContactSearch] = useState<string>('');
+  const [groupBy, setGroupBy] = useState<GroupByOption>('day');
+  const [showGroupByModal, setShowGroupByModal] = useState<boolean>(false);
+  const [showOrderReminders, setShowOrderReminders] = useState<boolean>(true);
   const fadeAnim = new Animated.Value(0);
 
   // Parse time from description

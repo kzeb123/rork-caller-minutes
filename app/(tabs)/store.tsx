@@ -22,6 +22,8 @@ export default function StoreScreen() {
   const [showProductCatalogModal, setShowProductCatalogModal] = useState<boolean>(false);
   const [editingCatalog, setEditingCatalog] = useState<any>(null);
   const [selectingProductsForOrder, setSelectingProductsForOrder] = useState<boolean>(false);
+  const [orderReminderDate, setOrderReminderDate] = useState<Date | null>(null);
+  const [orderReminderTime, setOrderReminderTime] = useState<string>('');
 
   const totalOrders = orders.length;
   const pendingOrders = orders.filter(order => order.status === 'pending').length;
@@ -39,6 +41,8 @@ export default function StoreScreen() {
     setContactSearch('');
     setShowContactDropdown(false);
     setEditingOrder(null);
+    setOrderReminderDate(null);
+    setOrderReminderTime('');
   };
 
   const addItemToOrder = () => {
@@ -108,6 +112,8 @@ export default function StoreScreen() {
     setSelectedContactId(order.contactId);
     setOrderItems([...order.items]);
     setOrderNotes(order.notes || '');
+    setOrderReminderDate(order.reminderDate ? new Date(order.reminderDate) : null);
+    setOrderReminderTime(order.reminderTime || '');
     const contact = contacts.find(c => c.id === order.contactId);
     if (contact) {
       setContactSearch(contact.name);
@@ -153,6 +159,39 @@ export default function StoreScreen() {
 
     const totalAmount = calculateTotal();
 
+    // Parse reminder date and time from notes if present
+    let reminderDate = orderReminderDate;
+    let reminderTime = orderReminderTime;
+    
+    if (orderNotes && !reminderDate) {
+      const timePatterns = [
+        /\b(\d{1,2})\s*[:.]\s*(\d{2})\s*(am|pm)?\b/i,
+        /\b(\d{1,2})\s*(am|pm)\b/i,
+        /\bat\s+(\d{1,2})\s*[:.]?\s*(\d{0,2})\s*(am|pm)?\b/i,
+      ];
+      
+      for (const pattern of timePatterns) {
+        const match = orderNotes.match(pattern);
+        if (match) {
+          let hours = parseInt(match[1]);
+          let minutes = match[2] ? parseInt(match[2]) : 0;
+          const meridiem = match[3] || match[match.length - 1];
+          
+          if (meridiem) {
+            const isPM = meridiem.toLowerCase() === 'pm';
+            if (isPM && hours < 12) hours += 12;
+            if (!isPM && hours === 12) hours = 0;
+          }
+          
+          const date = new Date();
+          date.setHours(hours, minutes, 0, 0);
+          reminderDate = date;
+          reminderTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          break;
+        }
+      }
+    }
+
     if (editingOrder) {
       // Update existing order
       updateOrder({
@@ -163,6 +202,8 @@ export default function StoreScreen() {
           items: orderItems,
           totalAmount,
           notes: orderNotes.trim() || undefined,
+          reminderDate: reminderDate || undefined,
+          reminderTime: reminderTime || undefined,
         }
       });
       Alert.alert('Success', 'Order updated successfully!');
@@ -175,6 +216,8 @@ export default function StoreScreen() {
         totalAmount,
         status: 'pending',
         notes: orderNotes.trim() || undefined,
+        reminderDate: reminderDate || undefined,
+        reminderTime: reminderTime || undefined,
       });
       Alert.alert('Success', 'Order created successfully!');
     }
@@ -412,6 +455,16 @@ export default function StoreScreen() {
                     
                     {order.notes && (
                       <Text style={styles.orderNotes}>{order.notes}</Text>
+                    )}
+                    
+                    {order.reminderDate && (
+                      <View style={styles.orderReminder}>
+                        <Clock size={14} color="#007AFF" />
+                        <Text style={styles.orderReminderText}>
+                          Reminder: {new Date(order.reminderDate).toLocaleDateString()} 
+                          {order.reminderTime && ` at ${order.reminderTime}`}
+                        </Text>
+                      </View>
                     )}
                     
                     <View style={styles.orderFooter}>
@@ -1068,6 +1121,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     padding: 8,
     borderRadius: 6,
+  },
+  orderReminder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#007AFF10',
+    borderRadius: 6,
+    borderLeftWidth: 2,
+    borderLeftColor: '#007AFF',
+  },
+  orderReminderText: {
+    fontSize: 13,
+    color: '#007AFF',
+    fontWeight: '500',
   },
   orderFooter: {
     flexDirection: 'row',

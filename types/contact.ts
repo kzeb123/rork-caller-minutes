@@ -89,6 +89,9 @@ export interface Order {
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
   notes?: string;
+  reminderDate?: Date;
+  reminderTime?: string;
+  reminderSent?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
