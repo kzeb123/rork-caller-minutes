@@ -645,7 +645,7 @@ export default function NotesScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Summary Section */}
         <View style={styles.summarySection}>
           <Text style={styles.sectionTitle}>Summary</Text>
@@ -702,6 +702,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   summarySection: {
     paddingVertical: 16,
@@ -795,15 +798,15 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 40,
+    paddingVertical: 24,
+    paddingHorizontal: 32,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: '#000',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 6,
   },
   emptyText: {
     fontSize: 14,

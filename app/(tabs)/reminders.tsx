@@ -381,6 +381,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingVertical: 16,
+    paddingBottom: 20,
   },
   statsSection: {
     marginBottom: 24,
@@ -557,10 +558,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
+    paddingVertical: 40,
   },
   emptyTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
     color: '#000',
     marginTop: 16,

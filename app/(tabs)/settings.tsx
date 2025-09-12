@@ -301,9 +301,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingVertical: 16,
+    paddingBottom: 20,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,

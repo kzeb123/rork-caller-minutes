@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, TextInput, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, SectionList, TextInput } from 'react-native';
 import { Users, Search } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import ContactCard from '@/components/ContactCard';
@@ -51,7 +51,7 @@ export default function ContactsScreen() {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Users size={64} color="#C7C7CC" />
+      <Users size={48} color="#C7C7CC" />
       <Text style={styles.emptyTitle}>No Contacts</Text>
       <Text style={styles.emptyText}>
         Go to Settings to add contacts manually or import from your device
@@ -60,12 +60,7 @@ export default function ContactsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Custom Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Contacts</Text>
-      </View>
-
+    <View style={styles.container}>
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
@@ -87,6 +82,7 @@ export default function ContactsScreen() {
           renderSectionHeader={renderSectionHeader}
           keyExtractor={(item) => item.id}
           style={styles.list}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={true}
         />
@@ -95,7 +91,7 @@ export default function ContactsScreen() {
       )}
 
       <NoteModal />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -104,21 +100,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F2F2F7',
   },
-  header: {
-    backgroundColor: '#F2F2F7',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#C6C6C8',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000',
-  },
   list: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  listContent: {
+    paddingBottom: 20,
   },
   sectionHeader: {
     backgroundColor: '#F2F2F7',
@@ -136,18 +123,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
     backgroundColor: '#F2F2F7',
   },
   emptyTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '600',
     color: '#000',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: 17,
+    fontSize: 16,
     color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 22,
@@ -157,7 +144,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#C6C6C8',
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingVertical: 8,
   },
   searchInputContainer: {
     flexDirection: 'row',

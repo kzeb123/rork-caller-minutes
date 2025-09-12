@@ -622,6 +622,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingVertical: 16,
+    paddingBottom: 20,
   },
   section: {
     marginBottom: 24,
@@ -806,15 +807,15 @@ const styles = StyleSheet.create({
   },
   emptyOrders: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 32,
     marginHorizontal: 16,
   },
   emptyOrdersTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#000',
     marginTop: 12,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptyOrdersText: {
     fontSize: 14,
