@@ -19,7 +19,8 @@
       "infoPlist": {
         "NSContactsUsageDescription": "A message that tells the user why the app is requesting access to the user's contacts."
       },
-      "accessesContactNotes": true
+      "accessesContactNotes": true,
+      "usesIcloudStorage": true
     },
     "android": {
       "adaptiveIcon": {
@@ -47,6 +48,12 @@
         "expo-contacts",
         {
           "contactsPermission": "Allow $(PRODUCT_NAME) to access your contacts."
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
         }
       ]
     ],

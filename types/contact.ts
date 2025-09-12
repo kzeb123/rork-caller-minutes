@@ -63,6 +63,24 @@ export interface OrderItem {
   quantity: number;
 }
 
+export interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  sku?: string;
+  category?: string;
+  inStock?: boolean;
+}
+
+export interface ProductCatalog {
+  id: string;
+  name: string;
+  products: Product[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Order {
   id: string;
   contactId: string;

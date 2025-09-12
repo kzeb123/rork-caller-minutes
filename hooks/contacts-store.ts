@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback, useMemo } from 'react';
 import { Platform } from 'react-native';
 import * as Contacts from 'expo-contacts';
-import { Contact, CallNote, IncomingCall, ActiveCall, Reminder, Order, DetectedDateTime, NoteStatus, NoteFolder, NoteFilter } from '@/types/contact';
+import { Contact, CallNote, IncomingCall, ActiveCall, Reminder, Order, DetectedDateTime, NoteStatus, NoteFolder, NoteFilter, ProductCatalog, Product } from '@/types/contact';
 
 const CONTACTS_KEY = 'call_notes_contacts';
 const NOTES_KEY = 'call_notes_notes';
@@ -12,6 +12,7 @@ const REMINDERS_KEY = 'call_notes_reminders';
 const ORDERS_KEY = 'call_notes_orders';
 const NOTE_TEMPLATE_KEY = 'call_note_template';
 const FOLDERS_KEY = 'call_notes_folders';
+const PRODUCT_CATALOGS_KEY = 'call_notes_product_catalogs';
 
 const DEFAULT_NOTE_TEMPLATE = `Call with [CONTACT_NAME] - [DATE]
 
@@ -138,6 +139,14 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
       }
       
       return folders;
+    }
+  });
+
+  const productCatalogsQuery = useQuery({
+    queryKey: ['productCatalogs'],
+    queryFn: async (): Promise<ProductCatalog[]> => {
+      const stored = await AsyncStorage.getItem(PRODUCT_CATALOGS_KEY);
+      return stored ? JSON.parse(stored) : [];
     }
   });
 
@@ -420,6 +429,50 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
     }
   });
+
+  const addProductCatalogMutation = useMutation({
+    mutationFn: async (catalog: Omit<ProductCatalog, 'id' | 'createdAt' | 'updatedAt'>) => {
+      const catalogs = productCatalogsQuery.data || [];
+      const newCatalog: ProductCatalog = {
+        ...catalog,
+        id: Date.now().toString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const updated = [...catalogs, newCatalog];
+      await AsyncStorage.setItem(PRODUCT_CATALOGS_KEY, JSON.stringify(updated));
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['productCatalogs'] });
+    }
+  });
+
+  const updateProductCatalogMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<ProductCatalog> }) => {
+      const catalogs = productCatalogsQuery.data || [];
+      const updated = catalogs.map(catalog => 
+        catalog.id === id ? { ...catalog, ...updates, updatedAt: new Date() } : catalog
+      );
+      await AsyncStorage.setItem(PRODUCT_CATALOGS_KEY, JSON.stringify(updated));
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['productCatalogs'] });
+    }
+  });
+
+  const deleteProductCatalogMutation = useMutation({
+    mutationFn: async (catalogId: string) => {
+      const catalogs = productCatalogsQuery.data || [];
+      const updated = catalogs.filter(c => c.id !== catalogId);
+      await AsyncStorage.setItem(PRODUCT_CATALOGS_KEY, JSON.stringify(updated));
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['productCatalogs'] });
+    }
+  });
   
   const { mutate: addNoteMutate } = addNoteMutation;
 
@@ -632,11 +685,13 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     await AsyncStorage.removeItem(REMINDERS_KEY);
     await AsyncStorage.removeItem(ORDERS_KEY);
     await AsyncStorage.removeItem(FOLDERS_KEY);
+    await AsyncStorage.removeItem(PRODUCT_CATALOGS_KEY);
     queryClient.invalidateQueries({ queryKey: ['contacts'] });
     queryClient.invalidateQueries({ queryKey: ['notes'] });
     queryClient.invalidateQueries({ queryKey: ['reminders'] });
     queryClient.invalidateQueries({ queryKey: ['orders'] });
     queryClient.invalidateQueries({ queryKey: ['folders'] });
+    queryClient.invalidateQueries({ queryKey: ['productCatalogs'] });
   }, [queryClient]);
 
   const addFakeContactsMutation = useMutation({
@@ -800,8 +855,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     reminders: remindersQuery.data || [],
     orders: ordersQuery.data || [],
     folders: foldersQuery.data || [],
+    productCatalogs: productCatalogsQuery.data || [],
     noteTemplate: noteTemplateQuery.data || DEFAULT_NOTE_TEMPLATE,
-    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading || foldersQuery.isLoading,
+    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading || foldersQuery.isLoading || productCatalogsQuery.isLoading,
     incomingCall,
     activeCall,
     showNoteModal,
@@ -827,6 +883,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     addFolder: addFolderMutation.mutate,
     updateFolder: updateFolderMutation.mutate,
     deleteFolder: deleteFolderMutation.mutate,
+    addProductCatalog: addProductCatalogMutation.mutate,
+    updateProductCatalog: updateProductCatalogMutation.mutate,
+    deleteProductCatalog: deleteProductCatalogMutation.mutate,
     openCallNoteModal,
     simulateIncomingCall,
     answerCall,
@@ -846,12 +905,14 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     remindersQuery.data,
     ordersQuery.data,
     foldersQuery.data,
+    productCatalogsQuery.data,
     noteTemplateQuery.data,
     contactsQuery.isLoading,
     notesQuery.isLoading,
     remindersQuery.isLoading,
     ordersQuery.isLoading,
     foldersQuery.isLoading,
+    productCatalogsQuery.isLoading,
     noteTemplateQuery.isLoading,
     incomingCall,
     activeCall,
@@ -878,6 +939,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     addFolderMutation.mutate,
     updateFolderMutation.mutate,
     deleteFolderMutation.mutate,
+    addProductCatalogMutation.mutate,
+    updateProductCatalogMutation.mutate,
+    deleteProductCatalogMutation.mutate,
     openCallNoteModal,
     simulateIncomingCall,
     answerCall,

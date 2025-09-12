@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
-import { ShoppingBag, FileText, Plus, Download, Package, DollarSign, User, Calendar, Clock, CheckCircle, X, Minus, Search, ChevronDown, Edit3, Trash2 } from 'lucide-react-native';
+import { ShoppingBag, FileText, Plus, Download, Package, DollarSign, User, Calendar, Clock, CheckCircle, X, Minus, Search, ChevronDown, Edit3, Trash2, Upload } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
-import { OrderItem, Order } from '@/types/contact';
+import { OrderItem, Order, Product } from '@/types/contact';
+import ProductCatalogModal from '@/components/ProductCatalogModal';
 
 export default function StoreScreen() {
-  const { contacts, orders, addOrder, updateOrder, deleteOrder } = useContacts();
+  const { contacts, orders, addOrder, updateOrder, deleteOrder, productCatalogs, deleteProductCatalog } = useContacts();
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<string>('');
@@ -18,6 +19,9 @@ export default function StoreScreen() {
   const [newItemQuantity, setNewItemQuantity] = useState<string>('1');
   const [contactSearch, setContactSearch] = useState<string>('');
   const [showContactDropdown, setShowContactDropdown] = useState<boolean>(false);
+  const [showProductCatalogModal, setShowProductCatalogModal] = useState<boolean>(false);
+  const [editingCatalog, setEditingCatalog] = useState<any>(null);
+  const [selectingProductsForOrder, setSelectingProductsForOrder] = useState<boolean>(false);
 
   const totalOrders = orders.length;
   const pendingOrders = orders.filter(order => order.status === 'pending').length;
@@ -115,6 +119,19 @@ export default function StoreScreen() {
     setSelectedContactId(contact.id);
     setContactSearch(contact.name);
     setShowContactDropdown(false);
+  };
+
+  const handleProductsSelected = (products: Product[]) => {
+    // Add selected products to order items
+    const newItems: OrderItem[] = products.map(product => ({
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      quantity: 1,
+    }));
+    setOrderItems(prev => [...prev, ...newItems]);
+    setSelectingProductsForOrder(false);
   };
 
   const createOrder = () => {
@@ -250,59 +267,88 @@ export default function StoreScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Product Catalog</Text>
+          <Text style={styles.sectionTitle}>Product Catalogs</Text>
           <View style={styles.catalogContainer}>
             <View style={styles.catalogHeader}>
               <View style={styles.catalogTitleContainer}>
                 <FileText size={24} color="#FF6B35" />
-                <Text style={styles.catalogTitle}>PDF Catalogs</Text>
+                <Text style={styles.catalogTitle}>Product Lists</Text>
               </View>
               <TouchableOpacity 
                 style={styles.addCatalogButton}
-                onPress={() => Alert.alert('Coming Soon', 'PDF catalog upload functionality will be available soon.')}
+                onPress={() => {
+                  setEditingCatalog(null);
+                  setSelectingProductsForOrder(false);
+                  setShowProductCatalogModal(true);
+                }}
               >
-                <Plus size={16} color="#fff" />
-                <Text style={styles.addCatalogButtonText}>Add PDF</Text>
+                <Upload size={16} color="#fff" />
+                <Text style={styles.addCatalogButtonText}>Upload PDF</Text>
               </TouchableOpacity>
             </View>
             
-            <View style={styles.catalogGrid}>
-              <View style={styles.catalogCard}>
-                <View style={styles.catalogIconContainer}>
-                  <FileText size={32} color="#FF6B35" />
-                </View>
-                <Text style={styles.catalogCardTitle}>Sample Catalog</Text>
-                <Text style={styles.catalogSubtitle}>Coming Soon</Text>
-                <TouchableOpacity 
-                  style={styles.downloadButton}
-                  onPress={() => Alert.alert('Coming Soon', 'PDF download functionality will be available soon.')}
-                >
-                  <Download size={14} color="#FF6B35" />
-                  <Text style={styles.downloadButtonText}>Download</Text>
-                </TouchableOpacity>
+            {productCatalogs.length === 0 ? (
+              <View style={styles.emptyCatalogs}>
+                <Package size={48} color="#ccc" />
+                <Text style={styles.emptyCatalogsTitle}>No Product Catalogs</Text>
+                <Text style={styles.emptyCatalogsText}>
+                  Upload a PDF with your product list or create one manually
+                </Text>
               </View>
-              
-              <View style={styles.catalogCard}>
-                <View style={styles.catalogIconContainer}>
-                  <FileText size={32} color="#FF6B35" />
+            ) : (
+              <>
+                <View style={styles.catalogGrid}>
+                  {productCatalogs.map((catalog) => (
+                    <View key={catalog.id} style={styles.catalogCard}>
+                      <View style={styles.catalogIconContainer}>
+                        <FileText size={32} color="#FF6B35" />
+                      </View>
+                      <Text style={styles.catalogCardTitle}>{catalog.name}</Text>
+                      <Text style={styles.catalogSubtitle}>
+                        {catalog.products.length} products
+                      </Text>
+                      <View style={styles.catalogActions}>
+                        <TouchableOpacity 
+                          style={styles.catalogActionButton}
+                          onPress={() => {
+                            setEditingCatalog(catalog);
+                            setSelectingProductsForOrder(false);
+                            setShowProductCatalogModal(true);
+                          }}
+                        >
+                          <Edit3 size={14} color="#007AFF" />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.catalogActionButton}
+                          onPress={() => {
+                            Alert.alert(
+                              'Delete Catalog',
+                              'Are you sure you want to delete this catalog?',
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                { 
+                                  text: 'Delete', 
+                                  style: 'destructive',
+                                  onPress: () => deleteProductCatalog(catalog.id)
+                                }
+                              ]
+                            );
+                          }}
+                        >
+                          <Trash2 size={14} color="#FF3B30" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
                 </View>
-                <Text style={styles.catalogCardTitle}>Product List</Text>
-                <Text style={styles.catalogSubtitle}>Coming Soon</Text>
-                <TouchableOpacity 
-                  style={styles.downloadButton}
-                  onPress={() => Alert.alert('Coming Soon', 'PDF download functionality will be available soon.')}
-                >
-                  <Download size={14} color="#FF6B35" />
-                  <Text style={styles.downloadButtonText}>Download</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            
-            <View style={styles.catalogInfo}>
-              <Text style={styles.catalogInfoText}>
-                Upload and manage your product catalogs in PDF format. Share them with contacts during calls or send them as follow-ups.
-              </Text>
-            </View>
+                
+                <View style={styles.catalogInfo}>
+                  <Text style={styles.catalogInfoText}>
+                    Your product catalogs are saved and can be used when creating orders. Upload PDFs to automatically extract products and prices.
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
@@ -538,7 +584,21 @@ export default function StoreScreen() {
             </View>
             
             <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Add Items</Text>
+              <View style={styles.formLabelRow}>
+                <Text style={styles.formLabel}>Add Items</Text>
+                {productCatalogs.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.fromCatalogButton}
+                    onPress={() => {
+                      setSelectingProductsForOrder(true);
+                      setShowProductCatalogModal(true);
+                    }}
+                  >
+                    <FileText size={14} color="#007AFF" />
+                    <Text style={styles.fromCatalogButtonText}>From Catalog</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               
               <View style={styles.addItemForm}>
                 <TextInput
@@ -655,6 +715,17 @@ export default function StoreScreen() {
           </View>
         </View>
       </Modal>
+
+      <ProductCatalogModal
+        visible={showProductCatalogModal}
+        onClose={() => {
+          setShowProductCatalogModal(false);
+          setEditingCatalog(null);
+          setSelectingProductsForOrder(false);
+        }}
+        editingCatalog={editingCatalog}
+        onSelectProducts={selectingProductsForOrder ? handleProductsSelected : undefined}
+      />
     </SafeAreaView>
   );
 }
@@ -827,6 +898,53 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     lineHeight: 18,
+  },
+  emptyCatalogs: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyCatalogsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  emptyCatalogsText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  catalogActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  catalogActionButton: {
+    padding: 6,
+    borderRadius: 4,
+    backgroundColor: '#f0f0f0',
+  },
+  formLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  fromCatalogButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#007AFF15',
+  },
+  fromCatalogButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#007AFF',
   },
   ordersHeader: {
     flexDirection: 'row',
