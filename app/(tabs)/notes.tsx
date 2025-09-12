@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Animated, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
 import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, ChevronRight, X, Plus } from 'lucide-react-native';
@@ -19,7 +19,7 @@ export default function NotesScreen() {
   const [showFolderModal, setShowFolderModal] = useState<boolean>(false);
   const [activeFilters, setActiveFilters] = useState<NoteFilter[]>([]);
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [groupBy, setGroupBy] = useState<GroupByOption>('none');
+  const [groupBy, setGroupBy] = useState<GroupByOption>('day');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const searchAnimation = new Animated.Value(0);
   const filterAnimation = new Animated.Value(0);
@@ -132,19 +132,79 @@ export default function NotesScreen() {
     return folders.find(f => f.id === folderId);
   };
 
+  // Get search suggestions based on current query
+  const getSearchSuggestions = useCallback(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) return [];
+    
+    const query = searchQuery.toLowerCase();
+    const suggestions = new Set<string>();
+    
+    // Add matching contact names
+    contacts.forEach(contact => {
+      if (contact.name.toLowerCase().includes(query) && contact.name.toLowerCase() !== query) {
+        suggestions.add(contact.name);
+      }
+    });
+    
+    // Add matching keywords from notes
+    notes.forEach(note => {
+      // Split note into words and find matches
+      const words = note.note.toLowerCase().split(/\s+/);
+      words.forEach(word => {
+        const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '');
+        if (cleanWord.length > 2 && cleanWord.includes(query) && cleanWord !== query) {
+          suggestions.add(cleanWord);
+        }
+      });
+      
+      // Add matching tags
+      if (note.tags) {
+        note.tags.forEach(tag => {
+          if (tag.toLowerCase().includes(query) && tag.toLowerCase() !== query) {
+            suggestions.add(tag);
+          }
+        });
+      }
+      
+      // Add matching categories
+      if (note.category && note.category.toLowerCase().includes(query) && note.category.toLowerCase() !== query) {
+        suggestions.add(note.category);
+      }
+    });
+    
+    return Array.from(suggestions).slice(0, 5); // Limit to 5 suggestions
+  }, [searchQuery, contacts, notes]);
+
   const filteredNotes = useMemo(() => {
     let filtered = [...notes];
 
-    // Apply search filter
+    // Apply search filter with enhanced matching
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(note => 
-        note.contactName.toLowerCase().includes(query) ||
-        note.note.toLowerCase().includes(query) ||
-        getStatusText(note.status, note.customStatus).toLowerCase().includes(query) ||
-        (note.tags && note.tags.some(tag => tag.toLowerCase().includes(query))) ||
-        (note.category && note.category.toLowerCase().includes(query))
-      );
+      filtered = filtered.filter(note => {
+        // Contact name matching
+        const contactMatch = note.contactName.toLowerCase().includes(query);
+        
+        // Note content matching (word boundaries for better relevance)
+        const noteWords = note.note.toLowerCase().split(/\s+/);
+        const noteMatch = noteWords.some(word => 
+          word.includes(query) || note.note.toLowerCase().includes(query)
+        );
+        
+        // Status matching
+        const statusMatch = getStatusText(note.status, note.customStatus).toLowerCase().includes(query);
+        
+        // Tags matching
+        const tagsMatch = note.tags && note.tags.some(tag => tag.toLowerCase().includes(query));
+        
+        // Category matching
+        const categoryMatch = note.category && note.category.toLowerCase().includes(query);
+        
+        // Phone number matching (if searching for numbers)
+        const phoneMatch = contacts.find(c => c.id === note.contactId)?.phoneNumber.includes(query);
+        
+        return contactMatch || noteMatch || statusMatch || tagsMatch || categoryMatch || phoneMatch;
+      });
     }
 
     // Apply active filters
@@ -970,6 +1030,20 @@ export default function NotesScreen() {
               <Text style={styles.searchResultsText}>
                 {filteredNotes.length} result{filteredNotes.length !== 1 ? 's' : ''} found
               </Text>
+              {searchQuery.length > 0 && (
+                <View style={styles.searchSuggestions}>
+                  {getSearchSuggestions().map((suggestion, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.searchSuggestion}
+                      onPress={() => setSearchQuery(suggestion)}
+                    >
+                      <Search size={14} color="#8E8E93" />
+                      <Text style={styles.searchSuggestionText}>{suggestion}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           )}
         </Animated.View>
@@ -1067,7 +1141,7 @@ export default function NotesScreen() {
                   groupBy === option && styles.groupByOptionTextActive,
                 ]}
               >
-                {option === 'none' ? 'Contact' : option.charAt(0).toUpperCase() + option.slice(1)}
+                {option === 'none' ? 'Contact' : option === 'day' ? 'Day' : option.charAt(0).toUpperCase() + option.slice(1)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -1789,5 +1863,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8E8E93',
     marginLeft: 4,
+  },
+  searchSuggestions: {
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  searchSuggestion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    marginBottom: 4,
+    gap: 8,
+  },
+  searchSuggestionText: {
+    fontSize: 14,
+    color: '#3C3C43',
+    fontWeight: '500',
   },
 });
