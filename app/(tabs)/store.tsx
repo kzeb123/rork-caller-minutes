@@ -452,7 +452,11 @@ export default function StoreScreen() {
             </TouchableOpacity>
           </View>
           
-          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            style={styles.modalContent} 
+            contentContainerStyle={styles.modalContentContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled">
             <View style={styles.formSection}>
               <Text style={styles.formLabel}>Select Contact</Text>
               <View style={styles.contactSearchContainer}>
@@ -617,7 +621,7 @@ export default function StoreScreen() {
               )}
             </View>
             
-            <View style={styles.formSection}>
+            <View style={[styles.formSection, { marginBottom: 8 }]}>
               <Text style={styles.formLabel}>Order Notes (Optional)</Text>
               <TextInput
                 style={[styles.textInput, styles.notesInput]}
@@ -625,7 +629,9 @@ export default function StoreScreen() {
                 value={orderNotes}
                 onChangeText={setOrderNotes}
                 multiline
-                numberOfLines={3}
+                numberOfLines={4}
+                textAlignVertical="top"
+                scrollEnabled={true}
               />
             </View>
           </ScrollView>
@@ -988,7 +994,10 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     flex: 1,
+  },
+  modalContentContainer: {
     padding: 16,
+    paddingBottom: 32,
   },
   formSection: {
     marginBottom: 24,
@@ -1224,8 +1233,11 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   notesInput: {
-    minHeight: 80,
+    minHeight: 100,
+    maxHeight: 150,
     textAlignVertical: 'top',
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   modalFooter: {
     flexDirection: 'row',
