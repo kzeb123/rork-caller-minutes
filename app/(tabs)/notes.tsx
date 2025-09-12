@@ -1126,7 +1126,7 @@ export default function NotesScreen() {
       <View style={styles.groupByContainer}>
         <Text style={styles.groupByLabel}>Group by:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupByScroll}>
-          {(['none', 'day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map(option => (
+          {(['day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map(option => (
             <TouchableOpacity
               key={option}
               style={[
@@ -1141,7 +1141,7 @@ export default function NotesScreen() {
                   groupBy === option && styles.groupByOptionTextActive,
                 ]}
               >
-                {option === 'none' ? 'Contact' : option === 'day' ? 'Day' : option.charAt(0).toUpperCase() + option.slice(1)}
+                {option === 'day' ? 'Day' : option.charAt(0).toUpperCase() + option.slice(1)}
               </Text>
             </TouchableOpacity>
           ))}
