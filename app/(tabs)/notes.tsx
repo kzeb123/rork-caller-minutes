@@ -1173,14 +1173,6 @@ export default function NotesScreen() {
               <TouchableOpacity onPress={() => setShowFolderModal(true)} style={styles.headerButton}>
                 <Settings size={20} color="#007AFF" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={toggleFilters} style={styles.headerButton}>
-                <Filter size={20} color={showFilters ? '#007AFF' : '#666'} />
-                {activeFilters.length > 0 && (
-                  <View style={styles.filterBadge}>
-                    <Text style={styles.filterBadgeText}>{activeFilters.length}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
               <TouchableOpacity onPress={toggleSearch} style={styles.headerButton}>
                 <Search size={20} color="#007AFF" />
               </TouchableOpacity>
@@ -1462,6 +1454,19 @@ export default function NotesScreen() {
         <View style={styles.summarySection}>
           <Text style={styles.sectionTitle}>Summary</Text>
           {renderSummarySection()}
+          
+          {/* Filter Button under Summary */}
+          <View style={styles.filterButtonContainer}>
+            <TouchableOpacity onPress={toggleFilters} style={styles.filterButton}>
+              <Filter size={20} color={showFilters ? '#007AFF' : '#666'} />
+              <Text style={[styles.filterButtonText, { color: showFilters ? '#007AFF' : '#666' }]}>Filters</Text>
+              {activeFilters.length > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{activeFilters.length}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Divider */}
@@ -1569,6 +1574,26 @@ const styles = StyleSheet.create({
   summarySection: {
     paddingVertical: 16,
     backgroundColor: '#fff',
+  },
+  filterButtonContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    gap: 8,
+    position: 'relative',
+  },
+  filterButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   notesSection: {
     paddingVertical: 16,
