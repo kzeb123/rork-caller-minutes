@@ -21,7 +21,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notes"
         options={{
-          title: "Notes & Summary",
+          title: "Notes",
           tabBarIcon: ({ color }) => <FileText color={color} size={24} />,
         }}
       />
