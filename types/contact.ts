@@ -86,6 +86,20 @@ export interface NoteFolder {
   color: string;
   createdAt: Date;
   description?: string;
+  type?: 'general' | 'sales-run';
+  scheduledDate?: Date;
+  noteIds?: string[];
+}
+
+export type GroupByOption = 'none' | 'day' | 'week' | 'month' | 'year' | 'folder';
+
+export interface CallGroup {
+  id: string;
+  title: string;
+  date?: Date;
+  notes: CallNote[];
+  type: 'time-based' | 'folder-based';
+  folderId?: string;
 }
 
 export type FilterType = 'all' | 'status' | 'priority' | 'folder' | 'direction' | 'date';
