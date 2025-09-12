@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
 import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
@@ -169,7 +169,7 @@ export default function SettingsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Settings' }} />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -290,7 +290,7 @@ export default function SettingsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

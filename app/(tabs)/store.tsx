@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
 import { ShoppingBag, FileText, Plus, Download, Package, DollarSign, User, Calendar, Clock, CheckCircle, X, Minus, Search, ChevronDown } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
@@ -182,7 +182,7 @@ export default function StoreScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Store' }} />
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -611,7 +611,7 @@ export default function StoreScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

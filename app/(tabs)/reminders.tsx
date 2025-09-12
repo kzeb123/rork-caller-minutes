@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
 import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2 } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
@@ -221,7 +221,7 @@ export default function RemindersScreen() {
   const todayReminders = pendingReminders.filter(r => new Date(r.dueDate).toDateString() === new Date().toDateString());
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Reminders' }} />
       
       {reminders.length === 0 ? (
@@ -370,7 +370,7 @@ export default function RemindersScreen() {
       )}
 
       <AddReminderModal />
-    </View>
+    </SafeAreaView>
   );
 }
 

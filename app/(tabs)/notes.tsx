@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Animated, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
 import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, X } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
@@ -503,7 +503,7 @@ export default function NotesScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{ 
           title: 'Notes & Summary',
@@ -694,7 +694,7 @@ export default function NotesScreen() {
         visible={showFolderModal}
         onClose={() => setShowFolderModal(false)}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, TextInput } from 'react-native';
+import { View, Text, StyleSheet, SectionList, TextInput, SafeAreaView } from 'react-native';
 import { Users, Search } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import ContactCard from '@/components/ContactCard';
@@ -60,7 +60,7 @@ export default function ContactsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
@@ -91,7 +91,7 @@ export default function ContactsScreen() {
       )}
 
       <NoteModal />
-    </View>
+    </SafeAreaView>
   );
 }
 
