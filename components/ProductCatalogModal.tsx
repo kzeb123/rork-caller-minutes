@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { X, Upload, FileText, Plus, Trash2, Package } from 'lucide-react-native';
-import * as DocumentPicker from 'expo-document-picker';
+import { X, Upload, Plus, Trash2, Package } from 'lucide-react-native';
 import { Product, ProductCatalog } from '@/types/contact';
 import { useContacts } from '@/hooks/contacts-store';
 
@@ -37,112 +36,123 @@ export default function ProductCatalogModal({
   const [newProductPrice, setNewProductPrice] = useState('');
   const [newProductDescription, setNewProductDescription] = useState('');
   const [newProductSku, setNewProductSku] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUploadPDF = async () => {
+    if (Platform.OS === 'web') {
+      // For web, trigger the file input
+      fileInputRef.current?.click();
+    } else {
+      // For mobile, show alert that PDF upload is not supported
+      Alert.alert(
+        'Not Available',
+        'PDF upload is currently only available on web. Please add products manually.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleFileSelect = async (event: any) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      Alert.alert('Error', 'Please select a PDF file');
+      return;
+    }
+
+    setIsProcessing(true);
+
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: Platform.OS === 'ios' ? 'application/pdf' : 'application/pdf',
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled) {
-        return;
-      }
-
-      const file = result.assets[0];
-      if (!file) {
-        Alert.alert('Error', 'No file selected');
-        return;
-      }
-
-      setIsProcessing(true);
-
-      // Read the PDF file content
-      const formData = new FormData();
-      if (Platform.OS === 'web') {
-        // For web, we need to fetch the blob
-        const response = await fetch(file.uri);
-        const blob = await response.blob();
-        formData.append('pdf', blob, file.name);
-      } else {
-        // For mobile
-        formData.append('pdf', {
-          uri: file.uri,
-          type: 'application/pdf',
-          name: file.name,
-        } as any);
-      }
-
-      // Send to AI API to extract products
-      const aiResponse = await fetch('https://toolkit.rork.com/text/llm/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: `You are a product catalog parser. Extract product information from the provided text and return it as a JSON array.
-              Each product should have: name (string), price (number), description (optional string), sku (optional string).
-              Return ONLY valid JSON array, no other text. Example:
-              [{"name": "Product 1", "price": 29.99, "description": "Description here", "sku": "SKU123"}]`
-            },
-            {
-              role: 'user',
-              content: `Parse this product catalog and extract all products with their prices. If you can't find clear products, return an empty array. Here's the text: ${file.name} - Please note that PDF parsing is simulated. In a real implementation, you would need to extract text from the PDF first.`
-            }
-          ]
-        }),
-      });
-
-      const aiData = await aiResponse.json();
-      
-      // Parse the AI response to extract products
-      try {
-        let extractedProducts: any[] = [];
-        const completion = aiData.completion || '';
+      // Read file as text (simplified approach)
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const text = e.target?.result as string;
         
-        // Try to find JSON array in the response
-        const jsonMatch = completion.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          extractedProducts = JSON.parse(jsonMatch[0]);
-        }
+        // Send to AI API to extract products
+        const aiResponse = await fetch('https://toolkit.rork.com/text/llm/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: 'system',
+                content: `You are a product catalog parser. Extract product information from the provided text and return it as a JSON array.
+                Each product should have: name (string), price (number), description (optional string), sku (optional string).
+                Return ONLY valid JSON array, no other text. Example:
+                [{"name": "Product 1", "price": 29.99, "description": "Description here", "sku": "SKU123"}]`
+              },
+              {
+                role: 'user',
+                content: `Parse this product catalog and extract all products with their prices. If you can't find clear products, return an empty array. File name: ${file.name}\n\nContent (may contain binary data, extract what you can):\n${text.substring(0, 5000)}`
+              }
+            ]
+          }),
+        });
 
-        if (Array.isArray(extractedProducts) && extractedProducts.length > 0) {
-          const parsedProducts: Product[] = extractedProducts.map((p: any, index: number) => ({
-            id: Date.now().toString() + index,
-            name: p.name || `Product ${index + 1}`,
-            price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
-            description: p.description || undefined,
-            sku: p.sku || undefined,
-            category: p.category || undefined,
-            inStock: p.inStock !== false,
-          }));
+        const aiData = await aiResponse.json();
+        
+        // Parse the AI response to extract products
+        try {
+          let extractedProducts: any[] = [];
+          const completion = aiData.completion || '';
+          
+          // Try to find JSON array in the response
+          const jsonMatch = completion.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            extractedProducts = JSON.parse(jsonMatch[0]);
+          }
 
-          setProducts(prev => [...prev, ...parsedProducts]);
-          Alert.alert('Success', `Extracted ${parsedProducts.length} products from PDF`);
-        } else {
-          // If AI couldn't extract, show manual entry hint
+          if (Array.isArray(extractedProducts) && extractedProducts.length > 0) {
+            const parsedProducts: Product[] = extractedProducts.map((p: any, index: number) => ({
+              id: Date.now().toString() + index,
+              name: p.name || `Product ${index + 1}`,
+              price: typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0,
+              description: p.description || undefined,
+              sku: p.sku || undefined,
+              category: p.category || undefined,
+              inStock: p.inStock !== false,
+            }));
+
+            setProducts(prev => [...prev, ...parsedProducts]);
+            Alert.alert('Success', `Extracted ${parsedProducts.length} products from PDF`);
+          } else {
+            // If AI couldn't extract, show manual entry hint
+            Alert.alert(
+              'Manual Entry Needed',
+              'PDF files contain complex formatting. Please add products manually using the form below.',
+              [{ text: 'OK' }]
+            );
+          }
+        } catch (parseError) {
+          console.error('Error parsing AI response:', parseError);
           Alert.alert(
             'Manual Entry Needed',
-            'Could not automatically extract products from this PDF. Please add products manually using the form below.',
+            'Could not extract products from this PDF. Please add products manually.',
             [{ text: 'OK' }]
           );
         }
-      } catch (parseError) {
-        console.error('Error parsing AI response:', parseError);
-        Alert.alert(
-          'Manual Entry Needed',
-          'Could not automatically extract products from this PDF. Please add products manually using the form below.',
-          [{ text: 'OK' }]
-        );
-      }
+        
+        setIsProcessing(false);
+      };
+
+      reader.onerror = () => {
+        Alert.alert('Error', 'Failed to read PDF file');
+        setIsProcessing(false);
+      };
+
+      reader.readAsText(file);
     } catch (error) {
       console.error('Error processing PDF:', error);
       Alert.alert('Error', 'Failed to process PDF. Please try adding products manually.');
-    } finally {
       setIsProcessing(false);
+    }
+
+    // Reset the input
+    if (event.target) {
+      event.target.value = '';
     }
   };
 
@@ -250,6 +260,15 @@ export default function ProductCatalogModal({
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Import from PDF</Text>
+            {Platform.OS === 'web' && (
+              <input
+                ref={fileInputRef as any}
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileSelect}
+                style={hiddenInputStyle}
+              />
+            )}
             <TouchableOpacity
               style={styles.uploadButton}
               onPress={handleUploadPDF}
@@ -265,7 +284,9 @@ export default function ProductCatalogModal({
               )}
             </TouchableOpacity>
             <Text style={styles.helpText}>
-              Upload a PDF with your product list. We'll try to extract products and prices automatically.
+              {Platform.OS === 'web' 
+                ? 'Upload a PDF with your product list. We\'ll try to extract products and prices automatically.'
+                : 'PDF upload is available on web. Please add products manually on mobile.'}
             </Text>
           </View>
 
@@ -370,6 +391,8 @@ export default function ProductCatalogModal({
     </Modal>
   );
 }
+
+const hiddenInputStyle = { display: 'none' } as any;
 
 const styles = StyleSheet.create({
   container: {
