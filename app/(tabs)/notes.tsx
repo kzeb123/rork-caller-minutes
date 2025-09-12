@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Animated, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
-import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, X } from 'lucide-react-native';
+import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, ChevronRight, X, Plus } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
-import { CallNote, NoteStatus, NoteFolder, NoteFilter, FilterType } from '@/types/contact';
+import { CallNote, NoteStatus, NoteFolder, NoteFilter, FilterType, GroupByOption } from '@/types/contact';
 import EditNoteModal from '@/components/EditNoteModal';
 import FolderManagementModal from '@/components/FolderManagementModal';
+import { COLORS } from '@/constants/colors';
 
 export default function NotesScreen() {
   const { notes, contacts, folders, updateNote, deleteNote } = useContacts();
@@ -16,7 +17,8 @@ export default function NotesScreen() {
   const [showFolderModal, setShowFolderModal] = useState<boolean>(false);
   const [activeFilters, setActiveFilters] = useState<NoteFilter[]>([]);
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [groupByFolder, setGroupByFolder] = useState<boolean>(true);
+  const [groupBy, setGroupBy] = useState<GroupByOption>('day');
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const searchAnimation = new Animated.Value(0);
   const filterAnimation = new Animated.Value(0);
 
@@ -177,40 +179,125 @@ export default function NotesScreen() {
   }, [notes, searchQuery, activeFilters]);
 
   const groupedNotes = useMemo(() => {
-    if (!groupByFolder) {
-      return [{ folder: null, notes: filteredNotes }];
+    const groups: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based'; folderId?: string; date?: Date }[] = [];
+
+    if (groupBy === 'none') {
+      return [{
+        id: 'all',
+        title: 'All Notes',
+        notes: filteredNotes,
+        type: 'time-based' as const,
+      }];
     }
 
-    const groups: { folder: NoteFolder | null; notes: CallNote[] }[] = [];
-    const folderMap = new Map<string, CallNote[]>();
-    const noFolderNotes: CallNote[] = [];
-
-    filteredNotes.forEach(note => {
-      if (note.folderId) {
-        if (!folderMap.has(note.folderId)) {
-          folderMap.set(note.folderId, []);
+    if (groupBy === 'folder') {
+      const ungrouped: CallNote[] = [];
+      
+      folders.forEach(folder => {
+        const folderNotes = filteredNotes.filter(n => n.folderId === folder.id);
+        if (folderNotes.length > 0) {
+          groups.push({
+            id: folder.id,
+            title: folder.name,
+            notes: folderNotes,
+            type: 'folder-based',
+            folderId: folder.id,
+          });
         }
-        folderMap.get(note.folderId)!.push(note);
-      } else {
-        noFolderNotes.push(note);
-      }
-    });
+      });
 
-    // Add folder groups
-    folders.forEach(folder => {
-      const folderNotes = folderMap.get(folder.id) || [];
-      if (folderNotes.length > 0) {
-        groups.push({ folder, notes: folderNotes });
-      }
-    });
+      filteredNotes.forEach(note => {
+        if (!note.folderId) {
+          ungrouped.push(note);
+        }
+      });
 
-    // Add no folder group
-    if (noFolderNotes.length > 0) {
-      groups.push({ folder: null, notes: noFolderNotes });
+      if (ungrouped.length > 0) {
+        groups.push({
+          id: 'ungrouped',
+          title: 'Ungrouped',
+          notes: ungrouped,
+          type: 'folder-based',
+        });
+      }
+
+      return groups;
     }
 
-    return groups;
-  }, [filteredNotes, groupByFolder, folders]);
+    const notesByDate = new Map<string, CallNote[]>();
+    
+    filteredNotes.forEach(note => {
+      const date = new Date(note.createdAt);
+      let key: string;
+      let title: string;
+
+      switch (groupBy) {
+        case 'day':
+          key = date.toDateString();
+          title = date.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            month: 'long', 
+            day: 'numeric', 
+            year: 'numeric' 
+          });
+          break;
+        case 'week':
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          key = `${weekStart.toDateString()}-${weekEnd.toDateString()}`;
+          title = `Week of ${weekStart.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+          })} - ${weekEnd.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            year: 'numeric'
+          })}`;
+          break;
+        case 'month':
+          key = `${date.getFullYear()}-${date.getMonth()}`;
+          title = date.toLocaleDateString('en-US', { 
+            month: 'long', 
+            year: 'numeric' 
+          });
+          break;
+        case 'year':
+          key = date.getFullYear().toString();
+          title = date.getFullYear().toString();
+          break;
+        default:
+          key = date.toDateString();
+          title = date.toDateString();
+      }
+
+      if (!notesByDate.has(key)) {
+        notesByDate.set(key, []);
+      }
+      notesByDate.get(key)!.push(note);
+    });
+
+    notesByDate.forEach((notesInGroup, key) => {
+      const [title] = key.split('|');
+      groups.push({
+        id: key,
+        title: title || key,
+        notes: notesInGroup.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ),
+        type: 'time-based',
+        date: notesInGroup[0].createdAt,
+      });
+    });
+
+    return groups.sort((a, b) => {
+      if (a.date && b.date) {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+      return 0;
+    });
+  }, [filteredNotes, groupBy, folders]);
 
   const handleEditNote = (note: CallNote) => {
     setEditingNote(note);
@@ -372,42 +459,59 @@ export default function NotesScreen() {
     </TouchableOpacity>
   );
 
-  const FolderGroup = ({ folder, notes }: { folder: NoteFolder | null; notes: CallNote[] }) => {
-    const sortedGroupNotes = [...notes].sort((a, b) => 
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
+
+  const NoteGroup = ({ group }: { group: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based'; folderId?: string; date?: Date } }) => {
+    const isExpanded = expandedGroups.has(group.id);
+    const sortedGroupNotes = [...group.notes].sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
     return (
-      <View style={styles.folderGroup}>
-        {groupByFolder && (
-          <View style={styles.folderHeader}>
-            <View style={styles.folderInfo}>
-              <Folder 
-                size={16} 
-                color={folder?.color || '#999'} 
-                fill={folder?.color ? folder.color + '20' : '#f0f0f0'} 
-              />
-              <Text style={styles.folderTitle}>
-                {folder?.name || 'No Folder'} ({notes.length})
-              </Text>
-            </View>
-            {folder && (
-              <TouchableOpacity
-                style={styles.folderAction}
-                onPress={() => addFilter('folder', folder.id, folder.name)}
-              >
-                <Filter size={14} color="#007AFF" />
-              </TouchableOpacity>
+      <View style={styles.noteGroup}>
+        <TouchableOpacity
+          style={styles.groupHeader}
+          onPress={() => toggleGroup(group.id)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.groupHeaderLeft}>
+            {isExpanded ? (
+              <ChevronDown size={20} color="#000" />
+            ) : (
+              <ChevronRight size={20} color="#000" />
             )}
+            {group.type === 'folder-based' && group.folderId && (
+              <View
+                style={[
+                  styles.folderIndicator,
+                  { backgroundColor: folders.find(f => f.id === group.folderId)?.color || COLORS.primary },
+                ]}
+              />
+            )}
+            <Text style={styles.groupTitle}>{group.title}</Text>
+          </View>
+          <Text style={styles.groupCount}>{group.notes.length}</Text>
+        </TouchableOpacity>
+
+        {isExpanded && (
+          <View style={styles.groupContent}>
+            {sortedGroupNotes.map((item) => (
+              <View key={item.id}>
+                {renderNote({ item })}
+              </View>
+            ))}
           </View>
         )}
-        <View style={styles.folderNotes}>
-          {sortedGroupNotes.map((item) => (
-            <View key={item.id}>
-              {renderNote({ item })}
-            </View>
-          ))}
-        </View>
       </View>
     );
   };
@@ -627,22 +731,30 @@ export default function NotesScreen() {
         </View>
       )}
 
-      {/* Group Toggle */}
-      <View style={styles.groupToggleContainer}>
-        <TouchableOpacity 
-          style={styles.groupToggle}
-          onPress={() => setGroupByFolder(!groupByFolder)}
-        >
-          <Folder size={16} color={groupByFolder ? '#007AFF' : '#666'} />
-          <Text style={[styles.groupToggleText, { color: groupByFolder ? '#007AFF' : '#666' }]}>
-            Group by Folder
-          </Text>
-          <ChevronDown 
-            size={16} 
-            color={groupByFolder ? '#007AFF' : '#666'} 
-            style={[{ transform: [{ rotate: groupByFolder ? '180deg' : '0deg' }] }]}
-          />
-        </TouchableOpacity>
+      {/* Group By Options */}
+      <View style={styles.groupByContainer}>
+        <Text style={styles.groupByLabel}>Group by:</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupByScroll}>
+          {(['none', 'day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map(option => (
+            <TouchableOpacity
+              key={option}
+              style={[
+                styles.groupByOption,
+                groupBy === option && styles.groupByOptionActive,
+              ]}
+              onPress={() => setGroupBy(option)}
+            >
+              <Text
+                style={[
+                  styles.groupByOptionText,
+                  groupBy === option && styles.groupByOptionTextActive,
+                ]}
+              >
+                {option.charAt(0).toUpperCase() + option.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -667,11 +779,10 @@ export default function NotesScreen() {
             renderEmpty()
           ) : (
             <View style={styles.notesList}>
-              {groupedNotes.map((group, index) => (
-                <FolderGroup 
-                  key={group.folder?.id || 'no-folder'} 
-                  folder={group.folder} 
-                  notes={group.notes} 
+              {groupedNotes.map((group) => (
+                <NoteGroup 
+                  key={group.id} 
+                  group={group} 
                 />
               ))}
             </View>
@@ -973,51 +1084,83 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FF3B30',
   },
-  groupToggleContainer: {
+  groupByContainer: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  groupToggle: {
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  groupToggleText: {
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  folderGroup: {
-    marginBottom: 16,
-  },
-  folderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  folderInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  folderTitle: {
+  groupByLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#000',
+    marginRight: 12,
   },
-  folderAction: {
-    padding: 4,
+  groupByScroll: {
+    flex: 1,
   },
-  folderNotes: {
+  groupByOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#f8f9fa',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  groupByOptionActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  groupByOptionText: {
+    fontSize: 14,
+    color: '#000',
+  },
+  groupByOptionTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  noteGroup: {
+    backgroundColor: '#fff',
+    marginBottom: 1,
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f8f9fa',
+  },
+  groupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+  },
+  folderIndicator: {
+    width: 4,
+    height: 20,
+    borderRadius: 2,
+  },
+  groupTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  groupCount: {
+    fontSize: 14,
+    color: '#8E8E93',
+    backgroundColor: '#e9ecef',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  groupContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   filteredText: {
     fontSize: 14,
