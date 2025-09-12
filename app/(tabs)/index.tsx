@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity, TextInput, Animated } from 'react-native';
+import { View, Text, StyleSheet, SectionList, TextInput } from 'react-native';
 import { Stack } from 'expo-router';
 import { Users, Search } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
@@ -9,21 +9,6 @@ import NoteModal from '@/components/NoteModal';
 export default function ContactsScreen() {
   const { contacts, isLoading } = useContacts();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
-  const searchAnimation = new Animated.Value(0);
-
-  const toggleSearch = () => {
-    const toValue = showSearch ? 0 : 1;
-    setShowSearch(!showSearch);
-    Animated.timing(searchAnimation, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-    if (showSearch) {
-      setSearchQuery('');
-    }
-  };
 
   const filteredContacts = useMemo(() => {
     if (!searchQuery.trim()) return contacts;
@@ -88,27 +73,11 @@ export default function ContactsScreen() {
             fontSize: 17,
             fontWeight: '600',
           },
-          headerRight: () => (
-            <TouchableOpacity onPress={toggleSearch} style={styles.searchButton}>
-              <Search size={20} color="#007AFF" />
-            </TouchableOpacity>
-          ),
         }} 
       />
 
       {/* Search Bar */}
-      <Animated.View 
-        style={[
-          styles.searchContainer,
-          {
-            height: searchAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 60],
-            }),
-            opacity: searchAnimation,
-          }
-        ]}
-      >
+      <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Search size={16} color="#999" />
           <TextInput
@@ -117,10 +86,9 @@ export default function ContactsScreen() {
             placeholderTextColor="#999"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            autoFocus={showSearch}
           />
         </View>
-      </Animated.View>
+      </View>
 
       {sectionedContacts.length > 0 ? (
         <SectionList
@@ -182,14 +150,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  searchButton: {
-    padding: 4,
-  },
   searchContainer: {
     backgroundColor: '#F2F2F7',
     borderBottomWidth: 1,
     borderBottomColor: '#C6C6C8',
-    overflow: 'hidden',
+    paddingVertical: 8,
   },
   searchInputContainer: {
     flexDirection: 'row',
