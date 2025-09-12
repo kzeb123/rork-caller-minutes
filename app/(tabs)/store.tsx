@@ -17,6 +17,8 @@ export default function StoreScreen() {
   const [newItemDescription, setNewItemDescription] = useState<string>('');
   const [newItemPrice, setNewItemPrice] = useState<string>('');
   const [newItemQuantity, setNewItemQuantity] = useState<string>('1');
+  const [showProductSuggestions, setShowProductSuggestions] = useState<boolean>(false);
+  const [productSuggestions, setProductSuggestions] = useState<Product[]>([]);
   const [contactSearch, setContactSearch] = useState<string>('');
   const [showContactDropdown, setShowContactDropdown] = useState<boolean>(false);
   const [showProductCatalogModal, setShowProductCatalogModal] = useState<boolean>(false);
@@ -43,6 +45,8 @@ export default function StoreScreen() {
     setEditingOrder(null);
     setOrderReminderDate(null);
     setOrderReminderTime('');
+    setShowProductSuggestions(false);
+    setProductSuggestions([]);
   };
 
   const addItemToOrder = () => {
@@ -77,6 +81,8 @@ export default function StoreScreen() {
     setNewItemDescription('');
     setNewItemPrice('');
     setNewItemQuantity('1');
+    setShowProductSuggestions(false);
+    setProductSuggestions([]);
   };
 
   const removeItemFromOrder = (itemId: string) => {
@@ -138,6 +144,41 @@ export default function StoreScreen() {
     }));
     setOrderItems(prev => [...prev, ...newItems]);
     setSelectingProductsForOrder(false);
+  };
+
+  // Get all products from all catalogs for suggestions
+  const getAllProducts = useMemo(() => {
+    const allProducts: Product[] = [];
+    productCatalogs.forEach(catalog => {
+      allProducts.push(...catalog.products);
+    });
+    return allProducts;
+  }, [productCatalogs]);
+
+  // Handle product name input and show suggestions
+  const handleProductNameChange = (text: string) => {
+    setNewItemName(text);
+    
+    if (text.trim().length > 0) {
+      const suggestions = getAllProducts.filter(product => 
+        product.name.toLowerCase().includes(text.toLowerCase())
+      ).slice(0, 5); // Limit to 5 suggestions
+      
+      setProductSuggestions(suggestions);
+      setShowProductSuggestions(suggestions.length > 0);
+    } else {
+      setProductSuggestions([]);
+      setShowProductSuggestions(false);
+    }
+  };
+
+  // Select a product from suggestions
+  const selectProductSuggestion = (product: Product) => {
+    setNewItemName(product.name);
+    setNewItemDescription(product.description || '');
+    setNewItemPrice(product.price.toString());
+    setShowProductSuggestions(false);
+    setProductSuggestions([]);
   };
 
   const createOrder = () => {
@@ -659,12 +700,45 @@ export default function StoreScreen() {
               </View>
               
               <View style={styles.addItemForm}>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Item name"
-                  value={newItemName}
-                  onChangeText={setNewItemName}
-                />
+                <View style={styles.productNameContainer}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Item name"
+                    value={newItemName}
+                    onChangeText={handleProductNameChange}
+                    onFocus={() => {
+                      if (newItemName.trim().length > 0 && productSuggestions.length > 0) {
+                        setShowProductSuggestions(true);
+                      }
+                    }}
+                  />
+                  {showProductSuggestions && productSuggestions.length > 0 && (
+                    <View style={styles.productSuggestionsDropdown}>
+                      <ScrollView style={styles.productSuggestionsScroll} nestedScrollEnabled>
+                        {productSuggestions.map((product) => (
+                          <TouchableOpacity
+                            key={product.id}
+                            style={styles.productSuggestionItem}
+                            onPress={() => selectProductSuggestion(product)}
+                          >
+                            <View style={styles.productSuggestionContent}>
+                              <Text style={styles.productSuggestionName}>{product.name}</Text>
+                              {product.description && (
+                                <Text style={styles.productSuggestionDescription}>
+                                  {product.description}
+                                </Text>
+                              )}
+                              <Text style={styles.productSuggestionPrice}>
+                                ${product.price.toFixed(2)}
+                              </Text>
+                            </View>
+                            <Package size={16} color="#666" />
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
                 <TextInput
                   style={styles.textInput}
                   placeholder="Description (optional)"
@@ -1211,6 +1285,61 @@ const styles = StyleSheet.create({
   contactSearchContainer: {
     position: 'relative',
     zIndex: 1000,
+  },
+  productNameContainer: {
+    position: 'relative',
+    zIndex: 999,
+  },
+  productSuggestionsDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 1000,
+  },
+  productSuggestionsScroll: {
+    maxHeight: 200,
+  },
+  productSuggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  productSuggestionContent: {
+    flex: 1,
+  },
+  productSuggestionName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 2,
+  },
+  productSuggestionDescription: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+    lineHeight: 16,
+  },
+  productSuggestionPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#007AFF',
   },
   contactSearchInput: {
     borderWidth: 1,
