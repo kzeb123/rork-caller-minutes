@@ -278,9 +278,21 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
   const updateReminderMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Reminder> }) => {
       const reminders = remindersQuery.data || [];
-      const updated = reminders.map(reminder => 
-        reminder.id === id ? { ...reminder, ...updates } : reminder
-      );
+      const updated = reminders.map(reminder => {
+        if (reminder.id === id) {
+          const updatedReminder = { ...reminder, ...updates };
+          // Set completedAt when marking as completed
+          if (updates.isCompleted === true && !reminder.isCompleted) {
+            updatedReminder.completedAt = new Date();
+          }
+          // Clear completedAt when marking as not completed
+          if (updates.isCompleted === false && reminder.isCompleted) {
+            updatedReminder.completedAt = undefined;
+          }
+          return updatedReminder;
+        }
+        return reminder;
+      });
       await AsyncStorage.setItem(REMINDERS_KEY, JSON.stringify(updated));
       return updated;
     },

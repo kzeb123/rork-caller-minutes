@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
-import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2 } from 'lucide-react-native';
+import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2, Archive, Cloud } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
-import { Contact } from '@/types/contact';
+import { Contact, Reminder } from '@/types/contact';
 
 export default function RemindersScreen() {
   const { reminders, contacts, addReminder, updateReminder, deleteReminder } = useContacts();
@@ -13,6 +13,8 @@ export default function RemindersScreen() {
   const [newReminderDescription, setNewReminderDescription] = useState<string>('');
   const [selectedContactId, setSelectedContactId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showCompletionModal, setShowCompletionModal] = useState<boolean>(false);
+  const [completedReminder, setCompletedReminder] = useState<Reminder | null>(null);
 
   const handleAddReminder = () => {
     if (!newReminderTitle.trim() || !selectedContactId) {
@@ -42,22 +44,51 @@ export default function RemindersScreen() {
     setShowAddModal(false);
   };
 
-  const handleQuickAdd = () => {
-    if (contacts.length === 0) {
-      Alert.alert('No Contacts', 'Add some contacts first to create reminders.');
-      return;
+  const handleReminderToggle = (reminder: Reminder) => {
+    if (!reminder.isCompleted) {
+      // When completing a reminder, show the completion modal
+      setCompletedReminder(reminder);
+      setShowCompletionModal(true);
+    } else {
+      // When unchecking, just update directly
+      updateReminder({ 
+        id: reminder.id, 
+        updates: { isCompleted: false } 
+      });
     }
-    const contact = contacts[0];
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    addReminder({
-      contactId: contact.id,
-      contactName: contact.name,
-      title: `Follow up with ${contact.name}`,
-      description: 'Follow up on recent call',
-      dueDate: tomorrow,
-      isCompleted: false,
-    });
+  };
+
+  const handleArchiveReminder = () => {
+    if (completedReminder) {
+      updateReminder({ 
+        id: completedReminder.id, 
+        updates: { 
+          isCompleted: true,
+          isArchived: true 
+        } 
+      });
+      setShowCompletionModal(false);
+      setCompletedReminder(null);
+    }
+  };
+
+  const handleDeleteCompletedReminder = () => {
+    if (completedReminder) {
+      deleteReminder(completedReminder.id);
+      setShowCompletionModal(false);
+      setCompletedReminder(null);
+    }
+  };
+
+  const handleKeepReminder = () => {
+    if (completedReminder) {
+      updateReminder({ 
+        id: completedReminder.id, 
+        updates: { isCompleted: true } 
+      });
+      setShowCompletionModal(false);
+      setCompletedReminder(null);
+    }
   };
 
   const ContactPicker = ({ selectedId, onSelect }: { selectedId: string; onSelect: (id: string) => void }) => (
@@ -185,6 +216,65 @@ export default function RemindersScreen() {
     </Modal>
   );
 
+  const CompletionModal = () => (
+    <Modal
+      visible={showCompletionModal}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={() => setShowCompletionModal(false)}
+    >
+      <View style={styles.completionModalOverlay}>
+        <View style={styles.completionModalContainer}>
+          <View style={styles.completionModalHeader}>
+            <CheckCircle size={32} color="#34C759" />
+            <Text style={styles.completionModalTitle}>Reminder Completed!</Text>
+            <Text style={styles.completionModalSubtitle}>
+              What would you like to do with this reminder?
+            </Text>
+          </View>
+
+          <View style={styles.completionModalContent}>
+            {completedReminder && (
+              <View style={styles.completedReminderInfo}>
+                <Text style={styles.completedReminderTitle}>{completedReminder.title}</Text>
+                <Text style={styles.completedReminderContact}>{completedReminder.contactName}</Text>
+              </View>
+            )}
+
+            <View style={styles.completionActions}>
+              <TouchableOpacity 
+                style={[styles.completionActionButton, styles.archiveButton]}
+                onPress={handleArchiveReminder}
+              >
+                <Archive size={20} color="#fff" />
+                <Text style={styles.completionActionText}>Archive</Text>
+                <Text style={styles.completionActionSubtext}>Save to cloud/archive</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.completionActionButton, styles.deleteButton]}
+                onPress={handleDeleteCompletedReminder}
+              >
+                <Trash2 size={20} color="#fff" />
+                <Text style={styles.completionActionText}>Delete</Text>
+                <Text style={styles.completionActionSubtext}>Remove permanently</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.completionActionButton, styles.keepButton]}
+                onPress={handleKeepReminder}
+              >
+                <CheckCircle size={20} color="#fff" />
+                <Text style={styles.completionActionText}>Keep</Text>
+                <Text style={styles.completionActionSubtext}>Mark as completed</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Bell size={64} color="#ccc" />
@@ -275,10 +365,7 @@ export default function RemindersScreen() {
                   ]}>
                     <TouchableOpacity 
                       style={styles.reminderCheckbox}
-                      onPress={() => updateReminder({ 
-                        id: reminder.id, 
-                        updates: { isCompleted: !reminder.isCompleted } 
-                      })}
+                      onPress={() => handleReminderToggle(reminder)}
                     >
                       {reminder.isCompleted ? (
                         <CheckCircle size={24} color="#34C759" />
@@ -370,6 +457,7 @@ export default function RemindersScreen() {
       )}
 
       <AddReminderModal />
+      <CompletionModal />
     </SafeAreaView>
   );
 }
@@ -710,5 +798,91 @@ const styles = StyleSheet.create({
   phoneText: {
     fontSize: 11,
     color: '#999',
+  },
+  completionModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  completionModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  completionModalHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  completionModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    marginTop: 12,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  completionModalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  completionModalContent: {
+    alignItems: 'center',
+  },
+  completedReminderInfo: {
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    width: '100%',
+  },
+  completedReminderContact: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  completionActions: {
+    width: '100%',
+    gap: 12,
+  },
+  completionActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 12,
+  },
+  archiveButton: {
+    backgroundColor: '#007AFF',
+  },
+  deleteButton: {
+    backgroundColor: '#FF3B30',
+  },
+  keepButton: {
+    backgroundColor: '#34C759',
+  },
+  completionActionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  completionActionSubtext: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginLeft: 8,
   },
 });

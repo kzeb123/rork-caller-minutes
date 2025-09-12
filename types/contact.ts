@@ -49,8 +49,10 @@ export interface Reminder {
   description?: string;
   dueDate: Date;
   isCompleted: boolean;
+  isArchived?: boolean;
   createdAt: Date;
   relatedNoteId?: string;
+  completedAt?: Date;
 }
 
 export interface OrderItem {
