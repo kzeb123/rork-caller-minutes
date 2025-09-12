@@ -24,6 +24,8 @@ export default function NotesScreen() {
   const searchAnimation = new Animated.Value(0);
   const filterAnimation = new Animated.Value(0);
   const [groupSearchQuery, setGroupSearchQuery] = useState<string>('');
+  const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null);
+  const [searchResultsExpanded, setSearchResultsExpanded] = useState<boolean>(false);
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -176,6 +178,54 @@ export default function NotesScreen() {
     return Array.from(suggestions).slice(0, 5); // Limit to 5 suggestions
   }, [searchQuery, contacts, notes]);
 
+
+
+  const highlightText = (text: string, start: number, end: number) => {
+    const before = text.substring(0, start);
+    const match = text.substring(start, end);
+    const after = text.substring(end);
+    
+    return (
+      <Text>
+        {before}
+        <Text style={styles.highlightedText}>{match}</Text>
+        {after}
+      </Text>
+    );
+  };
+
+  const handleSearchResultPress = (noteId: string) => {
+    setHighlightedNoteId(noteId);
+    setSearchResultsExpanded(false);
+    
+    // Auto-expand the group containing this note
+    const note = notes.find(n => n.id === noteId);
+    if (note) {
+      // Find which group this note belongs to
+      groupedNotes.forEach(group => {
+        const noteInGroup = group.notes.find(n => n.id === noteId);
+        if (noteInGroup) {
+          setExpandedGroups(prev => new Set([...prev, group.id]));
+          
+          // If it's a time-based group with subgroups, also expand the contact subgroup
+          if (group.subGroups) {
+            group.subGroups.forEach(subGroup => {
+              const noteInSubGroup = subGroup.notes.find((n: CallNote) => n.id === noteId);
+              if (noteInSubGroup) {
+                setExpandedGroups(prev => new Set([...prev, subGroup.id]));
+              }
+            });
+          }
+        }
+      });
+    }
+    
+    // Clear highlight after 3 seconds
+    setTimeout(() => {
+      setHighlightedNoteId(null);
+    }, 3000);
+  };
+
   const filteredNotes = useMemo(() => {
     let filtered = [...notes];
 
@@ -286,6 +336,89 @@ export default function NotesScreen() {
 
     return filtered;
   }, [notes, searchQuery, groupSearchQuery, activeFilters, contacts]);
+
+  // Get search results with highlighting info
+  const getSearchResults = useCallback(() => {
+    if (!groupSearchQuery.trim()) return [];
+    
+    const query = groupSearchQuery.toLowerCase();
+    const results: {
+      note: CallNote;
+      matchType: 'contact' | 'content' | 'tag' | 'category';
+      matchText: string;
+      highlightStart: number;
+      highlightEnd: number;
+    }[] = [];
+    
+    filteredNotes.forEach(note => {
+      // Contact name matching
+      const contactNameLower = note.contactName.toLowerCase();
+      const contactIndex = contactNameLower.indexOf(query);
+      if (contactIndex !== -1) {
+        results.push({
+          note,
+          matchType: 'contact',
+          matchText: note.contactName,
+          highlightStart: contactIndex,
+          highlightEnd: contactIndex + query.length
+        });
+        return;
+      }
+      
+      // Note content matching
+      const noteLower = note.note.toLowerCase();
+      const noteIndex = noteLower.indexOf(query);
+      if (noteIndex !== -1) {
+        // Get context around the match
+        const contextStart = Math.max(0, noteIndex - 20);
+        const contextEnd = Math.min(note.note.length, noteIndex + query.length + 20);
+        const contextText = note.note.substring(contextStart, contextEnd);
+        const adjustedStart = noteIndex - contextStart;
+        
+        results.push({
+          note,
+          matchType: 'content',
+          matchText: contextText,
+          highlightStart: adjustedStart,
+          highlightEnd: adjustedStart + query.length
+        });
+        return;
+      }
+      
+      // Tags matching
+      if (note.tags) {
+        for (const tag of note.tags) {
+          const tagIndex = tag.toLowerCase().indexOf(query);
+          if (tagIndex !== -1) {
+            results.push({
+              note,
+              matchType: 'tag',
+              matchText: tag,
+              highlightStart: tagIndex,
+              highlightEnd: tagIndex + query.length
+            });
+            return;
+          }
+        }
+      }
+      
+      // Category matching
+      if (note.category) {
+        const categoryIndex = note.category.toLowerCase().indexOf(query);
+        if (categoryIndex !== -1) {
+          results.push({
+            note,
+            matchType: 'category',
+            matchText: note.category,
+            highlightStart: categoryIndex,
+            highlightEnd: categoryIndex + query.length
+          });
+        }
+      }
+    });
+    
+    return results.slice(0, 10); // Limit to 10 results
+  }, [groupSearchQuery, filteredNotes]);
 
   const groupedNotes = useMemo(() => {
     const groups: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string; subGroups?: any[] }[] = [];
@@ -556,8 +689,24 @@ export default function NotesScreen() {
     }
   };
 
+  const getMatchTypeColor = (matchType: string) => {
+    switch (matchType) {
+      case 'contact': return '#007AFF20';
+      case 'content': return '#34C75920';
+      case 'tag': return '#FF950020';
+      case 'category': return '#5856D620';
+      default: return '#F2F2F720';
+    }
+  };
+
   const renderNote = ({ item }: { item: CallNote }) => (
-    <TouchableOpacity style={styles.noteCard} onPress={() => handleEditNote(item)}>
+    <TouchableOpacity 
+      style={[
+        styles.noteCard,
+        highlightedNoteId === item.id && styles.highlightedNoteCard
+      ]} 
+      onPress={() => handleEditNote(item)}
+    >
       <View style={styles.noteHeader}>
         <View style={styles.contactInfo}>
           <View style={styles.avatar}>
@@ -760,7 +909,10 @@ export default function NotesScreen() {
                         {subGroupNotes.map(item => (
                           <TouchableOpacity 
                             key={item.id} 
-                            style={styles.noteItem}
+                            style={[
+                              styles.noteItem,
+                              highlightedNoteId === item.id && styles.highlightedNoteItem
+                            ]}
                             onPress={() => handleEditNote(item)}
                             activeOpacity={0.7}
                           >
@@ -845,7 +997,10 @@ export default function NotesScreen() {
             {sortedGroupNotes.map(item => (
               <TouchableOpacity 
                 key={item.id} 
-                style={styles.noteItem}
+                style={[
+                  styles.noteItem,
+                  highlightedNoteId === item.id && styles.highlightedNoteItem
+                ]}
                 onPress={() => handleEditNote(item)}
                 activeOpacity={0.7}
               >
@@ -1188,15 +1343,114 @@ export default function NotesScreen() {
               placeholder="Search contacts or keywords..."
               placeholderTextColor="#8E8E93"
               value={groupSearchQuery}
-              onChangeText={setGroupSearchQuery}
+              onChangeText={(text) => {
+                setGroupSearchQuery(text);
+                if (text.trim()) {
+                  setSearchResultsExpanded(true);
+                } else {
+                  setSearchResultsExpanded(false);
+                }
+              }}
               returnKeyType="search"
             />
             {groupSearchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setGroupSearchQuery('')}>
+              <TouchableOpacity onPress={() => {
+                setGroupSearchQuery('');
+                setSearchResultsExpanded(false);
+              }}>
                 <X size={16} color="#8E8E93" />
               </TouchableOpacity>
             )}
           </View>
+          
+          {/* Search Results Dropdown */}
+          {searchResultsExpanded && groupSearchQuery.trim() && (
+            <View style={styles.searchResultsDropdown}>
+              <View style={styles.searchResultsHeader}>
+                <Text style={styles.searchResultsTitle}>
+                  {getSearchResults().length} result{getSearchResults().length !== 1 ? 's' : ''} found
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => setSearchResultsExpanded(false)}
+                  style={styles.collapseButton}
+                >
+                  <X size={16} color="#8E8E93" />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView 
+                style={styles.searchResultsList}
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+              >
+                {getSearchResults().map((result, index) => (
+                  <TouchableOpacity
+                    key={`${result.note.id}-${index}`}
+                    style={styles.searchResultItem}
+                    onPress={() => handleSearchResultPress(result.note.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.searchResultContent}>
+                      <View style={styles.searchResultHeader}>
+                        <View style={styles.searchResultContactInfo}>
+                          <View style={styles.searchResultAvatar}>
+                            <User size={12} color="#666" />
+                          </View>
+                          <Text style={styles.searchResultContactName}>
+                            {result.matchType === 'contact' 
+                              ? highlightText(result.matchText, result.highlightStart, result.highlightEnd)
+                              : result.note.contactName
+                            }
+                          </Text>
+                        </View>
+                        <View style={styles.searchResultMeta}>
+                          <Text style={styles.searchResultTime}>
+                            {formatDate(result.note.createdAt)}
+                          </Text>
+                          <View style={[styles.matchTypeBadge, { backgroundColor: getMatchTypeColor(result.matchType) }]}>
+                            <Text style={styles.matchTypeText}>
+                              {result.matchType === 'contact' ? 'Contact' :
+                               result.matchType === 'content' ? 'Note' :
+                               result.matchType === 'tag' ? 'Tag' : 'Category'}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.searchResultMatch}>
+                        {result.matchType === 'content' && (
+                          <Text style={styles.searchResultMatchText}>
+                            {result.highlightStart > 0 && '...'}
+                            {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
+                            {result.highlightEnd < result.matchText.length && '...'}
+                          </Text>
+                        )}
+                        {result.matchType === 'tag' && (
+                          <View style={styles.searchResultTag}>
+                            <Tag size={10} color="#007AFF" />
+                            {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
+                          </View>
+                        )}
+                        {result.matchType === 'category' && (
+                          <View style={styles.searchResultCategory}>
+                            <Text style={styles.categoryLabel}>Category: </Text>
+                            {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                {getSearchResults().length === 0 && (
+                  <View style={styles.noResultsContainer}>
+                    <Search size={24} color="#ccc" />
+                    <Text style={styles.noResultsText}>No matches found</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          )}
         </View>
       </View>
 
@@ -1937,6 +2191,150 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8E8E93',
     marginLeft: 4,
+  },
+  highlightedText: {
+    backgroundColor: '#FFEB3B',
+    color: '#000',
+    fontWeight: '600',
+    borderRadius: 2,
+    paddingHorizontal: 1,
+  },
+  highlightedNoteCard: {
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    backgroundColor: '#007AFF05',
+    transform: [{ scale: 1.02 }],
+  },
+  highlightedNoteItem: {
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    backgroundColor: '#007AFF10',
+  },
+  searchResultsDropdown: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    maxHeight: 300,
+    overflow: 'hidden',
+  },
+  searchResultsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F8F9FA',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9ECEF',
+  },
+  searchResultsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  collapseButton: {
+    padding: 4,
+  },
+  searchResultsList: {
+    maxHeight: 240,
+  },
+  searchResultItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  searchResultContent: {
+    flex: 1,
+  },
+  searchResultHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  searchResultContactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  searchResultAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  searchResultContactName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    flex: 1,
+  },
+  searchResultMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchResultTime: {
+    fontSize: 11,
+    color: '#8E8E93',
+  },
+  matchTypeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  matchTypeText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#666',
+    textTransform: 'uppercase',
+  },
+  searchResultMatch: {
+    marginTop: 4,
+  },
+  searchResultMatchText: {
+    fontSize: 13,
+    color: '#3C3C43',
+    lineHeight: 18,
+  },
+  searchResultTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#007AFF10',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  searchResultCategory: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  categoryLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 8,
+    textAlign: 'center',
   },
   searchSuggestions: {
     marginTop: 8,
