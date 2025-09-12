@@ -5,6 +5,7 @@ import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoi
 import { useContacts } from '@/hooks/contacts-store';
 import { CallNote, NoteStatus, NoteFolder, NoteFilter, FilterType, GroupByOption } from '@/types/contact';
 import EditNoteModal from '@/components/EditNoteModal';
+import NoteViewModal from '@/components/NoteViewModal';
 import FolderManagementModal from '@/components/FolderManagementModal';
 import { COLORS } from '@/constants/colors';
 
@@ -15,7 +16,9 @@ export default function NotesScreen() {
   const searchOpacity = new Animated.Value(0);
   const searchTranslateY = new Animated.Value(-20);
   const [editingNote, setEditingNote] = useState<CallNote | null>(null);
+  const [viewingNote, setViewingNote] = useState<CallNote | null>(null);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [showViewModal, setShowViewModal] = useState<boolean>(false);
   const [showFolderModal, setShowFolderModal] = useState<boolean>(false);
   const [activeFilters, setActiveFilters] = useState<NoteFilter[]>([]);
   const [showFilters, setShowFilters] = useState<boolean>(false);
@@ -661,9 +664,22 @@ export default function NotesScreen() {
     });
   }, [filteredNotes, groupBy, folders]);
 
+  const handleViewNote = (note: CallNote) => {
+    setViewingNote(note);
+    setShowViewModal(true);
+  };
+
   const handleEditNote = (note: CallNote) => {
     setEditingNote(note);
     setShowEditModal(true);
+  };
+
+  const handleEditFromView = () => {
+    if (viewingNote) {
+      setShowViewModal(false);
+      setEditingNote(viewingNote);
+      setShowEditModal(true);
+    }
   };
 
   const handleSaveNote = (updates: Partial<CallNote>) => {
@@ -705,7 +721,7 @@ export default function NotesScreen() {
         styles.noteCard,
         highlightedNoteId === item.id && styles.highlightedNoteCard
       ]} 
-      onPress={() => handleEditNote(item)}
+      onPress={() => handleViewNote(item)}
     >
       <View style={styles.noteHeader}>
         <View style={styles.contactInfo}>
@@ -913,7 +929,7 @@ export default function NotesScreen() {
                               styles.noteItem,
                               highlightedNoteId === item.id && styles.highlightedNoteItem
                             ]}
-                            onPress={() => handleEditNote(item)}
+                            onPress={() => handleViewNote(item)}
                             activeOpacity={0.7}
                           >
                             <View style={styles.noteItemHeader}>
@@ -1001,7 +1017,7 @@ export default function NotesScreen() {
                   styles.noteItem,
                   highlightedNoteId === item.id && styles.highlightedNoteItem
                 ]}
-                onPress={() => handleEditNote(item)}
+                onPress={() => handleViewNote(item)}
                 activeOpacity={0.7}
               >
                 <View style={styles.noteItemHeader}>
@@ -1486,6 +1502,16 @@ export default function NotesScreen() {
           )}
         </View>
       </ScrollView>
+      
+      <NoteViewModal
+        visible={showViewModal}
+        note={viewingNote}
+        onClose={() => {
+          setShowViewModal(false);
+          setViewingNote(null);
+        }}
+        onEdit={handleEditFromView}
+      />
       
       <EditNoteModal
         visible={showEditModal}
