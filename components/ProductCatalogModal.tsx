@@ -29,14 +29,25 @@ export default function ProductCatalogModal({
   editingCatalog,
 }: ProductCatalogModalProps) {
   const { addProductCatalog, updateProductCatalog } = useContacts();
-  const [catalogName, setCatalogName] = useState(editingCatalog?.name || '');
-  const [products, setProducts] = useState<Product[]>(editingCatalog?.products || []);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [newProductName, setNewProductName] = useState('');
-  const [newProductPrice, setNewProductPrice] = useState('');
-  const [newProductDescription, setNewProductDescription] = useState('');
-  const [newProductSku, setNewProductSku] = useState('');
+  const [catalogName, setCatalogName] = useState<string>('');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [newProductName, setNewProductName] = useState<string>('');
+  const [newProductPrice, setNewProductPrice] = useState<string>('');
+  const [newProductDescription, setNewProductDescription] = useState<string>('');
+  const [newProductSku, setNewProductSku] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize state from editingCatalog when it changes
+  React.useEffect(() => {
+    if (editingCatalog) {
+      setCatalogName(editingCatalog.name || '');
+      setProducts(editingCatalog.products || []);
+    } else {
+      setCatalogName('');
+      setProducts([]);
+    }
+  }, [editingCatalog]);
 
   const handleUploadPDF = async () => {
     if (Platform.OS === 'web') {
