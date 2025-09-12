@@ -13,6 +13,7 @@ const ORDERS_KEY = 'call_notes_orders';
 const NOTE_TEMPLATE_KEY = 'call_note_template';
 const FOLDERS_KEY = 'call_notes_folders';
 const PRODUCT_CATALOGS_KEY = 'call_notes_product_catalogs';
+const PRESET_TAGS_KEY = 'call_notes_preset_tags';
 
 const DEFAULT_NOTE_TEMPLATE = `Call with [CONTACT_NAME] - [DATE]
 
@@ -147,6 +148,34 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<ProductCatalog[]> => {
       const stored = await AsyncStorage.getItem(PRODUCT_CATALOGS_KEY);
       return stored ? JSON.parse(stored) : [];
+    }
+  });
+
+  const presetTagsQuery = useQuery({
+    queryKey: ['presetTags'],
+    queryFn: async (): Promise<string[]> => {
+      const stored = await AsyncStorage.getItem(PRESET_TAGS_KEY);
+      const tags = stored ? JSON.parse(stored) : [];
+      
+      // Add default tags if none exist
+      if (tags.length === 0) {
+        const defaultTags = [
+          'Follow-up',
+          'Urgent',
+          'Sales',
+          'Support',
+          'Meeting',
+          'Quote',
+          'Order',
+          'Complaint',
+          'Information',
+          'Callback'
+        ];
+        await AsyncStorage.setItem(PRESET_TAGS_KEY, JSON.stringify(defaultTags));
+        return defaultTags;
+      }
+      
+      return tags;
     }
   });
 
@@ -473,6 +502,16 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
       queryClient.invalidateQueries({ queryKey: ['productCatalogs'] });
     }
   });
+
+  const updatePresetTagsMutation = useMutation({
+    mutationFn: async (tags: string[]) => {
+      await AsyncStorage.setItem(PRESET_TAGS_KEY, JSON.stringify(tags));
+      return tags;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['presetTags'] });
+    }
+  });
   
   const { mutate: addNoteMutate } = addNoteMutation;
 
@@ -701,12 +740,14 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     await AsyncStorage.removeItem(ORDERS_KEY);
     await AsyncStorage.removeItem(FOLDERS_KEY);
     await AsyncStorage.removeItem(PRODUCT_CATALOGS_KEY);
+    await AsyncStorage.removeItem(PRESET_TAGS_KEY);
     queryClient.invalidateQueries({ queryKey: ['contacts'] });
     queryClient.invalidateQueries({ queryKey: ['notes'] });
     queryClient.invalidateQueries({ queryKey: ['reminders'] });
     queryClient.invalidateQueries({ queryKey: ['orders'] });
     queryClient.invalidateQueries({ queryKey: ['folders'] });
     queryClient.invalidateQueries({ queryKey: ['productCatalogs'] });
+    queryClient.invalidateQueries({ queryKey: ['presetTags'] });
   }, [queryClient]);
 
   const addFakeContactsMutation = useMutation({
@@ -871,8 +912,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     orders: ordersQuery.data || [],
     folders: foldersQuery.data || [],
     productCatalogs: productCatalogsQuery.data || [],
+    presetTags: presetTagsQuery.data || [],
     noteTemplate: noteTemplateQuery.data || DEFAULT_NOTE_TEMPLATE,
-    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading || foldersQuery.isLoading || productCatalogsQuery.isLoading,
+    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading || foldersQuery.isLoading || productCatalogsQuery.isLoading || presetTagsQuery.isLoading,
     incomingCall,
     activeCall,
     showNoteModal,
@@ -901,6 +943,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     addProductCatalog: addProductCatalogMutation.mutate,
     updateProductCatalog: updateProductCatalogMutation.mutate,
     deleteProductCatalog: deleteProductCatalogMutation.mutate,
+    updatePresetTags: updatePresetTagsMutation.mutate,
     openCallNoteModal,
     simulateIncomingCall,
     answerCall,
@@ -921,6 +964,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     ordersQuery.data,
     foldersQuery.data,
     productCatalogsQuery.data,
+    presetTagsQuery.data,
     noteTemplateQuery.data,
     contactsQuery.isLoading,
     notesQuery.isLoading,
@@ -928,6 +972,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     ordersQuery.isLoading,
     foldersQuery.isLoading,
     productCatalogsQuery.isLoading,
+    presetTagsQuery.isLoading,
     noteTemplateQuery.isLoading,
     incomingCall,
     activeCall,
@@ -957,6 +1002,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     addProductCatalogMutation.mutate,
     updateProductCatalogMutation.mutate,
     deleteProductCatalogMutation.mutate,
+    updatePresetTagsMutation.mutate,
     openCallNoteModal,
     simulateIncomingCall,
     answerCall,

@@ -12,7 +12,7 @@ interface TemplateSection {
 }
 
 export default function NoteModal() {
-  const { showNoteModal, currentCallContact, callStartTime, callEndTime, closeNoteModal, saveNote, noteTemplate } = useContacts();
+  const { showNoteModal, currentCallContact, callStartTime, callEndTime, closeNoteModal, saveNote, noteTemplate, presetTags } = useContacts();
   const [selectedStatus, setSelectedStatus] = useState<NoteStatus>('follow-up');
   const [customStatus, setCustomStatus] = useState('');
   const [showStatusPicker, setShowStatusPicker] = useState(false);
@@ -23,6 +23,7 @@ export default function NoteModal() {
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
+  const [showTagPicker, setShowTagPicker] = useState(false);
 
   useEffect(() => {
     if (showNoteModal && currentCallContact) {
@@ -78,6 +79,7 @@ export default function NoteModal() {
       setTags([]);
       setNewTag('');
       setShowTagInput(false);
+      setShowTagPicker(false);
     }
   }, [showNoteModal, currentCallContact, noteTemplate]);
   
@@ -146,6 +148,7 @@ export default function NoteModal() {
     setTags([]);
     setNewTag('');
     setShowTagInput(false);
+    setShowTagPicker(false);
     closeNoteModal();
   };
 
@@ -192,6 +195,13 @@ export default function NoteModal() {
       setNewTag('');
       setShowTagInput(false);
     }
+  };
+  
+  const addPresetTag = (tag: string) => {
+    if (!tags.includes(tag)) {
+      setTags([...tags, tag]);
+    }
+    setShowTagPicker(false);
   };
   
   const removeTag = (tagToRemove: string) => {
@@ -376,7 +386,7 @@ export default function NoteModal() {
                 <View style={styles.tagInputContainer}>
                   <TextInput
                     style={styles.tagInput}
-                    placeholder="Enter tag..."
+                    placeholder="Enter custom tag..."
                     placeholderTextColor="#999"
                     value={newTag}
                     onChangeText={setNewTag}
@@ -392,15 +402,46 @@ export default function NoteModal() {
                   />
                 </View>
               ) : (
-                <TouchableOpacity 
-                  style={styles.addTagButton}
-                  onPress={() => setShowTagInput(true)}
-                >
-                  <Plus size={16} color="#007AFF" />
-                  <Text style={styles.addTagText}>Add Tag</Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity 
+                    style={styles.addTagButton}
+                    onPress={() => setShowTagPicker(!showTagPicker)}
+                  >
+                    <Tag size={16} color="#007AFF" />
+                    <Text style={styles.addTagText}>Add Tag</Text>
+                    <ChevronDown size={16} color="#666" />
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.customTagButton}
+                    onPress={() => setShowTagInput(true)}
+                  >
+                    <Plus size={16} color="#007AFF" />
+                    <Text style={styles.addTagText}>Custom</Text>
+                  </TouchableOpacity>
+                </>
               )}
             </View>
+            
+            {showTagPicker && (
+              <View style={styles.tagPicker}>
+                <Text style={styles.tagPickerTitle}>Select from preset tags:</Text>
+                <View style={styles.presetTagsContainer}>
+                  {presetTags.filter(tag => !tags.includes(tag)).map((tag) => (
+                    <TouchableOpacity
+                      key={tag}
+                      style={styles.presetTagOption}
+                      onPress={() => addPresetTag(tag)}
+                    >
+                      <Text style={styles.presetTagText}>{tag}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  {presetTags.filter(tag => !tags.includes(tag)).length === 0 && (
+                    <Text style={styles.noTagsText}>All preset tags are already added</Text>
+                  )}
+                </View>
+              </View>
+            )}
           </View>
           
           <Text style={styles.sectionTitle}>Call Notes</Text>
@@ -705,6 +746,60 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     minWidth: 80,
+  },
+  customTagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f4f8',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#34C759',
+    borderStyle: 'dashed',
+  },
+  tagPicker: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginTop: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tagPickerTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  presetTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  presetTagOption: {
+    backgroundColor: '#f0f4f8',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  presetTagText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  noTagsText: {
+    color: '#999',
+    fontSize: 14,
+    fontStyle: 'italic',
   },
   sectionTitle: {
     fontSize: 18,

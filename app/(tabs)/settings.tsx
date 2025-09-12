@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView, SafeAreaView, Switch } from 'react-native';
 import { Stack } from 'expo-router';
-import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save, Check, ChevronRight } from 'lucide-react-native';
+import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save, Check, ChevronRight, Tag } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import AddContactModal from '@/components/AddContactModal';
 
@@ -13,10 +13,14 @@ interface TemplateSection {
 }
 
 export default function SettingsScreen() {
-  const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts } = useContacts();
+  const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts, presetTags, updatePresetTags } = useContacts();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showTagsModal, setShowTagsModal] = useState(false);
+  const [editableTags, setEditableTags] = useState<string[]>([]);
+  const [newTagText, setNewTagText] = useState('');
+  const [showAddTag, setShowAddTag] = useState(false);
   
   // Parse existing template or use default sections
   const parseTemplateToSections = (template: string): TemplateSection[] => {
@@ -137,6 +141,11 @@ export default function SettingsScreen() {
     setShowTemplateModal(true);
   };
 
+  const handleEditTags = () => {
+    setEditableTags([...presetTags]);
+    setShowTagsModal(true);
+  };
+
   const handleSaveTemplate = () => {
     // Build template from enabled sections
     let template = 'Call with [CONTACT_NAME] - [DATE]\n\n';
@@ -183,6 +192,31 @@ export default function SettingsScreen() {
   
   const removeCustomPrompt = (index: number) => {
     setCustomPrompts(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveTags = () => {
+    updatePresetTags(editableTags);
+    setShowTagsModal(false);
+    Alert.alert('Tags Updated', 'Your preset tags have been updated successfully.');
+  };
+
+  const handleCloseTags = () => {
+    setShowTagsModal(false);
+    setEditableTags([...presetTags]);
+    setNewTagText('');
+    setShowAddTag(false);
+  };
+
+  const addTag = () => {
+    if (newTagText.trim() && !editableTags.includes(newTagText.trim())) {
+      setEditableTags(prev => [...prev, newTagText.trim()]);
+      setNewTagText('');
+      setShowAddTag(false);
+    }
+  };
+
+  const removeTag = (index: number) => {
+    setEditableTags(prev => prev.filter((_, i) => i !== index));
   };
 
 
@@ -289,6 +323,12 @@ export default function SettingsScreen() {
               title="Edit Note Template"
               subtitle="Customize the default structure for call notes"
               onPress={handleEditTemplate}
+            />
+            <SettingItem
+              icon={<Tag />}
+              title="Manage Tags"
+              subtitle={`Customize preset tags for call notes (${presetTags.length} tags)`}
+              onPress={handleEditTags}
             />
           </View>
         </View>
@@ -431,6 +471,93 @@ export default function SettingsScreen() {
           <View style={styles.templateFooter}>
             <TouchableOpacity style={styles.templateSaveButton} onPress={handleSaveTemplate}>
               <Text style={styles.templateSaveButtonText}>Save Template</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showTagsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.templateModalContainer}>
+          <View style={styles.templateHeader}>
+            <TouchableOpacity onPress={handleCloseTags}>
+              <X size={24} color="#007AFF" />
+            </TouchableOpacity>
+            
+            <Text style={styles.templateTitle}>Manage Tags</Text>
+            
+            <TouchableOpacity onPress={handleSaveTags}>
+              <Save size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.templateContent} showsVerticalScrollIndicator={false}>
+            <Text style={styles.templateSectionTitle}>Preset Tags</Text>
+            <Text style={styles.templateDescription}>
+              These tags will be available as quick options when adding call notes
+            </Text>
+            
+            <View style={styles.tagsGrid}>
+              {editableTags.map((tag, index) => (
+                <View key={index} style={styles.editableTag}>
+                  <Text style={styles.editableTagText}>{tag}</Text>
+                  <TouchableOpacity onPress={() => removeTag(index)} style={styles.editableTagRemove}>
+                    <X size={16} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              
+              {showAddTag ? (
+                <View style={styles.addTagInputContainer}>
+                  <TextInput
+                    style={styles.addTagInput}
+                    placeholder="Enter tag name..."
+                    placeholderTextColor="#999"
+                    value={newTagText}
+                    onChangeText={setNewTagText}
+                    onSubmitEditing={addTag}
+                    onBlur={() => {
+                      if (newTagText.trim()) {
+                        addTag();
+                      } else {
+                        setShowAddTag(false);
+                      }
+                    }}
+                    autoFocus
+                  />
+                </View>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.addTagButton}
+                  onPress={() => setShowAddTag(true)}
+                >
+                  <Plus size={16} color="#007AFF" />
+                  <Text style={styles.addTagButtonText}>Add Tag</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <View style={styles.tagPreviewSection}>
+              <Text style={styles.templateSectionTitle}>Preview</Text>
+              <Text style={styles.templateDescription}>
+                These tags will appear as quick selection options in call notes
+              </Text>
+              <View style={styles.tagPreview}>
+                {editableTags.map((tag, index) => (
+                  <View key={index} style={styles.previewTag}>
+                    <Text style={styles.previewTagText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.templateFooter}>
+            <TouchableOpacity style={styles.templateSaveButton} onPress={handleSaveTags}>
+              <Text style={styles.templateSaveButtonText}>Save Tags</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -720,5 +847,84 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  tagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  editableTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  editableTagText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  editableTagRemove: {
+    padding: 2,
+  },
+  addTagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f4f8',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+  },
+  addTagButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  addTagInputContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  addTagInput: {
+    fontSize: 14,
+    color: '#333',
+    minWidth: 80,
+    paddingVertical: 4,
+  },
+  tagPreviewSection: {
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  tagPreview: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  previewTag: {
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  previewTagText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
