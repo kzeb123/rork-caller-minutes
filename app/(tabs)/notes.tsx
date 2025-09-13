@@ -734,22 +734,20 @@ export default function NotesScreen() {
       // Icon morphing animation with easing
       Animated.timing(animationValue, {
         toValue: 1,
-        duration: 400,
+        duration: 300,
         useNativeDriver: true,
       })
     ]).start(() => {
-      // After icon morph completes, open modal
+      // After icon morph completes, open modal immediately
+      setShowAddContactModal(true);
+      
+      // Reset animation values after modal opens
       setTimeout(() => {
-        setShowAddContactModal(true);
-        
-        // Reset animation values after modal opens
-        setTimeout(() => {
-          animationValue.setValue(0);
-          rotationValue.setValue(0);
-          scaleValue.setValue(1);
-          setIsAnimating(false);
-        }, 200);
-      }, 100);
+        animationValue.setValue(0);
+        rotationValue.setValue(0);
+        scaleValue.setValue(1);
+        setIsAnimating(false);
+      }, 150);
     });
   };
 
@@ -1654,7 +1652,7 @@ export default function NotesScreen() {
                 styles.iconWrapper,
                 {
                   opacity: animationValue.interpolate({
-                    inputRange: [0, 0.3, 1],
+                    inputRange: [0, 0.2, 1],
                     outputRange: [1, 0, 0]
                   }),
                   transform: [
@@ -1677,7 +1675,7 @@ export default function NotesScreen() {
                 styles.phoneIconWrapper,
                 {
                   opacity: animationValue.interpolate({
-                    inputRange: [0, 0.3, 1],
+                    inputRange: [0, 0.15, 1],
                     outputRange: [0, 0, 1]
                   }),
                   transform: [
@@ -1711,17 +1709,17 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.3, 0.6, 1],
+                    inputRange: [0, 0.2, 0.5, 1],
                     outputRange: [1, 3, 6, 10]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0.2, 0.5, 1],
+                inputRange: [0, 0.15, 0.4, 1],
                 outputRange: [0, 0.6, 0.3, 0]
               }),
               backgroundColor: animationValue.interpolate({
-                inputRange: [0, 0.3, 0.7, 1],
+                inputRange: [0, 0.2, 0.6, 1],
                 outputRange: ['#007AFF', '#4A9EFF', '#80BFFF', '#B3D9FF']
               })
             }
