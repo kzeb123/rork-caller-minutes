@@ -24,7 +24,7 @@ export default function SettingsScreen() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isPremium, setIsPremium] = useState(false);
+  const [isPremium, setIsPremium] = useState(true); // Testing mode - premium enabled
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
