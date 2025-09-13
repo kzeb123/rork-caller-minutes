@@ -116,10 +116,42 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const handleContactSelect = (contact: Contact) => {
     if (onSelectContact) {
       onSelectContact(contact);
+      handleClose();
     } else {
-      openCallNoteModal(contact);
+      // Close modal first, then open call note modal after animation completes
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateXAnim, {
+          toValue: -width * 0.45,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: height * 0.45,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setName('');
+        setPhoneNumber('');
+        setSearchQuery('');
+        setShowAddForm(false);
+        onClose();
+        // Open call note modal after the close animation completes
+        setTimeout(() => {
+          openCallNoteModal(contact);
+        }, 100);
+      });
     }
-    handleClose();
   };
 
   const filteredContacts = contacts.filter(contact => 
