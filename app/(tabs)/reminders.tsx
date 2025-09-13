@@ -730,6 +730,49 @@ export default function RemindersScreen() {
         renderEmpty()
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Stats Section */}
+          <View style={styles.statsSection}>
+            <Text style={styles.sectionTitle}>Summary</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsGrid}>
+              <View style={styles.statCard}>
+                <View style={[styles.iconContainer, { backgroundColor: '#007AFF15' }]}>
+                  <Bell size={20} color="#007AFF" />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={styles.statNumber}>{pendingReminders.length}</Text>
+                  <Text style={styles.statLabel}>Pending</Text>
+                </View>
+              </View>
+              <View style={styles.statCard}>
+                <View style={[styles.iconContainer, { backgroundColor: '#FF3B3015' }]}>
+                  <AlertCircle size={20} color="#FF3B30" />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statNumber, { color: '#FF3B30' }]}>{overdueReminders.length}</Text>
+                  <Text style={styles.statLabel}>Overdue</Text>
+                </View>
+              </View>
+              <View style={styles.statCard}>
+                <View style={[styles.iconContainer, { backgroundColor: '#FF950015' }]}>
+                  <Clock size={20} color="#FF9500" />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statNumber, { color: '#FF9500' }]}>{todayReminders.length}</Text>
+                  <Text style={styles.statLabel}>Today</Text>
+                </View>
+              </View>
+              <View style={styles.statCard}>
+                <View style={[styles.iconContainer, { backgroundColor: '#34C75915' }]}>
+                  <CheckCircle size={20} color="#34C759" />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statNumber, { color: '#34C759' }]}>{completedReminders.length}</Text>
+                  <Text style={styles.statLabel}>Done</Text>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+
           {/* Tab Selector */}
           <View style={styles.tabContainer}>
             <TouchableOpacity 
@@ -790,49 +833,6 @@ export default function RemindersScreen() {
                 <Text style={styles.addButtonText}>Add</Text>
               </TouchableOpacity>
             )}
-          </View>
-
-          {/* Stats Section */}
-          <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>Summary</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <View style={[styles.iconContainer, { backgroundColor: '#007AFF15' }]}>
-                  <Bell size={20} color="#007AFF" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={styles.statNumber}>{pendingReminders.length}</Text>
-                  <Text style={styles.statLabel}>Pending</Text>
-                </View>
-              </View>
-              <View style={styles.statCard}>
-                <View style={[styles.iconContainer, { backgroundColor: '#FF3B3015' }]}>
-                  <AlertCircle size={20} color="#FF3B30" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={[styles.statNumber, { color: '#FF3B30' }]}>{overdueReminders.length}</Text>
-                  <Text style={styles.statLabel}>Overdue</Text>
-                </View>
-              </View>
-              <View style={styles.statCard}>
-                <View style={[styles.iconContainer, { backgroundColor: '#FF950015' }]}>
-                  <Clock size={20} color="#FF9500" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={[styles.statNumber, { color: '#FF9500' }]}>{todayReminders.length}</Text>
-                  <Text style={styles.statLabel}>Today</Text>
-                </View>
-              </View>
-              <View style={styles.statCard}>
-                <View style={[styles.iconContainer, { backgroundColor: '#34C75915' }]}>
-                  <CheckCircle size={20} color="#34C759" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={[styles.statNumber, { color: '#34C759' }]}>{completedReminders.length}</Text>
-                  <Text style={styles.statLabel}>Done</Text>
-                </View>
-              </View>
-            </ScrollView>
           </View>
 
           {/* Reminders List */}
