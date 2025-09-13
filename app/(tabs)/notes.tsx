@@ -1325,11 +1325,25 @@ export default function NotesScreen() {
           {renderSummarySection()}
         </View>
 
-        {/* Divider */}
-        <View style={styles.divider} />
+
 
         {/* Notes Section */}
         <View style={styles.notesSection}>
+          {/* Group By Options above Call Notes title */}
+          <View style={styles.notesFilterButtonContainer}>
+            <TouchableOpacity 
+              style={styles.groupByButton}
+              onPress={() => setShowGroupByModal(true)}
+            >
+              <Filter size={16} color="#007AFF" />
+              <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
+              <ChevronDown size={16} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Divider */}
+          <View style={styles.divider} />
+          
           {/* Search Bar */}
           <View style={styles.groupByWrapper}>
             <View style={styles.groupSearchContainer}>
@@ -1449,18 +1463,6 @@ export default function NotesScreen() {
                 </View>
               )}
             </View>
-          </View>
-          
-          {/* Group By Options above Call Notes title */}
-          <View style={styles.notesFilterButtonContainer}>
-            <TouchableOpacity 
-              style={styles.groupByButton}
-              onPress={() => setShowGroupByModal(true)}
-            >
-              <Filter size={16} color="#007AFF" />
-              <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
-              <ChevronDown size={16} color="#007AFF" />
-            </TouchableOpacity>
           </View>
           
           <Text style={styles.sectionTitle}>
