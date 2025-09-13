@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert,
 import { Stack } from 'expo-router';
 import { Globe, ExternalLink, Settings, ShoppingCart, BarChart3, Users, Package, Save, X } from 'lucide-react-native';
 
-
 interface WebsiteConfig {
   url: string;
   title: string;
