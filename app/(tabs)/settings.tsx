@@ -554,24 +554,6 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Premium Features</Text>
-          <View style={styles.settingsGroup}>
-            <View style={styles.toggleItem}>
-              <View style={styles.toggleLeft}>
-                <Text style={styles.toggleTitle}>Enable Shopify/Website Tab</Text>
-                <Text style={styles.toggleSubtitle}>Add a premium tab for Shopify store or website integration</Text>
-              </View>
-              <Switch
-                value={premiumSettings?.showShopifyTab ?? false}
-                onValueChange={(value) => updatePremiumSettings({ showShopifyTab: value })}
-                trackColor={{ false: '#767577', true: '#007AFF' }}
-                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
           <View style={styles.premiumSectionHeader}>
             <Crown size={20} color="#FFD700" />
             <Text style={styles.sectionTitle}>Premium Features</Text>
@@ -635,6 +617,25 @@ export default function SettingsScreen() {
                       ]
                     );
                   }
+                }}
+                trackColor={{ false: '#767577', true: '#007AFF' }}
+                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
+                disabled={!isPremium}
+              />
+            </View>
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleLeft}>
+                <Text style={styles.toggleTitle}>Enable Shopify/Website Tab</Text>
+                <Text style={styles.toggleSubtitle}>Add a premium tab for Shopify store or website integration</Text>
+              </View>
+              <Switch
+                value={premiumSettings?.showShopifyTab ?? false}
+                onValueChange={(value) => {
+                  if (!isPremium) {
+                    setShowPremiumModal(true);
+                    return;
+                  }
+                  updatePremiumSettings({ showShopifyTab: value });
                 }}
                 trackColor={{ false: '#767577', true: '#007AFF' }}
                 thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
