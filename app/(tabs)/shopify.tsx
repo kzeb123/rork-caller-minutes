@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform, Linking } from 'react-native';
 import { Stack } from 'expo-router';
 import { Globe, ExternalLink, Settings, ShoppingCart, BarChart3, Users, Package, Save, X } from 'lucide-react-native';
-import { WebView } from 'react-native-webview';
+
 
 interface WebsiteConfig {
   url: string;
@@ -203,11 +203,24 @@ export default function ShopifyScreen() {
       }} />
       
       {Platform.OS === 'web' ? (
+        <View style={styles.iframeContainer}>
+          <iframe
+            key={webViewKey}
+            src={websiteConfig.url}
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+            }}
+            title={websiteConfig.title}
+          />
+        </View>
+      ) : (
         <View style={styles.webFallback}>
           <Globe size={48} color="#007AFF" />
           <Text style={styles.webFallbackTitle}>Website Integration</Text>
           <Text style={styles.webFallbackDescription}>
-            The integrated browser is not available on web. Use the button below to open your website in a new tab.
+            WebView is not available in Expo Go. Please use a development build or open the website in your browser.
           </Text>
           <TouchableOpacity style={styles.openBrowserButton} onPress={handleOpenInBrowser}>
             <ExternalLink size={20} color="#fff" />
@@ -232,27 +245,6 @@ export default function ShopifyScreen() {
             </View>
           </View>
         </View>
-      ) : (
-        <WebView
-          key={webViewKey}
-          source={{ uri: websiteConfig.url }}
-          style={styles.webview}
-          startInLoadingState
-          scalesPageToFit
-          allowsBackForwardNavigationGestures
-          onError={(syntheticEvent: any) => {
-            const { nativeEvent } = syntheticEvent;
-            console.warn('WebView error: ', nativeEvent);
-            Alert.alert(
-              'Loading Error',
-              'Failed to load the website. Please check the URL and your internet connection.',
-              [
-                { text: 'OK' },
-                { text: 'Settings', onPress: () => setShowSettings(true) }
-              ]
-            );
-          }}
-        />
       )}
     </View>
   );
@@ -270,8 +262,10 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: 8,
   },
-  webview: {
+  iframeContainer: {
     flex: 1,
+    width: '100%',
+    height: '100%',
   },
   webFallback: {
     flex: 1,
