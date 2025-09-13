@@ -738,16 +738,14 @@ export default function NotesScreen() {
         useNativeDriver: true,
       })
     ]).start(() => {
-      // After icon morph completes, open modal immediately
+      // Open modal immediately when animation completes
       setShowAddContactModal(true);
       
-      // Reset animation values after modal opens
-      setTimeout(() => {
-        animationValue.setValue(0);
-        rotationValue.setValue(0);
-        scaleValue.setValue(1);
-        setIsAnimating(false);
-      }, 50);
+      // Reset animation values immediately without delay
+      animationValue.setValue(0);
+      rotationValue.setValue(0);
+      scaleValue.setValue(1);
+      setIsAnimating(false);
     });
   };
 
