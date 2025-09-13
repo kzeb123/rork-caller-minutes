@@ -1702,7 +1702,7 @@ export default function NotesScreen() {
           </Animated.View>
         </TouchableOpacity>
         
-        {/* Radiating ripple effects from corner */}
+        {/* Radiating ripple effects from corner with blue color fade */}
         <Animated.View
           pointerEvents="none"
           style={[
@@ -1718,7 +1718,11 @@ export default function NotesScreen() {
               ],
               opacity: animationValue.interpolate({
                 inputRange: [0, 0.2, 0.5, 1],
-                outputRange: [0, 0.4, 0.2, 0]
+                outputRange: [0, 0.6, 0.3, 0]
+              }),
+              backgroundColor: animationValue.interpolate({
+                inputRange: [0, 0.3, 0.7, 1],
+                outputRange: ['#007AFF', '#4A9EFF', '#80BFFF', '#B3D9FF']
               })
             }
           ]}
@@ -1738,7 +1742,11 @@ export default function NotesScreen() {
               ],
               opacity: animationValue.interpolate({
                 inputRange: [0, 0.1, 0.3, 0.6, 1],
-                outputRange: [0, 0, 0.3, 0.1, 0]
+                outputRange: [0, 0, 0.4, 0.15, 0]
+              }),
+              backgroundColor: animationValue.interpolate({
+                inputRange: [0, 0.2, 0.6, 1],
+                outputRange: ['#007AFF', '#3388FF', '#66AAFF', '#99CCFF']
               })
             }
           ]}
@@ -1758,7 +1766,11 @@ export default function NotesScreen() {
               ],
               opacity: animationValue.interpolate({
                 inputRange: [0, 0, 0.2, 0.4, 1],
-                outputRange: [0, 0, 0.2, 0.05, 0]
+                outputRange: [0, 0, 0.3, 0.1, 0]
+              }),
+              backgroundColor: animationValue.interpolate({
+                inputRange: [0, 0.1, 0.5, 1],
+                outputRange: ['#007AFF', '#1A7AFF', '#5599FF', '#8FBBFF']
               })
             }
           ]}
@@ -2755,7 +2767,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
     left: 0,
     bottom: 0,
   },
