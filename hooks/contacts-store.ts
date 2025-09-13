@@ -46,66 +46,143 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
   const contactsQuery = useQuery({
     queryKey: ['contacts'],
     queryFn: async (): Promise<Contact[]> => {
-      const stored = await AsyncStorage.getItem(CONTACTS_KEY);
-      return stored ? JSON.parse(stored) : [];
+      try {
+        const stored = await AsyncStorage.getItem(CONTACTS_KEY);
+        if (!stored) return [];
+        return JSON.parse(stored);
+      } catch (error) {
+        console.error('Error parsing contacts from storage:', error);
+        // Clear corrupted data
+        await AsyncStorage.removeItem(CONTACTS_KEY);
+        return [];
+      }
     }
   });
 
   const notesQuery = useQuery({
     queryKey: ['notes'],
     queryFn: async (): Promise<CallNote[]> => {
-      const stored = await AsyncStorage.getItem(NOTES_KEY);
-      const notes = stored ? JSON.parse(stored) : [];
-      
-      // Migrate old notes to include status field
-      const migratedNotes = notes.map((note: any) => ({
-        ...note,
-        status: note.status || 'follow-up' as NoteStatus,
-        customStatus: note.customStatus || undefined,
-      }));
-      
-      // Save migrated notes back if any migration occurred
-      const needsMigration = notes.some((note: any) => !note.status);
-      if (needsMigration) {
-        await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(migratedNotes));
+      try {
+        const stored = await AsyncStorage.getItem(NOTES_KEY);
+        if (!stored) return [];
+        const notes = JSON.parse(stored);
+        
+        // Migrate old notes to include status field
+        const migratedNotes = notes.map((note: any) => ({
+          ...note,
+          status: note.status || 'follow-up' as NoteStatus,
+          customStatus: note.customStatus || undefined,
+        }));
+        
+        // Save migrated notes back if any migration occurred
+        const needsMigration = notes.some((note: any) => !note.status);
+        if (needsMigration) {
+          await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(migratedNotes));
+        }
+        
+        return migratedNotes;
+      } catch (error) {
+        console.error('Error parsing notes from storage:', error);
+        // Clear corrupted data
+        await AsyncStorage.removeItem(NOTES_KEY);
+        return [];
       }
-      
-      return migratedNotes;
     }
   });
 
   const remindersQuery = useQuery({
     queryKey: ['reminders'],
     queryFn: async (): Promise<Reminder[]> => {
-      const stored = await AsyncStorage.getItem(REMINDERS_KEY);
-      return stored ? JSON.parse(stored) : [];
+      try {
+        const stored = await AsyncStorage.getItem(REMINDERS_KEY);
+        if (!stored) return [];
+        return JSON.parse(stored);
+      } catch (error) {
+        console.error('Error parsing reminders from storage:', error);
+        // Clear corrupted data
+        await AsyncStorage.removeItem(REMINDERS_KEY);
+        return [];
+      }
     }
   });
 
   const ordersQuery = useQuery({
     queryKey: ['orders'],
     queryFn: async (): Promise<Order[]> => {
-      const stored = await AsyncStorage.getItem(ORDERS_KEY);
-      return stored ? JSON.parse(stored) : [];
+      try {
+        const stored = await AsyncStorage.getItem(ORDERS_KEY);
+        if (!stored) return [];
+        return JSON.parse(stored);
+      } catch (error) {
+        console.error('Error parsing orders from storage:', error);
+        // Clear corrupted data
+        await AsyncStorage.removeItem(ORDERS_KEY);
+        return [];
+      }
     }
   });
 
   const noteTemplateQuery = useQuery({
     queryKey: ['noteTemplate'],
     queryFn: async (): Promise<string> => {
-      const stored = await AsyncStorage.getItem(NOTE_TEMPLATE_KEY);
-      return stored || DEFAULT_NOTE_TEMPLATE;
+      try {
+        const stored = await AsyncStorage.getItem(NOTE_TEMPLATE_KEY);
+        return stored || DEFAULT_NOTE_TEMPLATE;
+      } catch (error) {
+        console.error('Error getting note template from storage:', error);
+        return DEFAULT_NOTE_TEMPLATE;
+      }
     }
   });
 
   const foldersQuery = useQuery({
     queryKey: ['folders'],
     queryFn: async (): Promise<NoteFolder[]> => {
-      const stored = await AsyncStorage.getItem(FOLDERS_KEY);
-      const folders = stored ? JSON.parse(stored) : [];
-      
-      // Add default folders if none exist
-      if (folders.length === 0) {
+      try {
+        const stored = await AsyncStorage.getItem(FOLDERS_KEY);
+        const folders = stored ? JSON.parse(stored) : [];
+        
+        // Add default folders if none exist
+        if (folders.length === 0) {
+          const defaultFolders: NoteFolder[] = [
+            {
+              id: 'work',
+              name: 'Work',
+              color: '#007AFF',
+              createdAt: new Date(),
+              description: 'Work-related calls'
+            },
+            {
+              id: 'personal',
+              name: 'Personal',
+              color: '#34C759',
+              createdAt: new Date(),
+              description: 'Personal calls'
+            },
+            {
+              id: 'sales',
+              name: 'Sales',
+              color: '#FF9500',
+              createdAt: new Date(),
+              description: 'Sales and business calls'
+            },
+            {
+              id: 'support',
+              name: 'Support',
+              color: '#5856D6',
+              createdAt: new Date(),
+              description: 'Customer support calls'
+            }
+          ];
+          await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(defaultFolders));
+          return defaultFolders;
+        }
+        
+        return folders;
+      } catch (error) {
+        console.error('Error parsing folders from storage:', error);
+        // Clear corrupted data and return default folders
+        await AsyncStorage.removeItem(FOLDERS_KEY);
         const defaultFolders: NoteFolder[] = [
           {
             id: 'work',
@@ -139,27 +216,55 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(defaultFolders));
         return defaultFolders;
       }
-      
-      return folders;
     }
   });
 
   const productCatalogsQuery = useQuery({
     queryKey: ['productCatalogs'],
     queryFn: async (): Promise<ProductCatalog[]> => {
-      const stored = await AsyncStorage.getItem(PRODUCT_CATALOGS_KEY);
-      return stored ? JSON.parse(stored) : [];
+      try {
+        const stored = await AsyncStorage.getItem(PRODUCT_CATALOGS_KEY);
+        if (!stored) return [];
+        return JSON.parse(stored);
+      } catch (error) {
+        console.error('Error parsing product catalogs from storage:', error);
+        // Clear corrupted data
+        await AsyncStorage.removeItem(PRODUCT_CATALOGS_KEY);
+        return [];
+      }
     }
   });
 
   const presetTagsQuery = useQuery({
     queryKey: ['presetTags'],
     queryFn: async (): Promise<string[]> => {
-      const stored = await AsyncStorage.getItem(PRESET_TAGS_KEY);
-      const tags = stored ? JSON.parse(stored) : [];
-      
-      // Add default tags if none exist
-      if (tags.length === 0) {
+      try {
+        const stored = await AsyncStorage.getItem(PRESET_TAGS_KEY);
+        const tags = stored ? JSON.parse(stored) : [];
+        
+        // Add default tags if none exist
+        if (tags.length === 0) {
+          const defaultTags = [
+            'Follow-up',
+            'Urgent',
+            'Sales',
+            'Support',
+            'Meeting',
+            'Quote',
+            'Order',
+            'Complaint',
+            'Information',
+            'Callback'
+          ];
+          await AsyncStorage.setItem(PRESET_TAGS_KEY, JSON.stringify(defaultTags));
+          return defaultTags;
+        }
+        
+        return tags;
+      } catch (error) {
+        console.error('Error parsing preset tags from storage:', error);
+        // Clear corrupted data and return default tags
+        await AsyncStorage.removeItem(PRESET_TAGS_KEY);
         const defaultTags = [
           'Follow-up',
           'Urgent',
@@ -175,24 +280,34 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         await AsyncStorage.setItem(PRESET_TAGS_KEY, JSON.stringify(defaultTags));
         return defaultTags;
       }
-      
-      return tags;
     }
   });
 
   const noteSettingsQuery = useQuery({
     queryKey: ['noteSettings'],
     queryFn: async (): Promise<NoteSettings> => {
-      const stored = await AsyncStorage.getItem(NOTE_SETTINGS_KEY);
-      const settings = stored ? JSON.parse(stored) : {};
-      
-      // Return with default values
-      return {
-        showDuration: settings.showDuration ?? true,
-        showDirection: settings.showDirection ?? true,
-        passwordProtected: settings.passwordProtected ?? false,
-        password: settings.password,
-      };
+      try {
+        const stored = await AsyncStorage.getItem(NOTE_SETTINGS_KEY);
+        const settings = stored ? JSON.parse(stored) : {};
+        
+        // Return with default values
+        return {
+          showDuration: settings.showDuration ?? true,
+          showDirection: settings.showDirection ?? true,
+          passwordProtected: settings.passwordProtected ?? false,
+          password: settings.password,
+        };
+      } catch (error) {
+        console.error('Error parsing note settings from storage:', error);
+        // Clear corrupted data and return defaults
+        await AsyncStorage.removeItem(NOTE_SETTINGS_KEY);
+        return {
+          showDuration: true,
+          showDirection: true,
+          passwordProtected: false,
+          password: undefined,
+        };
+      }
     }
   });
 
