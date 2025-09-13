@@ -771,6 +771,27 @@ export default function RemindersScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Group By Selector */}
+          <View style={styles.groupBySection}>
+            <TouchableOpacity 
+              style={styles.groupByButton}
+              onPress={() => setShowGroupByModal(true)}
+            >
+              <Filter size={16} color="#007AFF" />
+              <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
+              <ChevronDown size={16} color="#007AFF" />
+            </TouchableOpacity>
+            {activeTab === 'calls' && (
+              <TouchableOpacity 
+                style={styles.addButton}
+                onPress={() => setShowAddModal(true)}
+              >
+                <Plus size={16} color="#fff" />
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* Stats Section */}
           <View style={styles.statsSection}>
             <Text style={styles.sectionTitle}>Summary</Text>
@@ -812,27 +833,6 @@ export default function RemindersScreen() {
                 </View>
               </View>
             </ScrollView>
-          </View>
-
-          {/* Group By Selector */}
-          <View style={styles.groupBySection}>
-            <TouchableOpacity 
-              style={styles.groupByButton}
-              onPress={() => setShowGroupByModal(true)}
-            >
-              <Filter size={16} color="#007AFF" />
-              <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
-              <ChevronDown size={16} color="#007AFF" />
-            </TouchableOpacity>
-            {activeTab === 'calls' && (
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={() => setShowAddModal(true)}
-              >
-                <Plus size={16} color="#fff" />
-                <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
-            )}
           </View>
 
           {/* Reminders List */}
@@ -967,6 +967,7 @@ const styles = StyleSheet.create({
   statsSection: {
     paddingVertical: 16,
     backgroundColor: '#fff',
+    marginTop: 16,
   },
   statsGrid: {
     paddingHorizontal: 16,
