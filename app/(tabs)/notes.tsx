@@ -7,10 +7,11 @@ import { CallNote, NoteStatus, NoteFolder, NoteFilter, FilterType, GroupByOption
 import EditNoteModal from '@/components/EditNoteModal';
 import NoteViewModal from '@/components/NoteViewModal';
 import FolderManagementModal from '@/components/FolderManagementModal';
+import AddContactModal from '@/components/AddContactModal';
 import { COLORS } from '@/constants/colors';
 
 export default function NotesScreen() {
-  const { notes, contacts, folders, updateNote, deleteNote } = useContacts();
+  const { notes, contacts, folders, updateNote, deleteNote, addContact } = useContacts();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const searchOpacity = new Animated.Value(0);
@@ -30,6 +31,7 @@ export default function NotesScreen() {
   const [groupSearchQuery, setGroupSearchQuery] = useState<string>('');
   const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null);
   const [searchResultsExpanded, setSearchResultsExpanded] = useState<boolean>(false);
+  const [showAddContactModal, setShowAddContactModal] = useState<boolean>(false);
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -1550,6 +1552,24 @@ export default function NotesScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+      
+      <AddContactModal
+        visible={showAddContactModal}
+        onClose={() => setShowAddContactModal(false)}
+        onAdd={(contact) => {
+          addContact(contact);
+          setShowAddContactModal(false);
+        }}
+      />
+      
+      {/* Floating Add Button */}
+      <TouchableOpacity 
+        style={styles.floatingButton}
+        onPress={() => setShowAddContactModal(true)}
+        activeOpacity={0.8}
+      >
+        <Plus size={24} color="#fff" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -2497,5 +2517,21 @@ const styles = StyleSheet.create({
   selectedGroupByOptionText: {
     color: '#007AFF',
     fontWeight: '600',
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });

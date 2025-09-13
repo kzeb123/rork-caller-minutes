@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Users, FileText, Settings, ShoppingBag, Bell } from "lucide-react-native";
+import { FileText, Settings, ShoppingBag, Bell } from "lucide-react-native";
 import React from "react";
 import Colors from "@/constants/colors";
 
@@ -11,13 +11,6 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Contacts",
-          tabBarIcon: ({ color }) => <Users color={color} size={24} />,
-        }}
-      />
       <Tabs.Screen
         name="notes"
         options={{
