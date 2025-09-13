@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Animated, SafeAreaView, Modal } from 'react-native';
 import { Stack } from 'expo-router';
 import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, ChevronRight, ChevronUp, X, Plus, CheckCircle } from 'lucide-react-native';
@@ -32,6 +32,10 @@ export default function NotesScreen() {
   const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null);
   const [searchResultsExpanded, setSearchResultsExpanded] = useState<boolean>(false);
   const [showAddContactModal, setShowAddContactModal] = useState<boolean>(false);
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const animationValue = useRef(new Animated.Value(0)).current;
+  const scaleValue = useRef(new Animated.Value(1)).current;
+  const rotationValue = useRef(new Animated.Value(0)).current;
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -697,6 +701,56 @@ export default function NotesScreen() {
     deleteNote(noteId);
     setShowEditModal(false);
     setEditingNote(null);
+  };
+
+  const handleFloatingButtonPress = () => {
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
+    
+    // Start the animation sequence
+    Animated.parallel([
+      // Scale animation for press feedback
+      Animated.sequence([
+        Animated.timing(scaleValue, {
+          toValue: 0.9,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleValue, {
+          toValue: 1.1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleValue, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        })
+      ]),
+      // Rotation animation
+      Animated.timing(rotationValue, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      // Icon morphing animation
+      Animated.timing(animationValue, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      // Reset animations and show modal
+      setTimeout(() => {
+        setShowAddContactModal(true);
+        
+        // Reset animation values
+        animationValue.setValue(0);
+        rotationValue.setValue(0);
+        setIsAnimating(false);
+      }, 100);
+    });
   };
 
   const getPriorityColor = (priority?: 'low' | 'medium' | 'high') => {
@@ -1562,13 +1616,60 @@ export default function NotesScreen() {
         }}
       />
       
-      {/* Floating Add Button */}
+      {/* Animated Floating Add Button */}
       <TouchableOpacity 
-        style={styles.floatingButton}
-        onPress={() => setShowAddContactModal(true)}
+        style={[
+          styles.floatingButton,
+          styles.animatedButton,
+          {
+            transform: [{ scale: scaleValue }]
+          }
+        ]}
+        onPress={handleFloatingButtonPress}
         activeOpacity={0.8}
       >
-        <Plus size={24} color="#fff" />
+        <Animated.View
+          style={[
+            styles.rotatingContainer,
+            {
+              transform: [
+                {
+                  rotate: rotationValue.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg']
+                  })
+                }
+              ]
+            }
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.iconContainer,
+              {
+                opacity: animationValue.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [1, 0, 0]
+                })
+              }
+            ]}
+          >
+            <Plus size={24} color="#fff" />
+          </Animated.View>
+          <Animated.View
+            style={[
+              styles.phoneIconContainer,
+              {
+                opacity: animationValue.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0, 0, 1]
+                })
+              }
+            ]}
+          >
+            <Phone size={24} color="#fff" />
+          </Animated.View>
+        </Animated.View>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -2533,5 +2634,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  animatedButton: {
+    overflow: 'hidden',
+  },
+  rotatingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  phoneIconContainer: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
