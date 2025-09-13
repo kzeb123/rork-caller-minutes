@@ -708,9 +708,9 @@ export default function NotesScreen() {
     
     setIsAnimating(true);
     
-    // Start the animation sequence
+    // Start the animation sequence with radiating effect
     Animated.parallel([
-      // Scale animation for press feedback and expansion
+      // Scale animation for press feedback
       Animated.sequence([
         Animated.timing(scaleValue, {
           toValue: 0.95,
@@ -718,7 +718,7 @@ export default function NotesScreen() {
           useNativeDriver: true,
         }),
         Animated.spring(scaleValue, {
-          toValue: 1.15,
+          toValue: 1.1,
           tension: 100,
           friction: 8,
           useNativeDriver: true,
@@ -738,12 +738,8 @@ export default function NotesScreen() {
         useNativeDriver: true,
       })
     ]).start(() => {
-      // Smooth transition to modal
-      Animated.timing(scaleValue, {
-        toValue: 1.5,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
+      // After icon morph completes, open modal
+      setTimeout(() => {
         setShowAddContactModal(true);
         
         // Reset animation values after modal opens
@@ -752,8 +748,8 @@ export default function NotesScreen() {
           rotationValue.setValue(0);
           scaleValue.setValue(1);
           setIsAnimating(false);
-        }, 300);
-      });
+        }, 200);
+      }, 100);
     });
   };
 
@@ -1626,18 +1622,8 @@ export default function NotesScreen() {
           styles.floatingButton,
           {
             transform: [
-              { scale: scaleValue },
-              {
-                translateY: animationValue.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, -5]
-                })
-              }
-            ],
-            opacity: scaleValue.interpolate({
-              inputRange: [1, 1.5],
-              outputRange: [1, 0.3]
-            })
+              { scale: scaleValue }
+            ]
           }
         ]}
       >
@@ -1714,28 +1700,69 @@ export default function NotesScreen() {
               <Phone size={24} color="#fff" strokeWidth={2} />
             </Animated.View>
           </Animated.View>
-          
-          {/* Ripple effect */}
-          <Animated.View
-            style={[
-              styles.rippleEffect,
-              {
-                transform: [
-                  {
-                    scale: animationValue.interpolate({
-                      inputRange: [0, 0.5, 1],
-                      outputRange: [0, 1.5, 2]
-                    })
-                  }
-                ],
-                opacity: animationValue.interpolate({
-                  inputRange: [0, 0.3, 1],
-                  outputRange: [0, 0.3, 0]
-                })
-              }
-            ]}
-          />
         </TouchableOpacity>
+        
+        {/* Radiating ripple effects from corner */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.radiatingRipple,
+            {
+              transform: [
+                {
+                  scale: animationValue.interpolate({
+                    inputRange: [0, 0.3, 0.6, 1],
+                    outputRange: [1, 3, 6, 10]
+                  })
+                }
+              ],
+              opacity: animationValue.interpolate({
+                inputRange: [0, 0.2, 0.5, 1],
+                outputRange: [0, 0.4, 0.2, 0]
+              })
+            }
+          ]}
+        />
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.radiatingRipple,
+            {
+              transform: [
+                {
+                  scale: animationValue.interpolate({
+                    inputRange: [0, 0.2, 0.5, 0.8, 1],
+                    outputRange: [1, 2, 4, 7, 12]
+                  })
+                }
+              ],
+              opacity: animationValue.interpolate({
+                inputRange: [0, 0.1, 0.3, 0.6, 1],
+                outputRange: [0, 0, 0.3, 0.1, 0]
+              })
+            }
+          ]}
+        />
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.radiatingRipple,
+            {
+              transform: [
+                {
+                  scale: animationValue.interpolate({
+                    inputRange: [0, 0.1, 0.4, 0.7, 1],
+                    outputRange: [1, 1.5, 3, 5, 8]
+                  })
+                }
+              ],
+              opacity: animationValue.interpolate({
+                inputRange: [0, 0, 0.2, 0.4, 1],
+                outputRange: [0, 0, 0.2, 0.05, 0]
+              })
+            }
+          ]}
+        />
       </Animated.View>
     </SafeAreaView>
   );
@@ -2723,11 +2750,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rippleEffect: {
+  radiatingRipple: {
     position: 'absolute',
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: '#007AFF',
+    left: 0,
+    bottom: 0,
   },
 });
