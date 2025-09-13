@@ -787,10 +787,12 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         {
           name: 'John Smith',
           phoneNumber: '+1234567890',
+          businessCardImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop&crop=face',
         },
         {
           name: 'Sarah Johnson',
           phoneNumber: '+1987654321',
+          businessCardImage: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=250&fit=crop&crop=face',
         },
         {
           name: 'Michael Brown',
@@ -799,6 +801,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         {
           name: 'Emily Davis',
           phoneNumber: '+1444987654',
+          businessCardImage: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=250&fit=crop&crop=face',
         },
         {
           name: 'David Wilson',
