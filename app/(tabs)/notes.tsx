@@ -1316,126 +1316,7 @@ export default function NotesScreen() {
         </View>
       )}
 
-      {/* Search Bar */}
-      <View style={styles.groupByWrapper}>
-        <View style={styles.groupSearchContainer}>
-          <View style={styles.groupSearchInputWrapper}>
-            <Search size={16} color="#8E8E93" />
-            <TextInput
-              style={styles.groupSearchInput}
-              placeholder="Search contacts or keywords..."
-              placeholderTextColor="#8E8E93"
-              value={groupSearchQuery}
-              onChangeText={(text) => {
-                setGroupSearchQuery(text);
-                if (text.trim()) {
-                  setSearchResultsExpanded(true);
-                } else {
-                  setSearchResultsExpanded(false);
-                }
-              }}
-              returnKeyType="search"
-            />
-            {groupSearchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => {
-                setGroupSearchQuery('');
-                setSearchResultsExpanded(false);
-              }}>
-                <X size={16} color="#8E8E93" />
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          {/* Search Results Dropdown */}
-          {searchResultsExpanded && groupSearchQuery.trim() && (
-            <View style={styles.searchResultsDropdown}>
-              <View style={styles.searchResultsHeader}>
-                <Text style={styles.searchResultsTitle}>
-                  {getSearchResults().length} result{getSearchResults().length !== 1 ? 's' : ''} found
-                </Text>
-                <TouchableOpacity 
-                  onPress={() => setSearchResultsExpanded(false)}
-                  style={styles.collapseButton}
-                >
-                  <X size={16} color="#8E8E93" />
-                </TouchableOpacity>
-              </View>
-              
-              <ScrollView 
-                style={styles.searchResultsList}
-                showsVerticalScrollIndicator={false}
-                nestedScrollEnabled={true}
-              >
-                {getSearchResults().map((result, index) => (
-                  <TouchableOpacity
-                    key={`${result.note.id}-${index}`}
-                    style={styles.searchResultItem}
-                    onPress={() => handleSearchResultPress(result.note.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.searchResultContent}>
-                      <View style={styles.searchResultHeader}>
-                        <View style={styles.searchResultContactInfo}>
-                          <View style={styles.searchResultAvatar}>
-                            <User size={12} color="#666" />
-                          </View>
-                          <Text style={styles.searchResultContactName}>
-                            {result.matchType === 'contact' 
-                              ? highlightText(result.matchText, result.highlightStart, result.highlightEnd)
-                              : result.note.contactName
-                            }
-                          </Text>
-                        </View>
-                        <View style={styles.searchResultMeta}>
-                          <Text style={styles.searchResultTime}>
-                            {formatDate(result.note.createdAt)}
-                          </Text>
-                          <View style={[styles.matchTypeBadge, { backgroundColor: getMatchTypeColor(result.matchType) }]}>
-                            <Text style={styles.matchTypeText}>
-                              {result.matchType === 'contact' ? 'Contact' :
-                               result.matchType === 'content' ? 'Note' :
-                               result.matchType === 'tag' ? 'Tag' : 'Category'}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                      
-                      <View style={styles.searchResultMatch}>
-                        {result.matchType === 'content' && (
-                          <Text style={styles.searchResultMatchText}>
-                            {result.highlightStart > 0 && '...'}
-                            {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
-                            {result.highlightEnd < result.matchText.length && '...'}
-                          </Text>
-                        )}
-                        {result.matchType === 'tag' && (
-                          <View style={styles.searchResultTag}>
-                            <Tag size={10} color="#007AFF" />
-                            {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
-                          </View>
-                        )}
-                        {result.matchType === 'category' && (
-                          <View style={styles.searchResultCategory}>
-                            <Text style={styles.categoryLabel}>Category: </Text>
-                            {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-                
-                {getSearchResults().length === 0 && (
-                  <View style={styles.noResultsContainer}>
-                    <Search size={24} color="#ccc" />
-                    <Text style={styles.noResultsText}>No matches found</Text>
-                  </View>
-                )}
-              </ScrollView>
-            </View>
-          )}
-        </View>
-      </View>
+
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Summary Section */}
@@ -1449,6 +1330,127 @@ export default function NotesScreen() {
 
         {/* Notes Section */}
         <View style={styles.notesSection}>
+          {/* Search Bar */}
+          <View style={styles.groupByWrapper}>
+            <View style={styles.groupSearchContainer}>
+              <View style={styles.groupSearchInputWrapper}>
+                <Search size={16} color="#8E8E93" />
+                <TextInput
+                  style={styles.groupSearchInput}
+                  placeholder="Search contacts or keywords..."
+                  placeholderTextColor="#8E8E93"
+                  value={groupSearchQuery}
+                  onChangeText={(text) => {
+                    setGroupSearchQuery(text);
+                    if (text.trim()) {
+                      setSearchResultsExpanded(true);
+                    } else {
+                      setSearchResultsExpanded(false);
+                    }
+                  }}
+                  returnKeyType="search"
+                />
+                {groupSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => {
+                    setGroupSearchQuery('');
+                    setSearchResultsExpanded(false);
+                  }}>
+                    <X size={16} color="#8E8E93" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              {/* Search Results Dropdown */}
+              {searchResultsExpanded && groupSearchQuery.trim() && (
+                <View style={styles.searchResultsDropdown}>
+                  <View style={styles.searchResultsHeader}>
+                    <Text style={styles.searchResultsTitle}>
+                      {getSearchResults().length} result{getSearchResults().length !== 1 ? 's' : ''} found
+                    </Text>
+                    <TouchableOpacity 
+                      onPress={() => setSearchResultsExpanded(false)}
+                      style={styles.collapseButton}
+                    >
+                      <X size={16} color="#8E8E93" />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <ScrollView 
+                    style={styles.searchResultsList}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled={true}
+                  >
+                    {getSearchResults().map((result, index) => (
+                      <TouchableOpacity
+                        key={`${result.note.id}-${index}`}
+                        style={styles.searchResultItem}
+                        onPress={() => handleSearchResultPress(result.note.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.searchResultContent}>
+                          <View style={styles.searchResultHeader}>
+                            <View style={styles.searchResultContactInfo}>
+                              <View style={styles.searchResultAvatar}>
+                                <User size={12} color="#666" />
+                              </View>
+                              <Text style={styles.searchResultContactName}>
+                                {result.matchType === 'contact' 
+                                  ? highlightText(result.matchText, result.highlightStart, result.highlightEnd)
+                                  : result.note.contactName
+                                }
+                              </Text>
+                            </View>
+                            <View style={styles.searchResultMeta}>
+                              <Text style={styles.searchResultTime}>
+                                {formatDate(result.note.createdAt)}
+                              </Text>
+                              <View style={[styles.matchTypeBadge, { backgroundColor: getMatchTypeColor(result.matchType) }]}>
+                                <Text style={styles.matchTypeText}>
+                                  {result.matchType === 'contact' ? 'Contact' :
+                                   result.matchType === 'content' ? 'Note' :
+                                   result.matchType === 'tag' ? 'Tag' : 'Category'}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                          
+                          <View style={styles.searchResultMatch}>
+                            {result.matchType === 'content' && (
+                              <Text style={styles.searchResultMatchText}>
+                                {result.highlightStart > 0 && '...'}
+                                {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
+                                {result.highlightEnd < result.matchText.length && '...'}
+                              </Text>
+                            )}
+                            {result.matchType === 'tag' && (
+                              <View style={styles.searchResultTag}>
+                                <Tag size={10} color="#007AFF" />
+                                {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
+                              </View>
+                            )}
+                            {result.matchType === 'category' && (
+                              <View style={styles.searchResultCategory}>
+                                <Text style={styles.categoryLabel}>Category: </Text>
+                                {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                    
+                    {getSearchResults().length === 0 && (
+                      <View style={styles.noResultsContainer}>
+                        <Search size={24} color="#ccc" />
+                        <Text style={styles.noResultsText}>No matches found</Text>
+                      </View>
+                    )}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+          </View>
+          
           {/* Group By Options above Call Notes title */}
           <View style={styles.notesFilterButtonContainer}>
             <TouchableOpacity 
