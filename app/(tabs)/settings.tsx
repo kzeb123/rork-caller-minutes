@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView, SafeAreaView, Switch, Share } from 'react-native';
 import { Stack } from 'expo-router';
-import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save, Check, ChevronRight, Tag, Crown, FileText, Archive, Star } from 'lucide-react-native';
+import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save, Check, ChevronRight, Tag, Crown, FileText, Archive, Star, BarChart3, TrendingUp, Calendar, PieChart } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import AddContactModal from '@/components/AddContactModal';
 
@@ -27,6 +27,7 @@ export default function SettingsScreen() {
   const [isPremium, setIsPremium] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
   
   // Parse existing template or use default sections
   const parseTemplateToSections = (template: string): TemplateSection[] => {
@@ -293,7 +294,7 @@ export default function SettingsScreen() {
   const handleUpgradeToPremium = () => {
     Alert.alert(
       'Upgrade to Premium',
-      'Premium features include:\n\n• Cloud backup and sync\n• Export all data\n• Password protected notes\n• Advanced analytics\n• Priority support\n• Unlimited storage',
+      'Premium features include:\n\n• Cloud backup and sync\n• Export all data\n• Password protected notes\n• Advanced analytics & reports\n• Priority support\n• Unlimited storage',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -307,6 +308,105 @@ export default function SettingsScreen() {
         }
       ]
     );
+  };
+
+  const handleViewReports = () => {
+    if (!isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
+    setShowReportsModal(true);
+  };
+
+  // Analytics calculations
+  const getAnalytics = () => {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Filter recent data
+    const recentNotes = notes.filter(note => new Date(note.createdAt) >= thirtyDaysAgo);
+    const recentOrders = orders.filter(order => new Date(order.createdAt) >= thirtyDaysAgo);
+    const recentReminders = reminders.filter(reminder => new Date(reminder.createdAt) >= thirtyDaysAgo);
+    
+    const weeklyNotes = notes.filter(note => new Date(note.createdAt) >= sevenDaysAgo);
+    const weeklyOrders = orders.filter(order => new Date(order.createdAt) >= sevenDaysAgo);
+    
+    // Calculate trends
+    const notesGrowth = weeklyNotes.length > 0 ? ((weeklyNotes.length / Math.max(recentNotes.length - weeklyNotes.length, 1)) * 100) : 0;
+    const ordersGrowth = weeklyOrders.length > 0 ? ((weeklyOrders.length / Math.max(recentOrders.length - weeklyOrders.length, 1)) * 100) : 0;
+    
+    // Most active contacts
+    const contactActivity = contacts.map(contact => {
+      const contactNotes = notes.filter(note => note.contactId === contact.id);
+      const contactOrders = orders.filter(order => order.contactId === contact.id);
+      return {
+        contact,
+        totalActivity: contactNotes.length + contactOrders.length,
+        notes: contactNotes.length,
+        orders: contactOrders.length
+      };
+    }).sort((a, b) => b.totalActivity - a.totalActivity).slice(0, 5);
+    
+    // Tag frequency
+    const tagCounts: { [key: string]: number } = {};
+    notes.forEach(note => {
+      if (note.tags) {
+        note.tags.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      }
+    });
+    const topTags = Object.entries(tagCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([tag, count]) => ({ tag, count }));
+    
+    // Weekly activity chart data
+    const weeklyData = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const dayNotes = notes.filter(note => {
+        const noteDate = new Date(note.createdAt);
+        return noteDate >= dayStart && noteDate < dayEnd;
+      }).length;
+      
+      const dayOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= dayStart && orderDate < dayEnd;
+      }).length;
+      
+      weeklyData.push({
+        day: date.toLocaleDateString('en', { weekday: 'short' }),
+        notes: dayNotes,
+        orders: dayOrders,
+        total: dayNotes + dayOrders
+      });
+    }
+    
+    return {
+      totalStats: {
+        contacts: contacts.length,
+        notes: notes.length,
+        orders: orders.length,
+        reminders: reminders.length
+      },
+      recentStats: {
+        notes: recentNotes.length,
+        orders: recentOrders.length,
+        reminders: recentReminders.length
+      },
+      trends: {
+        notesGrowth: Math.round(notesGrowth),
+        ordersGrowth: Math.round(ordersGrowth)
+      },
+      topContacts: contactActivity,
+      topTags,
+      weeklyActivity: weeklyData
+    };
   };
 
 
@@ -480,6 +580,12 @@ export default function SettingsScreen() {
               title="Save Logs to Cloud"
               subtitle="Backup your data to secure cloud storage"
               onPress={handleSaveLogs}
+            />
+            <SettingItem
+              icon={<BarChart3 />}
+              title="Analytics & Reports"
+              subtitle="View detailed analytics and generate reports"
+              onPress={handleViewReports}
             />
             <View style={styles.toggleItem}>
               <View style={styles.toggleLeft}>
@@ -904,6 +1010,14 @@ export default function SettingsScreen() {
               </View>
               
               <View style={styles.premiumFeature}>
+                <BarChart3 size={24} color="#007AFF" />
+                <View style={styles.premiumFeatureContent}>
+                  <Text style={styles.premiumFeatureTitle}>Analytics & Reports</Text>
+                  <Text style={styles.premiumFeatureDescription}>Detailed insights, trends, and exportable reports</Text>
+                </View>
+              </View>
+              
+              <View style={styles.premiumFeature}>
                 <Star size={24} color="#007AFF" />
                 <View style={styles.premiumFeatureContent}>
                   <Text style={styles.premiumFeatureTitle}>Priority Support</Text>
@@ -947,6 +1061,283 @@ export default function SettingsScreen() {
               <Text style={styles.premiumCancelButtonText}>Maybe Later</Text>
             </TouchableOpacity>
           </View>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showReportsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.reportsModalContainer}>
+          <View style={styles.reportsHeader}>
+            <TouchableOpacity onPress={() => setShowReportsModal(false)}>
+              <X size={24} color="#007AFF" />
+            </TouchableOpacity>
+            
+            <View style={styles.reportsTitleContainer}>
+              <BarChart3 size={24} color="#007AFF" />
+              <Text style={styles.reportsModalTitle}>Analytics & Reports</Text>
+            </View>
+            
+            <TouchableOpacity onPress={() => {
+              const analytics = getAnalytics();
+              const reportData = {
+                generatedAt: new Date().toISOString(),
+                summary: analytics.totalStats,
+                trends: analytics.trends,
+                topContacts: analytics.topContacts,
+                topTags: analytics.topTags,
+                weeklyActivity: analytics.weeklyActivity
+              };
+              
+              if (Platform.OS === 'web') {
+                const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `analytics-report-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              } else {
+                Share.share({
+                  message: JSON.stringify(reportData, null, 2),
+                  title: 'Analytics Report'
+                });
+              }
+            }}>
+              <Download size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.reportsContent} showsVerticalScrollIndicator={false}>
+            {(() => {
+              const analytics = getAnalytics();
+              return (
+                <>
+                  {/* Overview Cards */}
+                  <View style={styles.overviewSection}>
+                    <Text style={styles.reportsSectionTitle}>Overview</Text>
+                    <View style={styles.overviewGrid}>
+                      <View style={styles.overviewCard}>
+                        <Users size={24} color="#007AFF" />
+                        <Text style={styles.overviewNumber}>{analytics.totalStats.contacts}</Text>
+                        <Text style={styles.overviewLabel}>Total Contacts</Text>
+                      </View>
+                      <View style={styles.overviewCard}>
+                        <FileText size={24} color="#34C759" />
+                        <Text style={styles.overviewNumber}>{analytics.totalStats.notes}</Text>
+                        <Text style={styles.overviewLabel}>Call Notes</Text>
+                      </View>
+                      <View style={styles.overviewCard}>
+                        <Archive size={24} color="#FF9500" />
+                        <Text style={styles.overviewNumber}>{analytics.totalStats.orders}</Text>
+                        <Text style={styles.overviewLabel}>Orders</Text>
+                      </View>
+                      <View style={styles.overviewCard}>
+                        <Calendar size={24} color="#FF3B30" />
+                        <Text style={styles.overviewNumber}>{analytics.totalStats.reminders}</Text>
+                        <Text style={styles.overviewLabel}>Reminders</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Trends */}
+                  <View style={styles.trendsSection}>
+                    <Text style={styles.reportsSectionTitle}>Weekly Trends</Text>
+                    <View style={styles.trendsGrid}>
+                      <View style={styles.trendCard}>
+                        <View style={styles.trendHeader}>
+                          <TrendingUp size={20} color={analytics.trends.notesGrowth >= 0 ? '#34C759' : '#FF3B30'} />
+                          <Text style={styles.trendTitle}>Notes Growth</Text>
+                        </View>
+                        <Text style={[styles.trendValue, { color: analytics.trends.notesGrowth >= 0 ? '#34C759' : '#FF3B30' }]}>
+                          {analytics.trends.notesGrowth >= 0 ? '+' : ''}{analytics.trends.notesGrowth}%
+                        </Text>
+                        <Text style={styles.trendSubtitle}>vs last week</Text>
+                      </View>
+                      <View style={styles.trendCard}>
+                        <View style={styles.trendHeader}>
+                          <TrendingUp size={20} color={analytics.trends.ordersGrowth >= 0 ? '#34C759' : '#FF3B30'} />
+                          <Text style={styles.trendTitle}>Orders Growth</Text>
+                        </View>
+                        <Text style={[styles.trendValue, { color: analytics.trends.ordersGrowth >= 0 ? '#34C759' : '#FF3B30' }]}>
+                          {analytics.trends.ordersGrowth >= 0 ? '+' : ''}{analytics.trends.ordersGrowth}%
+                        </Text>
+                        <Text style={styles.trendSubtitle}>vs last week</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Weekly Activity Chart */}
+                  <View style={styles.chartSection}>
+                    <Text style={styles.reportsSectionTitle}>Weekly Activity</Text>
+                    <View style={styles.chartContainer}>
+                      <View style={styles.chartGrid}>
+                        {analytics.weeklyActivity.map((day, index) => {
+                          const maxActivity = Math.max(...analytics.weeklyActivity.map(d => d.total));
+                          const height = maxActivity > 0 ? (day.total / maxActivity) * 120 : 0;
+                          return (
+                            <View key={index} style={styles.chartColumn}>
+                              <View style={styles.chartBars}>
+                                <View style={[styles.chartBar, styles.chartBarNotes, { height: maxActivity > 0 ? (day.notes / maxActivity) * 120 : 0 }]} />
+                                <View style={[styles.chartBar, styles.chartBarOrders, { height: maxActivity > 0 ? (day.orders / maxActivity) * 120 : 0 }]} />
+                              </View>
+                              <Text style={styles.chartLabel}>{day.day}</Text>
+                              <Text style={styles.chartValue}>{day.total}</Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                      <View style={styles.chartLegend}>
+                        <View style={styles.legendItem}>
+                          <View style={[styles.legendColor, styles.chartBarNotes]} />
+                          <Text style={styles.legendText}>Notes</Text>
+                        </View>
+                        <View style={styles.legendItem}>
+                          <View style={[styles.legendColor, styles.chartBarOrders]} />
+                          <Text style={styles.legendText}>Orders</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Top Contacts */}
+                  <View style={styles.topContactsSection}>
+                    <Text style={styles.reportsSectionTitle}>Most Active Contacts</Text>
+                    <View style={styles.topContactsList}>
+                      {analytics.topContacts.map((item, index) => (
+                        <View key={item.contact.id} style={styles.topContactItem}>
+                          <View style={styles.topContactRank}>
+                            <Text style={styles.topContactRankText}>{index + 1}</Text>
+                          </View>
+                          <View style={styles.topContactInfo}>
+                            <Text style={styles.topContactName}>{item.contact.name}</Text>
+                            <Text style={styles.topContactStats}>
+                              {item.notes} notes • {item.orders} orders
+                            </Text>
+                          </View>
+                          <Text style={styles.topContactTotal}>{item.totalActivity}</Text>
+                        </View>
+                      ))}
+                      {analytics.topContacts.length === 0 && (
+                        <Text style={styles.emptyState}>No contact activity yet</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Top Tags */}
+                  <View style={styles.topTagsSection}>
+                    <Text style={styles.reportsSectionTitle}>Most Used Tags</Text>
+                    <View style={styles.topTagsList}>
+                      {analytics.topTags.map((item, index) => (
+                        <View key={item.tag} style={styles.topTagItem}>
+                          <View style={styles.topTagRank}>
+                            <Text style={styles.topTagRankText}>{index + 1}</Text>
+                          </View>
+                          <View style={styles.topTagInfo}>
+                            <Text style={styles.topTagName}>{item.tag}</Text>
+                          </View>
+                          <Text style={styles.topTagCount}>{item.count}</Text>
+                        </View>
+                      ))}
+                      {analytics.topTags.length === 0 && (
+                        <Text style={styles.emptyState}>No tags used yet</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Export Options */}
+                  <View style={styles.exportSection}>
+                    <Text style={styles.reportsSectionTitle}>Export Options</Text>
+                    <View style={styles.exportButtons}>
+                      <TouchableOpacity 
+                        style={styles.exportButton}
+                        onPress={() => {
+                          const summaryData = {
+                            generatedAt: new Date().toISOString(),
+                            period: 'Last 30 days',
+                            summary: {
+                              totalContacts: analytics.totalStats.contacts,
+                              totalNotes: analytics.totalStats.notes,
+                              totalOrders: analytics.totalStats.orders,
+                              totalReminders: analytics.totalStats.reminders,
+                              recentNotes: analytics.recentStats.notes,
+                              recentOrders: analytics.recentStats.orders,
+                              notesGrowth: analytics.trends.notesGrowth,
+                              ordersGrowth: analytics.trends.ordersGrowth
+                            },
+                            topContacts: analytics.topContacts.slice(0, 3),
+                            topTags: analytics.topTags.slice(0, 3)
+                          };
+                          
+                          const summaryText = `Call Notes Summary Report\n\nGenerated: ${new Date().toLocaleDateString()}\n\nOverview:\n• Total Contacts: ${analytics.totalStats.contacts}\n• Total Notes: ${analytics.totalStats.notes}\n• Total Orders: ${analytics.totalStats.orders}\n• Total Reminders: ${analytics.totalStats.reminders}\n\nRecent Activity (30 days):\n• Notes: ${analytics.recentStats.notes}\n• Orders: ${analytics.recentStats.orders}\n\nTop Contacts:\n${analytics.topContacts.slice(0, 3).map((c, i) => `${i + 1}. ${c.contact.name} (${c.totalActivity} activities)`).join('\n')}\n\nTop Tags:\n${analytics.topTags.slice(0, 3).map((t, i) => `${i + 1}. ${t.tag} (${t.count} uses)`).join('\n')}`;
+                          
+                          if (Platform.OS === 'web') {
+                            const blob = new Blob([summaryText], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `summary-report-${new Date().toISOString().split('T')[0]}.txt`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                          } else {
+                            Share.share({
+                              message: summaryText,
+                              title: 'Summary Report'
+                            });
+                          }
+                        }}
+                      >
+                        <FileText size={20} color="#007AFF" />
+                        <Text style={styles.exportButtonText}>Export Summary</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity 
+                        style={styles.exportButton}
+                        onPress={() => {
+                          const detailedData = {
+                            generatedAt: new Date().toISOString(),
+                            analytics: analytics,
+                            rawData: {
+                              contacts: contacts.map(c => ({ id: c.id, name: c.name, phoneNumber: c.phoneNumber })),
+                              notes: notes.map(n => ({ id: n.id, contactId: n.contactId, createdAt: n.createdAt, tags: n.tags })),
+                              orders: orders.map(o => ({ id: o.id, contactId: o.contactId, createdAt: o.createdAt, status: o.status })),
+                              reminders: reminders.map(r => ({ id: r.id, contactId: r.contactId, createdAt: r.createdAt, title: r.title }))
+                            }
+                          };
+                          
+                          if (Platform.OS === 'web') {
+                            const blob = new Blob([JSON.stringify(detailedData, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `detailed-report-${new Date().toISOString().split('T')[0]}.json`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                          } else {
+                            Share.share({
+                              message: JSON.stringify(detailedData, null, 2),
+                              title: 'Detailed Analytics Report'
+                            });
+                          }
+                        }}
+                      >
+                        <BarChart3 size={20} color="#007AFF" />
+                        <Text style={styles.exportButtonText}>Export Detailed</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </>
+              );
+            })()}
+          </ScrollView>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -1572,5 +1963,323 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 16,
     fontWeight: '500',
+  },
+  reportsModalContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  reportsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+  },
+  reportsTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reportsModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  reportsContent: {
+    flex: 1,
+  },
+  reportsSectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 16,
+    marginHorizontal: 20,
+  },
+  overviewSection: {
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  overviewGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginHorizontal: 16,
+  },
+  overviewCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  overviewNumber: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000',
+  },
+  overviewLabel: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  trendsSection: {
+    marginBottom: 24,
+  },
+  trendsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginHorizontal: 16,
+  },
+  trendCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  trendHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  trendTitle: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  trendValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  trendSubtitle: {
+    fontSize: 12,
+    color: '#999',
+  },
+  chartSection: {
+    marginBottom: 24,
+  },
+  chartContainer: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  chartGrid: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 140,
+    marginBottom: 16,
+  },
+  chartColumn: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  chartBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 120,
+    marginBottom: 8,
+  },
+  chartBar: {
+    width: 8,
+    borderRadius: 4,
+    marginHorizontal: 1,
+  },
+  chartBarNotes: {
+    backgroundColor: '#007AFF',
+  },
+  chartBarOrders: {
+    backgroundColor: '#FF9500',
+  },
+  chartLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  chartValue: {
+    fontSize: 10,
+    color: '#999',
+  },
+  chartLegend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  topContactsSection: {
+    marginBottom: 24,
+  },
+  topContactsList: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  topContactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  topContactRank: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  topContactRankText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  topContactInfo: {
+    flex: 1,
+  },
+  topContactName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 2,
+  },
+  topContactStats: {
+    fontSize: 14,
+    color: '#666',
+  },
+  topContactTotal: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  topTagsSection: {
+    marginBottom: 24,
+  },
+  topTagsList: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  topTagItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  topTagRank: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#34C759',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  topTagRankText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  topTagInfo: {
+    flex: 1,
+  },
+  topTagName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  topTagCount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#34C759',
+  },
+  exportSection: {
+    marginBottom: 32,
+  },
+  exportButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginHorizontal: 16,
+  },
+  exportButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  exportButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyState: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 14,
+    fontStyle: 'italic',
+    padding: 20,
   },
 });
