@@ -293,7 +293,7 @@ export default function SettingsScreen() {
   const handleUpgradeToPremium = () => {
     Alert.alert(
       'Upgrade to Premium',
-      'Premium features include:\n\n• Cloud backup and sync\n• Export all data\n• Advanced analytics\n• Priority support\n• Unlimited storage',
+      'Premium features include:\n\n• Cloud backup and sync\n• Export all data\n• Password protected notes\n• Advanced analytics\n• Priority support\n• Unlimited storage',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -449,37 +449,7 @@ export default function SettingsScreen() {
               />
             </View>
             
-            <View style={styles.toggleItem}>
-              <View style={styles.toggleLeft}>
-                <Text style={styles.toggleTitle}>Password Protected Notes</Text>
-                <Text style={styles.toggleSubtitle}>Require password to view notes</Text>
-              </View>
-              <Switch
-                value={noteSettings?.passwordProtected ?? false}
-                onValueChange={(value) => {
-                  if (value) {
-                    setShowPasswordModal(true);
-                  } else {
-                    Alert.alert(
-                      'Remove Password Protection',
-                      'Are you sure you want to remove password protection from your notes?',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Remove',
-                          style: 'destructive',
-                          onPress: () => {
-                            updateNoteSettings({ passwordProtected: false, password: undefined });
-                          },
-                        },
-                      ]
-                    );
-                  }
-                }}
-                trackColor={{ false: '#767577', true: '#007AFF' }}
-                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
-              />
-            </View>
+
           </View>
         </View>
 
@@ -511,12 +481,48 @@ export default function SettingsScreen() {
               subtitle="Backup your data to secure cloud storage"
               onPress={handleSaveLogs}
             />
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleLeft}>
+                <Text style={styles.toggleTitle}>Password Protected Notes</Text>
+                <Text style={styles.toggleSubtitle}>Require password to view notes</Text>
+              </View>
+              <Switch
+                value={noteSettings?.passwordProtected ?? false}
+                onValueChange={(value) => {
+                  if (!isPremium) {
+                    setShowPremiumModal(true);
+                    return;
+                  }
+                  if (value) {
+                    setShowPasswordModal(true);
+                  } else {
+                    Alert.alert(
+                      'Remove Password Protection',
+                      'Are you sure you want to remove password protection from your notes?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Remove',
+                          style: 'destructive',
+                          onPress: () => {
+                            updateNoteSettings({ passwordProtected: false, password: undefined });
+                          },
+                        },
+                      ]
+                    );
+                  }
+                }}
+                trackColor={{ false: '#767577', true: '#007AFF' }}
+                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
+                disabled={!isPremium}
+              />
+            </View>
           </View>
           {!isPremium && (
             <View style={styles.premiumOverlay}>
               <Crown size={24} color="#FFD700" />
               <Text style={styles.premiumOverlayText}>Premium Feature</Text>
-              <Text style={styles.premiumOverlaySubtext}>Upgrade to access cloud backup and export</Text>
+              <Text style={styles.premiumOverlaySubtext}>Upgrade to access cloud backup, export, and password protection</Text>
             </View>
           )}
         </View>
@@ -886,6 +892,14 @@ export default function SettingsScreen() {
                 <View style={styles.premiumFeatureContent}>
                   <Text style={styles.premiumFeatureTitle}>Unlimited Storage</Text>
                   <Text style={styles.premiumFeatureDescription}>Store unlimited contacts, notes, and call history</Text>
+                </View>
+              </View>
+              
+              <View style={styles.premiumFeature}>
+                <SettingsIcon size={24} color="#007AFF" />
+                <View style={styles.premiumFeatureContent}>
+                  <Text style={styles.premiumFeatureTitle}>Password Protection</Text>
+                  <Text style={styles.premiumFeatureDescription}>Secure your call notes with password protection</Text>
                 </View>
               </View>
               
