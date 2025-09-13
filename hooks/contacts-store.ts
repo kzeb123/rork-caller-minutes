@@ -15,6 +15,7 @@ const FOLDERS_KEY = 'call_notes_folders';
 const PRODUCT_CATALOGS_KEY = 'call_notes_product_catalogs';
 const PRESET_TAGS_KEY = 'call_notes_preset_tags';
 const NOTE_SETTINGS_KEY = 'call_notes_settings';
+const PREMIUM_SETTINGS_KEY = 'call_notes_premium_settings';
 
 const DEFAULT_NOTE_TEMPLATE = `Call with [CONTACT_NAME] - [DATE]
 
@@ -306,6 +307,30 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
           showDirection: true,
           passwordProtected: false,
           password: undefined,
+        };
+      }
+    }
+  });
+
+  const premiumSettingsQuery = useQuery({
+    queryKey: ['premiumSettings'],
+    queryFn: async (): Promise<{ isPremium: boolean; showShopifyTab: boolean }> => {
+      try {
+        const stored = await AsyncStorage.getItem(PREMIUM_SETTINGS_KEY);
+        const settings = stored ? JSON.parse(stored) : {};
+        
+        // Return with default values
+        return {
+          isPremium: settings.isPremium ?? false,
+          showShopifyTab: settings.showShopifyTab ?? false,
+        };
+      } catch (error) {
+        console.error('Error parsing premium settings from storage:', error);
+        // Clear corrupted data and return defaults
+        await AsyncStorage.removeItem(PREMIUM_SETTINGS_KEY);
+        return {
+          isPremium: false,
+          showShopifyTab: false,
         };
       }
     }
@@ -656,6 +681,18 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
       queryClient.invalidateQueries({ queryKey: ['noteSettings'] });
     }
   });
+
+  const updatePremiumSettingsMutation = useMutation({
+    mutationFn: async (updates: Partial<{ isPremium: boolean; showShopifyTab: boolean }>) => {
+      const current = premiumSettingsQuery.data || { isPremium: false, showShopifyTab: false };
+      const updated = { ...current, ...updates };
+      await AsyncStorage.setItem(PREMIUM_SETTINGS_KEY, JSON.stringify(updated));
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['premiumSettings'] });
+    }
+  });
   
   const { mutate: addNoteMutate } = addNoteMutation;
 
@@ -886,6 +923,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     await AsyncStorage.removeItem(PRODUCT_CATALOGS_KEY);
     await AsyncStorage.removeItem(PRESET_TAGS_KEY);
     await AsyncStorage.removeItem(NOTE_SETTINGS_KEY);
+    await AsyncStorage.removeItem(PREMIUM_SETTINGS_KEY);
     queryClient.invalidateQueries({ queryKey: ['contacts'] });
     queryClient.invalidateQueries({ queryKey: ['notes'] });
     queryClient.invalidateQueries({ queryKey: ['reminders'] });
@@ -894,6 +932,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryClient.invalidateQueries({ queryKey: ['productCatalogs'] });
     queryClient.invalidateQueries({ queryKey: ['presetTags'] });
     queryClient.invalidateQueries({ queryKey: ['noteSettings'] });
+    queryClient.invalidateQueries({ queryKey: ['premiumSettings'] });
   }, [queryClient]);
 
   const addFakeContactsMutation = useMutation({
@@ -1063,8 +1102,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     productCatalogs: productCatalogsQuery.data || [],
     presetTags: presetTagsQuery.data || [],
     noteSettings: noteSettingsQuery.data || { showDuration: true, showDirection: true, passwordProtected: false },
+    premiumSettings: premiumSettingsQuery.data || { isPremium: false, showShopifyTab: false },
     noteTemplate: noteTemplateQuery.data || DEFAULT_NOTE_TEMPLATE,
-    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading || foldersQuery.isLoading || productCatalogsQuery.isLoading || presetTagsQuery.isLoading || noteSettingsQuery.isLoading,
+    isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading || foldersQuery.isLoading || productCatalogsQuery.isLoading || presetTagsQuery.isLoading || noteSettingsQuery.isLoading || premiumSettingsQuery.isLoading,
     incomingCall,
     activeCall,
     showNoteModal,
@@ -1095,6 +1135,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     deleteProductCatalog: deleteProductCatalogMutation.mutate,
     updatePresetTags: updatePresetTagsMutation.mutate,
     updateNoteSettings: updateNoteSettingsMutation.mutate,
+    updatePremiumSettings: updatePremiumSettingsMutation.mutate,
     openCallNoteModal,
     simulateIncomingCall,
     answerCall,
@@ -1117,6 +1158,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     productCatalogsQuery.data,
     presetTagsQuery.data,
     noteSettingsQuery.data,
+    premiumSettingsQuery.data,
     noteTemplateQuery.data,
     contactsQuery.isLoading,
     notesQuery.isLoading,
@@ -1126,6 +1168,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     productCatalogsQuery.isLoading,
     presetTagsQuery.isLoading,
     noteSettingsQuery.isLoading,
+    premiumSettingsQuery.isLoading,
     noteTemplateQuery.isLoading,
     incomingCall,
     activeCall,
@@ -1157,6 +1200,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     deleteProductCatalogMutation.mutate,
     updatePresetTagsMutation.mutate,
     updateNoteSettingsMutation.mutate,
+    updatePremiumSettingsMutation.mutate,
     openCallNoteModal,
     simulateIncomingCall,
     answerCall,

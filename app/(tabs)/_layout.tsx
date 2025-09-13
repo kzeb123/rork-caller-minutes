@@ -1,9 +1,13 @@
 import { Tabs } from "expo-router";
-import { FileText, Settings, ShoppingBag, Bell } from "lucide-react-native";
+import { FileText, Settings, ShoppingBag, Bell, Globe } from "lucide-react-native";
 import React from "react";
 import Colors from "@/constants/colors";
+import { useContacts } from "@/hooks/contacts-store";
 
 export default function TabLayout() {
+  const { premiumSettings } = useContacts();
+  const showShopifyTab = premiumSettings?.showShopifyTab ?? false;
+
   return (
     <Tabs
       screenOptions={{
@@ -32,6 +36,15 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <ShoppingBag color={color} size={24} />,
         }}
       />
+      {showShopifyTab && (
+        <Tabs.Screen
+          name="shopify"
+          options={{
+            title: "Website",
+            tabBarIcon: ({ color }) => <Globe color={color} size={24} />,
+          }}
+        />
+      )}
       <Tabs.Screen
         name="settings"
         options={{

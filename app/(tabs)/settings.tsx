@@ -13,7 +13,7 @@ interface TemplateSection {
 }
 
 export default function SettingsScreen() {
-  const { contacts, notes, orders, reminders, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts, presetTags, updatePresetTags, noteSettings, updateNoteSettings } = useContacts();
+  const { contacts, notes, orders, reminders, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts, presetTags, updatePresetTags, noteSettings, updateNoteSettings, premiumSettings, updatePremiumSettings } = useContacts();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -550,6 +550,24 @@ export default function SettingsScreen() {
             </View>
             
 
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Premium Features</Text>
+          <View style={styles.settingsGroup}>
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleLeft}>
+                <Text style={styles.toggleTitle}>Enable Shopify/Website Tab</Text>
+                <Text style={styles.toggleSubtitle}>Add a premium tab for Shopify store or website integration</Text>
+              </View>
+              <Switch
+                value={premiumSettings?.showShopifyTab ?? false}
+                onValueChange={(value) => updatePremiumSettings({ showShopifyTab: value })}
+                trackColor={{ false: '#767577', true: '#007AFF' }}
+                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
+              />
+            </View>
           </View>
         </View>
 
