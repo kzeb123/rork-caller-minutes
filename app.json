@@ -17,7 +17,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.rork.caller-note-assistant",
       "infoPlist": {
-        "NSContactsUsageDescription": "A message that tells the user why the app is requesting access to the user's contacts."
+        "NSContactsUsageDescription": "A message that tells the user why the app is requesting access to the user's contacts.",
+        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
       },
       "accessesContactNotes": true,
       "usesIcloudStorage": true
@@ -31,7 +34,10 @@
       "permissions": [
         "android.permission.VIBRATE",
         "READ_CONTACTS",
-        "WRITE_CONTACTS"
+        "WRITE_CONTACTS",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -54,6 +60,12 @@
         "expo-document-picker",
         {
           "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ]
     ],

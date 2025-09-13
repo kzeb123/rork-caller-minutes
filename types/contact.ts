@@ -3,6 +3,7 @@ export interface Contact {
   name: string;
   phoneNumber: string;
   avatar?: string;
+  businessCardImage?: string;
   createdAt: Date;
 }
 

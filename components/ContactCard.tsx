@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { ChevronRight, User } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Image } from 'react-native';
+import { ChevronRight, User, CreditCard, X } from 'lucide-react-native';
 import { Contact } from '@/types/contact';
 import { useContacts } from '@/hooks/contacts-store';
 
@@ -10,34 +10,84 @@ interface ContactCardProps {
 
 export default function ContactCard({ contact }: ContactCardProps) {
   const { openCallNoteModal } = useContacts();
+  const [showBusinessCard, setShowBusinessCard] = useState(false);
 
   const handleContactPress = () => {
+    const options: any[] = [
+      { text: 'Cancel', style: 'cancel' as const },
+      { 
+        text: 'Create Call Note', 
+        onPress: () => openCallNoteModal(contact)
+      },
+    ];
+
+    if (contact.businessCardImage) {
+      options.splice(1, 0, {
+        text: 'View Business Card',
+        onPress: () => setShowBusinessCard(true)
+      });
+    }
+
     Alert.alert(
       contact.name,
       contact.phoneNumber,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Create Call Note', 
-          onPress: () => openCallNoteModal(contact)
-        },
-      ]
+      options
     );
   };
 
   return (
-    <TouchableOpacity style={styles.container} onPress={handleContactPress}>
-      <View style={styles.avatar}>
-        <User size={24} color="#666" />
-      </View>
-      
-      <View style={styles.info}>
-        <Text style={styles.name}>{contact.name}</Text>
-        <Text style={styles.phone}>{contact.phoneNumber}</Text>
-      </View>
+    <>
+      <TouchableOpacity style={styles.container} onPress={handleContactPress}>
+        <View style={styles.avatar}>
+          <User size={24} color="#666" />
+        </View>
+        
+        <View style={styles.info}>
+          <Text style={styles.name}>{contact.name}</Text>
+          <View style={styles.phoneRow}>
+            <Text style={styles.phone}>{contact.phoneNumber}</Text>
+            {contact.businessCardImage && (
+              <View style={styles.businessCardBadge}>
+                <CreditCard size={12} color="#007AFF" />
+                <Text style={styles.businessCardText}>Card</Text>
+              </View>
+            )}
+          </View>
+        </View>
 
-      <ChevronRight size={20} color="#C7C7CC" />
-    </TouchableOpacity>
+        <ChevronRight size={20} color="#C7C7CC" />
+      </TouchableOpacity>
+
+      {/* Business Card Viewer Modal */}
+      <Modal
+        visible={showBusinessCard}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowBusinessCard(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={() => setShowBusinessCard(false)}
+          >
+            <X size={28} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.modalContent}>
+            {contact.businessCardImage && (
+              <Image 
+                source={{ uri: contact.businessCardImage }}
+                style={styles.businessCardImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+          <View style={styles.modalFooter}>
+            <Text style={styles.modalTitle}>{contact.name}&apos;s Business Card</Text>
+            <Text style={styles.modalSubtitle}>Pinch to zoom • Swipe to dismiss</Text>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -72,5 +122,63 @@ const styles = StyleSheet.create({
   phone: {
     fontSize: 15,
     color: '#8E8E93',
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  businessCardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#007AFF15',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  businessCardText: {
+    fontSize: 11,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 1,
+    padding: 8,
+  },
+  modalContent: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  businessCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  modalFooter: {
+    position: 'absolute',
+    bottom: 50,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
   },
 });

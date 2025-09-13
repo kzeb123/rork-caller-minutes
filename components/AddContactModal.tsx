@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert, FlatList, ScrollView, Animated, Dimensions } from 'react-native';
-import { X, UserPlus, User, Phone, Search, Plus } from 'lucide-react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert, FlatList, ScrollView, Animated, Dimensions, Image } from 'react-native';
+import { X, UserPlus, User, Phone, Search, Plus, Camera, Image as ImageIcon, Maximize2 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useContacts } from '@/hooks/contacts-store';
 import { Contact } from '@/types/contact';
 
@@ -17,6 +18,8 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const [phoneNumber, setPhoneNumber] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [businessCardImage, setBusinessCardImage] = useState<string | null>(null);
+  const [showImageViewer, setShowImageViewer] = useState(false);
   
   // Get dimensions inside component
   const { width, height } = Dimensions.get('window');
@@ -73,12 +76,53 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     onAdd({
       name: name.trim(),
       phoneNumber: phoneNumber.trim(),
-    });
+      businessCardImage: businessCardImage || undefined,
+    } as any);
 
     setName('');
     setPhoneNumber('');
+    setBusinessCardImage(null);
     setShowAddForm(false);
     onClose();
+  };
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'We need camera roll permissions to attach business cards.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.8,
+      base64: false,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setBusinessCardImage(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'We need camera permissions to take photos of business cards.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 0.8,
+      base64: false,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setBusinessCardImage(result.assets[0].uri);
+    }
   };
 
   const handleClose = () => {
@@ -108,6 +152,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
       setName('');
       setPhoneNumber('');
       setSearchQuery('');
+      setBusinessCardImage(null);
       setShowAddForm(false);
       onClose();
     });
@@ -144,6 +189,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
         setName('');
         setPhoneNumber('');
         setSearchQuery('');
+        setBusinessCardImage(null);
         setShowAddForm(false);
         onClose();
         // Open call note modal after the close animation completes
@@ -257,6 +303,52 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
               />
             </View>
 
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Business Card</Text>
+              {businessCardImage ? (
+                <View style={styles.imageContainer}>
+                  <TouchableOpacity 
+                    style={styles.imagePreview}
+                    onPress={() => setShowImageViewer(true)}
+                    activeOpacity={0.9}
+                  >
+                    <Image 
+                      source={{ uri: businessCardImage }} 
+                      style={styles.businessCardImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.imageOverlay}>
+                      <Maximize2 size={24} color="#fff" />
+                      <Text style={styles.imageOverlayText}>Tap to view</Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.removeImageButton}
+                    onPress={() => setBusinessCardImage(null)}
+                  >
+                    <X size={20} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.imageButtonsContainer}>
+                  <TouchableOpacity 
+                    style={styles.imageButton}
+                    onPress={takePhoto}
+                  >
+                    <Camera size={24} color="#007AFF" />
+                    <Text style={styles.imageButtonText}>Take Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.imageButton}
+                    onPress={pickImage}
+                  >
+                    <ImageIcon size={24} color="#007AFF" />
+                    <Text style={styles.imageButtonText}>Choose Photo</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
             <View style={styles.formFooter}>
               <TouchableOpacity 
                 style={styles.cancelButton} 
@@ -264,6 +356,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
                   setShowAddForm(false);
                   setName('');
                   setPhoneNumber('');
+                  setBusinessCardImage(null);
                 }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -327,6 +420,36 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
           </KeyboardAvoidingView>
         </Animated.View>
       </Animated.View>
+
+      {/* Business Card Viewer Modal */}
+      <Modal
+        visible={showImageViewer}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowImageViewer(false)}
+      >
+        <View style={styles.imageViewerOverlay}>
+          <TouchableOpacity 
+            style={styles.imageViewerCloseButton}
+            onPress={() => setShowImageViewer(false)}
+          >
+            <X size={28} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.imageViewerContent}>
+            {businessCardImage && (
+              <Image 
+                source={{ uri: businessCardImage }}
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+          <View style={styles.imageViewerFooter}>
+            <Text style={styles.imageViewerTitle}>Business Card</Text>
+            <Text style={styles.imageViewerSubtitle}>Pinch to zoom • Swipe to dismiss</Text>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -514,5 +637,111 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  imageContainer: {
+    position: 'relative',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
+    position: 'relative',
+  },
+  businessCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageOverlayText: {
+    color: '#fff',
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  imageButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  imageButton: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    gap: 8,
+  },
+  imageButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  imageViewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageViewerCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 1,
+    padding: 8,
+  },
+  imageViewerContent: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageViewerFooter: {
+    position: 'absolute',
+    bottom: 50,
+    alignItems: 'center',
+  },
+  imageViewerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  imageViewerSubtitle: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
   },
 });
