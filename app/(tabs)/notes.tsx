@@ -734,7 +734,7 @@ export default function NotesScreen() {
       // Icon morphing animation with faster timing
       Animated.timing(animationValue, {
         toValue: 1,
-        duration: 180,
+        duration: 150,
         useNativeDriver: true,
       })
     ]).start(() => {
@@ -747,7 +747,7 @@ export default function NotesScreen() {
         rotationValue.setValue(0);
         scaleValue.setValue(1);
         setIsAnimating(false);
-      }, 100);
+      }, 50);
     });
   };
 
@@ -1675,13 +1675,13 @@ export default function NotesScreen() {
                 styles.phoneIconWrapper,
                 {
                   opacity: animationValue.interpolate({
-                    inputRange: [0, 0.25, 0.6, 1],
+                    inputRange: [0, 0.2, 0.5, 1],
                     outputRange: [0, 0, 1, 1]
                   }),
                   transform: [
                     {
                       scale: animationValue.interpolate({
-                        inputRange: [0, 0.4, 0.7, 1],
+                        inputRange: [0, 0.3, 0.6, 1],
                         outputRange: [0.8, 1.15, 1.05, 1]
                       })
                     },
@@ -1709,13 +1709,13 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.3, 0.6, 1],
+                    inputRange: [0, 0.2, 0.5, 1],
                     outputRange: [1, 4, 8, 12]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0.2, 0.5, 1],
+                inputRange: [0, 0.15, 0.4, 1],
                 outputRange: [0, 0.7, 0.3, 0]
               }),
               backgroundColor: animationValue.interpolate({
@@ -1733,13 +1733,13 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.25, 0.5, 0.75, 1],
+                    inputRange: [0, 0.2, 0.45, 0.7, 1],
                     outputRange: [1, 3, 6, 10, 15]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0.15, 0.4, 0.7, 1],
+                inputRange: [0, 0.1, 0.35, 0.65, 1],
                 outputRange: [0, 0, 0.5, 0.2, 0]
               }),
               backgroundColor: animationValue.interpolate({
@@ -1757,13 +1757,13 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.2, 0.45, 0.7, 1],
+                    inputRange: [0, 0.15, 0.4, 0.65, 1],
                     outputRange: [1, 2, 4.5, 7, 10]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0.1, 0.3, 0.5, 1],
+                inputRange: [0, 0.05, 0.25, 0.45, 1],
                 outputRange: [0, 0, 0.4, 0.15, 0]
               }),
               backgroundColor: animationValue.interpolate({
