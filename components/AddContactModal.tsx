@@ -29,29 +29,29 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   
   useEffect(() => {
     if (visible) {
-      // Animate modal radiating from bottom-left corner with smooth expansion
+      // Start animation immediately with no delay for seamless transition
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
-          tension: 40,
-          friction: 7,
+          tension: 50,
+          friction: 8,
           useNativeDriver: true,
         }),
         Animated.spring(translateXAnim, {
           toValue: 0,
-          tension: 40,
-          friction: 7,
+          tension: 50,
+          friction: 8,
           useNativeDriver: true,
         }),
         Animated.spring(translateYAnim, {
           toValue: 0,
-          tension: 40,
-          friction: 7,
+          tension: 50,
+          friction: 8,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 200,
+          duration: 150,
           useNativeDriver: true,
         }),
       ]).start();

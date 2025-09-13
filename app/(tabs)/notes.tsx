@@ -738,14 +738,16 @@ export default function NotesScreen() {
         useNativeDriver: true,
       })
     ]).start(() => {
-      // Open modal immediately when animation completes
+      // Open modal immediately when plus-to-phone animation completes
       setShowAddContactModal(true);
-      
-      // Reset animation values immediately without delay
-      animationValue.setValue(0);
-      rotationValue.setValue(0);
-      scaleValue.setValue(1);
       setIsAnimating(false);
+      
+      // Reset animation values after a tiny delay to ensure modal is open
+      setTimeout(() => {
+        animationValue.setValue(0);
+        rotationValue.setValue(0);
+        scaleValue.setValue(1);
+      }, 50);
     });
   };
 
