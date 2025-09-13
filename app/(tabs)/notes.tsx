@@ -710,46 +710,50 @@ export default function NotesScreen() {
     
     // Start the animation sequence
     Animated.parallel([
-      // Scale animation for press feedback
+      // Scale animation for press feedback and expansion
       Animated.sequence([
         Animated.timing(scaleValue, {
-          toValue: 0.9,
+          toValue: 0.95,
           duration: 100,
           useNativeDriver: true,
         }),
-        Animated.timing(scaleValue, {
-          toValue: 1.1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleValue, {
-          toValue: 1,
-          duration: 100,
+        Animated.spring(scaleValue, {
+          toValue: 1.15,
+          tension: 100,
+          friction: 8,
           useNativeDriver: true,
         })
       ]),
-      // Rotation animation
-      Animated.timing(rotationValue, {
+      // Smooth rotation animation
+      Animated.spring(rotationValue, {
         toValue: 1,
-        duration: 600,
+        tension: 50,
+        friction: 5,
         useNativeDriver: true,
       }),
-      // Icon morphing animation
+      // Icon morphing animation with easing
       Animated.timing(animationValue, {
         toValue: 1,
-        duration: 600,
+        duration: 400,
         useNativeDriver: true,
       })
     ]).start(() => {
-      // Reset animations and show modal
-      setTimeout(() => {
+      // Smooth transition to modal
+      Animated.timing(scaleValue, {
+        toValue: 1.5,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
         setShowAddContactModal(true);
         
-        // Reset animation values
-        animationValue.setValue(0);
-        rotationValue.setValue(0);
-        setIsAnimating(false);
-      }, 100);
+        // Reset animation values after modal opens
+        setTimeout(() => {
+          animationValue.setValue(0);
+          rotationValue.setValue(0);
+          scaleValue.setValue(1);
+          setIsAnimating(false);
+        }, 300);
+      });
     });
   };
 
@@ -1617,60 +1621,122 @@ export default function NotesScreen() {
       />
       
       {/* Animated Floating Add Button */}
-      <TouchableOpacity 
+      <Animated.View
         style={[
           styles.floatingButton,
-          styles.animatedButton,
           {
-            transform: [{ scale: scaleValue }]
+            transform: [
+              { scale: scaleValue },
+              {
+                translateY: animationValue.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -5]
+                })
+              }
+            ],
+            opacity: scaleValue.interpolate({
+              inputRange: [1, 1.5],
+              outputRange: [1, 0.3]
+            })
           }
         ]}
-        onPress={handleFloatingButtonPress}
-        activeOpacity={0.8}
       >
-        <Animated.View
-          style={[
-            styles.rotatingContainer,
-            {
-              transform: [
-                {
-                  rotate: rotationValue.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['0deg', '360deg']
-                  })
-                }
-              ]
-            }
-          ]}
+        <TouchableOpacity 
+          style={styles.floatingButtonTouchable}
+          onPress={handleFloatingButtonPress}
+          activeOpacity={0.9}
+          disabled={isAnimating}
         >
           <Animated.View
             style={[
-              styles.iconContainer,
+              styles.rotatingContainer,
               {
-                opacity: animationValue.interpolate({
-                  inputRange: [0, 0.5, 1],
-                  outputRange: [1, 0, 0]
-                })
+                transform: [
+                  {
+                    rotate: rotationValue.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '180deg']
+                    })
+                  }
+                ]
               }
             ]}
           >
-            <Plus size={24} color="#fff" />
+            {/* Plus Icon - fades out */}
+            <Animated.View
+              style={[
+                styles.iconWrapper,
+                {
+                  opacity: animationValue.interpolate({
+                    inputRange: [0, 0.3, 1],
+                    outputRange: [1, 0, 0]
+                  }),
+                  transform: [
+                    {
+                      scale: animationValue.interpolate({
+                        inputRange: [0, 0.5],
+                        outputRange: [1, 0.8]
+                      })
+                    }
+                  ]
+                }
+              ]}
+            >
+              <Plus size={26} color="#fff" strokeWidth={2.5} />
+            </Animated.View>
+            
+            {/* Phone Icon - fades in with bounce */}
+            <Animated.View
+              style={[
+                styles.phoneIconWrapper,
+                {
+                  opacity: animationValue.interpolate({
+                    inputRange: [0, 0.3, 1],
+                    outputRange: [0, 0, 1]
+                  }),
+                  transform: [
+                    {
+                      scale: animationValue.interpolate({
+                        inputRange: [0, 0.5, 1],
+                        outputRange: [0.8, 1.1, 1]
+                      })
+                    },
+                    {
+                      rotate: animationValue.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['45deg', '0deg']
+                      })
+                    }
+                  ]
+                }
+              ]}
+            >
+              <Phone size={24} color="#fff" strokeWidth={2} />
+            </Animated.View>
           </Animated.View>
+          
+          {/* Ripple effect */}
           <Animated.View
             style={[
-              styles.phoneIconContainer,
+              styles.rippleEffect,
               {
+                transform: [
+                  {
+                    scale: animationValue.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0, 1.5, 2]
+                    })
+                  }
+                ],
                 opacity: animationValue.interpolate({
-                  inputRange: [0, 0.5, 1],
-                  outputRange: [0, 0, 1]
+                  inputRange: [0, 0.3, 1],
+                  outputRange: [0, 0.3, 0]
                 })
               }
             ]}
-          >
-            <Phone size={24} color="#fff" />
-          </Animated.View>
-        </Animated.View>
-      </TouchableOpacity>
+          />
+        </TouchableOpacity>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -2627,24 +2693,41 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
-  animatedButton: {
+  floatingButtonTouchable: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
     overflow: 'hidden',
   },
   rotatingContainer: {
+    width: 56,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  phoneIconContainer: {
+  iconWrapper: {
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  phoneIconWrapper: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rippleEffect: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#007AFF',
   },
 });
