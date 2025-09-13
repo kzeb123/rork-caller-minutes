@@ -708,6 +708,11 @@ export default function NotesScreen() {
     
     setIsAnimating(true);
     
+    // Open modal immediately when animation starts
+    setTimeout(() => {
+      setShowAddContactModal(true);
+    }, 30); // Very short delay to let the press animation start
+    
     // Start the animation sequence with radiating effect
     Animated.parallel([
       // Scale animation for press feedback
@@ -738,11 +743,10 @@ export default function NotesScreen() {
         useNativeDriver: true,
       })
     ]).start(() => {
-      // Open modal immediately when plus-to-phone animation completes
-      setShowAddContactModal(true);
+      // Animation complete - reset values
       setIsAnimating(false);
       
-      // Reset animation values after a tiny delay to ensure modal is open
+      // Reset animation values after a tiny delay
       setTimeout(() => {
         animationValue.setValue(0);
         rotationValue.setValue(0);
