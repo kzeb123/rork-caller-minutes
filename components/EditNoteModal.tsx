@@ -123,8 +123,8 @@ export default function EditNoteModal({ visible, note, onClose, onSave, onDelete
       const fields = parseNoteIntoFields(note.note, noteTemplate);
       setTemplateFields(fields);
       
-      // Expand all sections by default
-      setExpandedSections(new Set(fields.map(f => f.id)));
+      // Start with all sections collapsed
+      setExpandedSections(new Set());
       
       setSelectedStatus(note.status);
       setCustomStatus(note.customStatus || '');

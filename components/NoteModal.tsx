@@ -67,7 +67,7 @@ export default function NoteModal() {
       }
       
       setTemplateSections(sections);
-      setExpandedSections(new Set(sections.map(s => s.id)));
+      setExpandedSections(new Set()); // Start with all sections collapsed
       setSelectedStatus('follow-up');
       setCustomStatus('');
       setShowStatusPicker(false);
