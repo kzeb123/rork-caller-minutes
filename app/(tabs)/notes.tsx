@@ -1453,16 +1453,6 @@ export default function NotesScreen() {
               <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
               <ChevronDown size={16} color="#007AFF" />
             </TouchableOpacity>
-            
-            <TouchableOpacity onPress={toggleFilters} style={styles.filterButton}>
-              <Filter size={20} color={showFilters ? '#007AFF' : '#666'} />
-              <Text style={[styles.filterButtonText, { color: showFilters ? '#007AFF' : '#666' }]}>Filters</Text>
-              {activeFilters.length > 0 && (
-                <View style={styles.filterBadge}>
-                  <Text style={styles.filterBadgeText}>{activeFilters.length}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
           </View>
         </View>
 
