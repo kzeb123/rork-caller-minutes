@@ -773,24 +773,45 @@ export default function RemindersScreen() {
 
           {/* Stats Section */}
           <View style={styles.statsSection}>
-            <View style={styles.statsGrid}>
+            <Text style={styles.sectionTitle}>Summary</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsGrid}>
               <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{pendingReminders.length}</Text>
-                <Text style={styles.statLabel}>Pending</Text>
+                <View style={[styles.iconContainer, { backgroundColor: '#007AFF15' }]}>
+                  <Bell size={20} color="#007AFF" />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={styles.statNumber}>{pendingReminders.length}</Text>
+                  <Text style={styles.statLabel}>Pending</Text>
+                </View>
               </View>
               <View style={styles.statCard}>
-                <Text style={[styles.statNumber, { color: '#FF3B30' }]}>{overdueReminders.length}</Text>
-                <Text style={styles.statLabel}>Overdue</Text>
+                <View style={[styles.iconContainer, { backgroundColor: '#FF3B3015' }]}>
+                  <AlertCircle size={20} color="#FF3B30" />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statNumber, { color: '#FF3B30' }]}>{overdueReminders.length}</Text>
+                  <Text style={styles.statLabel}>Overdue</Text>
+                </View>
               </View>
               <View style={styles.statCard}>
-                <Text style={[styles.statNumber, { color: '#FF9500' }]}>{todayReminders.length}</Text>
-                <Text style={styles.statLabel}>Today</Text>
+                <View style={[styles.iconContainer, { backgroundColor: '#FF950015' }]}>
+                  <Clock size={20} color="#FF9500" />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statNumber, { color: '#FF9500' }]}>{todayReminders.length}</Text>
+                  <Text style={styles.statLabel}>Today</Text>
+                </View>
               </View>
               <View style={styles.statCard}>
-                <Text style={[styles.statNumber, { color: '#34C759' }]}>{completedReminders.length}</Text>
-                <Text style={styles.statLabel}>Done</Text>
+                <View style={[styles.iconContainer, { backgroundColor: '#34C75915' }]}>
+                  <CheckCircle size={20} color="#34C759" />
+                </View>
+                <View style={styles.statContent}>
+                  <Text style={[styles.statNumber, { color: '#34C759' }]}>{completedReminders.length}</Text>
+                  <Text style={styles.statLabel}>Done</Text>
+                </View>
               </View>
-            </View>
+            </ScrollView>
           </View>
 
           {/* Group By Selector */}
@@ -944,19 +965,20 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   statsSection: {
-    marginBottom: 24,
-    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
   },
   statsGrid: {
-    flexDirection: 'row',
+    paddingHorizontal: 16,
     gap: 12,
   },
   statCard: {
-    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    minWidth: 140,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -964,15 +986,27 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#007AFF',
-    marginBottom: 4,
+    color: '#000',
+    marginBottom: 2,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
     fontWeight: '500',
+    color: '#666',
+    marginBottom: 1,
+  },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  statContent: {
+    flex: 1,
   },
   section: {
     marginBottom: 24,
@@ -988,6 +1022,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#000',
+    marginBottom: 16,
+    paddingHorizontal: 16,
   },
   addButton: {
     backgroundColor: '#007AFF',
