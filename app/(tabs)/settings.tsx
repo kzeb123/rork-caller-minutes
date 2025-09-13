@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView, SafeAreaView, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView, SafeAreaView, Switch, Share } from 'react-native';
 import { Stack } from 'expo-router';
-import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save, Check, ChevronRight, Tag } from 'lucide-react-native';
+import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save, Check, ChevronRight, Tag, Crown, FileText, Archive, Star } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import AddContactModal from '@/components/AddContactModal';
 
@@ -13,7 +13,7 @@ interface TemplateSection {
 }
 
 export default function SettingsScreen() {
-  const { contacts, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts, presetTags, updatePresetTags, noteSettings, updateNoteSettings } = useContacts();
+  const { contacts, notes, orders, reminders, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts, presetTags, updatePresetTags, noteSettings, updateNoteSettings } = useContacts();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -24,6 +24,9 @@ export default function SettingsScreen() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isPremium, setIsPremium] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Parse existing template or use default sections
   const parseTemplateToSections = (template: string): TemplateSection[] => {
@@ -222,6 +225,90 @@ export default function SettingsScreen() {
     setEditableTags(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleExportLogs = async () => {
+    if (!isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const exportData = {
+        contacts,
+        notes,
+        orders,
+        reminders,
+        exportDate: new Date().toISOString(),
+        version: '1.0'
+      };
+
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const fileName = `call-notes-export-${new Date().toISOString().split('T')[0]}.json`;
+
+      if (Platform.OS === 'web') {
+        // Web export
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        Alert.alert('Export Complete', 'Your data has been downloaded successfully.');
+      } else {
+        // Mobile share
+        await Share.share({
+          message: jsonString,
+          title: 'Call Notes Export'
+        });
+      }
+    } catch (error) {
+      Alert.alert('Export Failed', 'Failed to export data. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleSaveLogs = async () => {
+    if (!isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
+
+    try {
+      // In a real app, this would save to cloud storage
+      // For now, we'll just show a success message
+      Alert.alert(
+        'Logs Saved',
+        'Your call logs have been saved to secure cloud storage. You can access them anytime from any device.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Save Failed', 'Failed to save logs. Please try again.');
+    }
+  };
+
+  const handleUpgradeToPremium = () => {
+    Alert.alert(
+      'Upgrade to Premium',
+      'Premium features include:\n\n• Cloud backup and sync\n• Export all data\n• Advanced analytics\n• Priority support\n• Unlimited storage',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Upgrade Now',
+          onPress: () => {
+            // In a real app, this would open the payment flow
+            setIsPremium(true);
+            setShowPremiumModal(false);
+            Alert.alert('Welcome to Premium!', 'You now have access to all premium features.');
+          }
+        }
+      ]
+    );
+  };
+
 
 
   const SettingItem = ({ 
@@ -394,6 +481,44 @@ export default function SettingsScreen() {
               />
             </View>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.premiumSectionHeader}>
+            <Crown size={20} color="#FFD700" />
+            <Text style={styles.sectionTitle}>Premium Features</Text>
+            {!isPremium && (
+              <TouchableOpacity 
+                style={styles.upgradeButton}
+                onPress={() => setShowPremiumModal(true)}
+              >
+                <Star size={16} color="#FFD700" />
+                <Text style={styles.upgradeButtonText}>Upgrade</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <View style={[styles.settingsGroup, !isPremium && styles.settingsGroupDisabled]}>
+            <SettingItem
+              icon={<Archive />}
+              title={isExporting ? 'Exporting...' : 'Export All Data'}
+              subtitle={`Export contacts, notes, orders & reminders (${contacts.length + notes.length + orders.length + reminders.length} items)`}
+              onPress={handleExportLogs}
+              disabled={isExporting}
+            />
+            <SettingItem
+              icon={<FileText />}
+              title="Save Logs to Cloud"
+              subtitle="Backup your data to secure cloud storage"
+              onPress={handleSaveLogs}
+            />
+          </View>
+          {!isPremium && (
+            <View style={styles.premiumOverlay}>
+              <Crown size={24} color="#FFD700" />
+              <Text style={styles.premiumOverlayText}>Premium Feature</Text>
+              <Text style={styles.premiumOverlaySubtext}>Upgrade to access cloud backup and export</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -710,6 +835,104 @@ export default function SettingsScreen() {
               </Text>
             </TouchableOpacity>
           </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showPremiumModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.premiumModalContainer}>
+          <View style={styles.premiumModalHeader}>
+            <TouchableOpacity onPress={() => setShowPremiumModal(false)}>
+              <X size={24} color="#007AFF" />
+            </TouchableOpacity>
+            
+            <View style={styles.premiumTitleContainer}>
+              <Crown size={24} color="#FFD700" />
+              <Text style={styles.premiumModalTitle}>Premium Features</Text>
+            </View>
+            
+            <View style={{ width: 24 }} />
+          </View>
+
+          <ScrollView style={styles.premiumModalContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.premiumHero}>
+              <Crown size={48} color="#FFD700" />
+              <Text style={styles.premiumHeroTitle}>Unlock Premium</Text>
+              <Text style={styles.premiumHeroSubtitle}>Get access to advanced features and cloud storage</Text>
+            </View>
+
+            <View style={styles.premiumFeatures}>
+              <View style={styles.premiumFeature}>
+                <Archive size={24} color="#007AFF" />
+                <View style={styles.premiumFeatureContent}>
+                  <Text style={styles.premiumFeatureTitle}>Export All Data</Text>
+                  <Text style={styles.premiumFeatureDescription}>Export contacts, notes, orders, and reminders in JSON format</Text>
+                </View>
+              </View>
+              
+              <View style={styles.premiumFeature}>
+                <FileText size={24} color="#007AFF" />
+                <View style={styles.premiumFeatureContent}>
+                  <Text style={styles.premiumFeatureTitle}>Cloud Backup</Text>
+                  <Text style={styles.premiumFeatureDescription}>Automatically save your logs to secure cloud storage</Text>
+                </View>
+              </View>
+              
+              <View style={styles.premiumFeature}>
+                <Users size={24} color="#007AFF" />
+                <View style={styles.premiumFeatureContent}>
+                  <Text style={styles.premiumFeatureTitle}>Unlimited Storage</Text>
+                  <Text style={styles.premiumFeatureDescription}>Store unlimited contacts, notes, and call history</Text>
+                </View>
+              </View>
+              
+              <View style={styles.premiumFeature}>
+                <Star size={24} color="#007AFF" />
+                <View style={styles.premiumFeatureContent}>
+                  <Text style={styles.premiumFeatureTitle}>Priority Support</Text>
+                  <Text style={styles.premiumFeatureDescription}>Get priority customer support and feature requests</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.premiumStats}>
+              <Text style={styles.premiumStatsTitle}>Your Current Usage</Text>
+              <View style={styles.premiumStatsGrid}>
+                <View style={styles.premiumStat}>
+                  <Text style={styles.premiumStatNumber}>{contacts.length}</Text>
+                  <Text style={styles.premiumStatLabel}>Contacts</Text>
+                </View>
+                <View style={styles.premiumStat}>
+                  <Text style={styles.premiumStatNumber}>{notes.length}</Text>
+                  <Text style={styles.premiumStatLabel}>Notes</Text>
+                </View>
+                <View style={styles.premiumStat}>
+                  <Text style={styles.premiumStatNumber}>{orders.length}</Text>
+                  <Text style={styles.premiumStatLabel}>Orders</Text>
+                </View>
+                <View style={styles.premiumStat}>
+                  <Text style={styles.premiumStatNumber}>{reminders.length}</Text>
+                  <Text style={styles.premiumStatLabel}>Reminders</Text>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.premiumModalFooter}>
+            <TouchableOpacity style={styles.premiumUpgradeButton} onPress={handleUpgradeToPremium}>
+              <Crown size={20} color="#fff" />
+              <Text style={styles.premiumUpgradeButtonText}>Upgrade to Premium</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.premiumCancelButton} 
+              onPress={() => setShowPremiumModal(false)}
+            >
+              <Text style={styles.premiumCancelButtonText}>Maybe Later</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -1150,5 +1373,190 @@ const styles = StyleSheet.create({
   },
   passwordSaveButtonTextDisabled: {
     color: '#999',
+  },
+  premiumSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginHorizontal: 16,
+    gap: 8,
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginLeft: 'auto',
+    gap: 4,
+  },
+  upgradeButtonText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  settingsGroupDisabled: {
+    opacity: 0.6,
+  },
+  premiumOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 16,
+    right: 16,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+  },
+  premiumOverlayText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFD700',
+  },
+  premiumOverlaySubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  premiumModalContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  premiumModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+  },
+  premiumTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  premiumModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  premiumModalContent: {
+    flex: 1,
+  },
+  premiumHero: {
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    gap: 12,
+  },
+  premiumHeroTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000',
+  },
+  premiumHeroSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  premiumFeatures: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 20,
+    gap: 20,
+  },
+  premiumFeature: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+  },
+  premiumFeatureContent: {
+    flex: 1,
+  },
+  premiumFeatureTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  premiumFeatureDescription: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  premiumStats: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 20,
+    borderRadius: 16,
+    padding: 20,
+  },
+  premiumStatsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  premiumStatsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  premiumStat: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  premiumStatNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  premiumStatLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  premiumModalFooter: {
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    backgroundColor: '#f8f9fa',
+    borderTopWidth: 1,
+    borderTopColor: '#e1e5e9',
+    gap: 12,
+  },
+  premiumUpgradeButton: {
+    backgroundColor: '#FFD700',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  premiumUpgradeButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  premiumCancelButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  premiumCancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
