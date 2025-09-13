@@ -1442,9 +1442,15 @@ export default function NotesScreen() {
         <View style={styles.summarySection}>
           <Text style={styles.sectionTitle}>Summary</Text>
           {renderSummarySection()}
-          
-          {/* Group By Options under Summary */}
-          <View style={styles.filterButtonContainer}>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Notes Section */}
+        <View style={styles.notesSection}>
+          {/* Group By Options above Call Notes title */}
+          <View style={styles.notesFilterButtonContainer}>
             <TouchableOpacity 
               style={styles.groupByButton}
               onPress={() => setShowGroupByModal(true)}
@@ -1454,13 +1460,7 @@ export default function NotesScreen() {
               <ChevronDown size={16} color="#007AFF" />
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* Divider */}
-        <View style={styles.divider} />
-
-        {/* Notes Section */}
-        <View style={styles.notesSection}>
+          
           <Text style={styles.sectionTitle}>
             Call Notes ({filteredNotes.length})
             {activeFilters.length > 0 && (
@@ -1587,6 +1587,14 @@ const styles = StyleSheet.create({
   },
   notesSection: {
     paddingVertical: 16,
+    backgroundColor: '#fff',
+  },
+  notesFilterButtonContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    gap: 12,
   },
   sectionTitle: {
     fontSize: 20,
