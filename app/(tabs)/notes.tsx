@@ -1709,14 +1709,14 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.2, 0.5, 1],
-                    outputRange: [1, 4, 8, 12]
+                    inputRange: [0, 0.15, 0.4, 0.8, 1],
+                    outputRange: [1, 3.5, 7, 11, 14]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0.15, 0.4, 1],
-                outputRange: [0, 0.7, 0.3, 0]
+                inputRange: [0, 0.1, 0.3, 0.7, 1],
+                outputRange: [0, 0.8, 0.4, 0.1, 0]
               }),
               backgroundColor: animationValue.interpolate({
                 inputRange: [0, 0.3, 0.7, 1],
@@ -1733,14 +1733,14 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.2, 0.45, 0.7, 1],
-                    outputRange: [1, 3, 6, 10, 15]
+                    inputRange: [0, 0.1, 0.35, 0.65, 1],
+                    outputRange: [1, 2.5, 5.5, 9, 13]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0.1, 0.35, 0.65, 1],
-                outputRange: [0, 0, 0.5, 0.2, 0]
+                inputRange: [0, 0.05, 0.25, 0.55, 1],
+                outputRange: [0, 0, 0.6, 0.2, 0]
               }),
               backgroundColor: animationValue.interpolate({
                 inputRange: [0, 0.3, 0.7, 1],
@@ -1757,14 +1757,14 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.15, 0.4, 0.65, 1],
-                    outputRange: [1, 2, 4.5, 7, 10]
+                    inputRange: [0, 0.05, 0.3, 0.6, 1],
+                    outputRange: [1, 1.8, 4, 6.5, 9]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0.05, 0.25, 0.45, 1],
-                outputRange: [0, 0, 0.4, 0.15, 0]
+                inputRange: [0, 0.02, 0.2, 0.4, 1],
+                outputRange: [0, 0, 0.5, 0.15, 0]
               }),
               backgroundColor: animationValue.interpolate({
                 inputRange: [0, 0.2, 0.6, 1],
