@@ -714,27 +714,27 @@ export default function NotesScreen() {
       Animated.sequence([
         Animated.timing(scaleValue, {
           toValue: 0.95,
-          duration: 100,
+          duration: 50,
           useNativeDriver: true,
         }),
         Animated.spring(scaleValue, {
           toValue: 1.1,
-          tension: 100,
-          friction: 8,
+          tension: 120,
+          friction: 6,
           useNativeDriver: true,
         })
       ]),
       // Smooth rotation animation
       Animated.spring(rotationValue, {
         toValue: 1,
-        tension: 50,
-        friction: 5,
+        tension: 80,
+        friction: 4,
         useNativeDriver: true,
       }),
-      // Icon morphing animation with easing
+      // Icon morphing animation with faster timing
       Animated.timing(animationValue, {
         toValue: 1,
-        duration: 300,
+        duration: 180,
         useNativeDriver: true,
       })
     ]).start(() => {
@@ -747,7 +747,7 @@ export default function NotesScreen() {
         rotationValue.setValue(0);
         scaleValue.setValue(1);
         setIsAnimating(false);
-      }, 150);
+      }, 100);
     });
   };
 
@@ -1646,20 +1646,20 @@ export default function NotesScreen() {
               }
             ]}
           >
-            {/* Plus Icon - fades out */}
+            {/* Plus Icon - fades out quickly */}
             <Animated.View
               style={[
                 styles.iconWrapper,
                 {
                   opacity: animationValue.interpolate({
-                    inputRange: [0, 0.2, 1],
+                    inputRange: [0, 0.3, 1],
                     outputRange: [1, 0, 0]
                   }),
                   transform: [
                     {
                       scale: animationValue.interpolate({
-                        inputRange: [0, 0.5],
-                        outputRange: [1, 0.8]
+                        inputRange: [0, 0.4],
+                        outputRange: [1, 0.9]
                       })
                     }
                   ]
@@ -1669,20 +1669,20 @@ export default function NotesScreen() {
               <Plus size={26} color="#fff" strokeWidth={2.5} />
             </Animated.View>
             
-            {/* Phone Icon - fades in with bounce */}
+            {/* Phone Icon - fades in immediately after plus fades */}
             <Animated.View
               style={[
                 styles.phoneIconWrapper,
                 {
                   opacity: animationValue.interpolate({
-                    inputRange: [0, 0.15, 1],
-                    outputRange: [0, 0, 1]
+                    inputRange: [0, 0.25, 0.6, 1],
+                    outputRange: [0, 0, 1, 1]
                   }),
                   transform: [
                     {
                       scale: animationValue.interpolate({
-                        inputRange: [0, 0.5, 1],
-                        outputRange: [0.8, 1.1, 1]
+                        inputRange: [0, 0.4, 0.7, 1],
+                        outputRange: [0.8, 1.15, 1.05, 1]
                       })
                     },
                     {
@@ -1709,17 +1709,17 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.2, 0.5, 1],
-                    outputRange: [1, 3, 6, 10]
+                    inputRange: [0, 0.3, 0.6, 1],
+                    outputRange: [1, 4, 8, 12]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0.15, 0.4, 1],
-                outputRange: [0, 0.6, 0.3, 0]
+                inputRange: [0, 0.2, 0.5, 1],
+                outputRange: [0, 0.7, 0.3, 0]
               }),
               backgroundColor: animationValue.interpolate({
-                inputRange: [0, 0.2, 0.6, 1],
+                inputRange: [0, 0.3, 0.7, 1],
                 outputRange: ['#007AFF', '#4A9EFF', '#80BFFF', '#B3D9FF']
               })
             }
@@ -1733,17 +1733,17 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.2, 0.5, 0.8, 1],
-                    outputRange: [1, 2, 4, 7, 12]
+                    inputRange: [0, 0.25, 0.5, 0.75, 1],
+                    outputRange: [1, 3, 6, 10, 15]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0.1, 0.3, 0.6, 1],
-                outputRange: [0, 0, 0.4, 0.15, 0]
+                inputRange: [0, 0.15, 0.4, 0.7, 1],
+                outputRange: [0, 0, 0.5, 0.2, 0]
               }),
               backgroundColor: animationValue.interpolate({
-                inputRange: [0, 0.2, 0.6, 1],
+                inputRange: [0, 0.3, 0.7, 1],
                 outputRange: ['#007AFF', '#3388FF', '#66AAFF', '#99CCFF']
               })
             }
@@ -1757,17 +1757,17 @@ export default function NotesScreen() {
               transform: [
                 {
                   scale: animationValue.interpolate({
-                    inputRange: [0, 0.1, 0.4, 0.7, 1],
-                    outputRange: [1, 1.5, 3, 5, 8]
+                    inputRange: [0, 0.2, 0.45, 0.7, 1],
+                    outputRange: [1, 2, 4.5, 7, 10]
                   })
                 }
               ],
               opacity: animationValue.interpolate({
-                inputRange: [0, 0, 0.2, 0.4, 1],
-                outputRange: [0, 0, 0.3, 0.1, 0]
+                inputRange: [0, 0.1, 0.3, 0.5, 1],
+                outputRange: [0, 0, 0.4, 0.15, 0]
               }),
               backgroundColor: animationValue.interpolate({
-                inputRange: [0, 0.1, 0.5, 1],
+                inputRange: [0, 0.2, 0.6, 1],
                 outputRange: ['#007AFF', '#1A7AFF', '#5599FF', '#8FBBFF']
               })
             }
