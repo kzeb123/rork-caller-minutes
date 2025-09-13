@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert, FlatList, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert, FlatList, ScrollView, Animated, Dimensions } from 'react-native';
 import { X, UserPlus, User, Phone, Search, Plus } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { Contact } from '@/types/contact';
@@ -17,6 +17,52 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const [phoneNumber, setPhoneNumber] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  
+  // Get dimensions inside component
+  const { width, height } = Dimensions.get('window');
+  
+  // Animation values for radiating effect from bottom-left corner
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const translateXAnim = useRef(new Animated.Value(-width * 0.45)).current;
+  const translateYAnim = useRef(new Animated.Value(height * 0.45)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    if (visible) {
+      // Animate modal radiating from bottom-left corner with smooth expansion
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 40,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.spring(translateXAnim, {
+          toValue: 0,
+          tension: 40,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.spring(translateYAnim, {
+          toValue: 0,
+          tension: 40,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Reset animation values
+      scaleAnim.setValue(0);
+      translateXAnim.setValue(-width * 0.45);
+      translateYAnim.setValue(height * 0.45);
+      opacityAnim.setValue(0);
+    }
+  }, [visible, width, height, scaleAnim, translateXAnim, translateYAnim, opacityAnim]);
 
   const handleAdd = () => {
     if (!name.trim() || !phoneNumber.trim()) {
@@ -36,11 +82,35 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   };
 
   const handleClose = () => {
-    setName('');
-    setPhoneNumber('');
-    setSearchQuery('');
-    setShowAddForm(false);
-    onClose();
+    // Animate closing back to corner with smooth contraction
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateXAnim, {
+        toValue: -width * 0.45,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateYAnim, {
+        toValue: height * 0.45,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setName('');
+      setPhoneNumber('');
+      setSearchQuery('');
+      setShowAddForm(false);
+      onClose();
+    });
   };
 
   const handleContactSelect = (contact: Contact) => {
@@ -79,13 +149,36 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   return (
     <Modal
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
+      animationType="none"
+      transparent={true}
+      presentationStyle="overFullScreen"
     >
-      <KeyboardAvoidingView 
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <Animated.View 
+        style={[
+          styles.modalOverlay,
+          {
+            opacity: opacityAnim,
+          }
+        ]}
       >
+        <Animated.View
+          style={[
+            styles.modalContent,
+            {
+              width: width * 0.95,
+              height: height * 0.85,
+              transform: [
+                { scale: scaleAnim },
+                { translateX: translateXAnim },
+                { translateY: translateYAnim },
+              ],
+            },
+          ]}
+        >
+          <KeyboardAvoidingView 
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
         <View style={styles.header}>
           <TouchableOpacity onPress={handleClose}>
             <X size={24} color="#007AFF" />
@@ -199,15 +292,33 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
             )}
           </View>
         )}
-      </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
