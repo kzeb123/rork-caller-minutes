@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert, FlatList, ScrollView, Animated, Dimensions, Image } from 'react-native';
-import { X, UserPlus, User, Phone, Search, Plus, Camera, Image as ImageIcon, Maximize2 } from 'lucide-react-native';
+import { X, UserPlus, User, Phone, Search, Plus, Camera, Image as ImageIcon, Maximize2, CreditCard } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useContacts } from '@/hooks/contacts-store';
 import { Contact } from '@/types/contact';
@@ -20,6 +20,8 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const [showAddForm, setShowAddForm] = useState(false);
   const [businessCardImage, setBusinessCardImage] = useState<string | null>(null);
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const [viewingBusinessCard, setViewingBusinessCard] = useState<string | null>(null);
+  const [viewingContactName, setViewingContactName] = useState<string>('');
   
   // Get dimensions inside component
   const { width, height } = Dimensions.get('window');
@@ -205,23 +207,57 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     contact.phoneNumber.includes(searchQuery)
   );
 
+  const handleBusinessCardView = (contact: Contact) => {
+    if (contact.businessCardImage) {
+      setViewingBusinessCard(contact.businessCardImage);
+      setViewingContactName(contact.name);
+      setShowImageViewer(true);
+    }
+  };
+
   const renderContact = ({ item }: { item: Contact }) => (
-    <TouchableOpacity 
-      style={styles.contactItem} 
-      onPress={() => handleContactSelect(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.contactAvatar}>
-        <User size={20} color="#666" />
-      </View>
-      <View style={styles.contactInfo}>
-        <Text style={styles.contactName}>{item.name}</Text>
-        <View style={styles.phoneContainer}>
-          <Phone size={12} color="#999" />
-          <Text style={styles.contactPhone}>{item.phoneNumber}</Text>
+    <View style={styles.contactItemContainer}>
+      <TouchableOpacity 
+        style={styles.contactItem} 
+        onPress={() => handleContactSelect(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.contactAvatar}>
+          <User size={20} color="#666" />
         </View>
-      </View>
-    </TouchableOpacity>
+        <View style={styles.contactInfo}>
+          <Text style={styles.contactName}>{item.name}</Text>
+          <View style={styles.phoneContainer}>
+            <Phone size={12} color="#999" />
+            <Text style={styles.contactPhone}>{item.phoneNumber}</Text>
+            {item.businessCardImage && (
+              <View style={styles.businessCardBadge}>
+                <CreditCard size={10} color="#007AFF" />
+                <Text style={styles.businessCardBadgeText}>Card</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+      
+      {/* Business Card Thumbnail */}
+      {item.businessCardImage && (
+        <TouchableOpacity 
+          style={styles.businessCardThumbnail}
+          onPress={() => handleBusinessCardView(item)}
+          activeOpacity={0.8}
+        >
+          <Image 
+            source={{ uri: item.businessCardImage }}
+            style={styles.thumbnailImage}
+            resizeMode="cover"
+          />
+          <View style={styles.thumbnailOverlay}>
+            <Maximize2 size={16} color="#fff" />
+          </View>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 
   return (
@@ -426,26 +462,36 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
         visible={showImageViewer}
         animationType="fade"
         transparent={true}
-        onRequestClose={() => setShowImageViewer(false)}
+        onRequestClose={() => {
+          setShowImageViewer(false);
+          setViewingBusinessCard(null);
+          setViewingContactName('');
+        }}
       >
         <View style={styles.imageViewerOverlay}>
           <TouchableOpacity 
             style={styles.imageViewerCloseButton}
-            onPress={() => setShowImageViewer(false)}
+            onPress={() => {
+              setShowImageViewer(false);
+              setViewingBusinessCard(null);
+              setViewingContactName('');
+            }}
           >
             <X size={28} color="#fff" />
           </TouchableOpacity>
           <View style={styles.imageViewerContent}>
-            {businessCardImage && (
+            {(businessCardImage || viewingBusinessCard) && (
               <Image 
-                source={{ uri: businessCardImage }}
+                source={{ uri: businessCardImage || viewingBusinessCard || '' }}
                 style={styles.fullScreenImage}
                 resizeMode="contain"
               />
             )}
           </View>
           <View style={styles.imageViewerFooter}>
-            <Text style={styles.imageViewerTitle}>Business Card</Text>
+            <Text style={styles.imageViewerTitle}>
+              {viewingContactName ? `${viewingContactName}'s Business Card` : 'Business Card'}
+            </Text>
             <Text style={styles.imageViewerSubtitle}>Pinch to zoom • Swipe to dismiss</Text>
           </View>
         </View>
@@ -569,14 +615,19 @@ const styles = StyleSheet.create({
   listContent: {
     paddingVertical: 8,
   },
-  contactItem: {
+  contactItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    paddingVertical: 12,
+  },
+  contactItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   contactAvatar: {
     width: 40,
@@ -600,6 +651,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexWrap: 'wrap',
+  },
+  businessCardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: '#007AFF15',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  businessCardBadgeText: {
+    fontSize: 9,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  businessCardThumbnail: {
+    width: 60,
+    height: 40,
+    marginRight: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   contactPhone: {
     fontSize: 14,
