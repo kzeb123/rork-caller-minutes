@@ -956,14 +956,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 16,
+    marginBottom: 12,
     marginHorizontal: 16,
   },
   statsGrid: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   statCard: {
     flex: 1,
@@ -1020,7 +1020,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   catalogTitleContainer: {
     flexDirection: 'row',
@@ -1049,7 +1049,7 @@ const styles = StyleSheet.create({
   catalogGrid: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   catalogCard: {
     flex: 1,
@@ -1067,19 +1067,19 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   catalogCardTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: 2,
     textAlign: 'center',
   },
   catalogSubtitle: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
   },
   downloadButton: {
@@ -1117,8 +1117,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
-    marginTop: 12,
-    marginBottom: 6,
+    marginTop: 8,
+    marginBottom: 4,
   },
   emptyCatalogsText: {
     fontSize: 14,
@@ -1186,8 +1186,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
-    marginTop: 12,
-    marginBottom: 6,
+    marginTop: 8,
+    marginBottom: 4,
   },
   emptyOrdersText: {
     fontSize: 14,
@@ -1213,7 +1213,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   orderInfo: {
     flex: 1,
@@ -1222,7 +1222,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   orderMeta: {
     flexDirection: 'row',
@@ -1252,7 +1252,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   orderItems: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   orderItem: {
     fontSize: 14,
@@ -1263,7 +1263,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     fontStyle: 'italic',
-    marginBottom: 12,
+    marginBottom: 8,
     backgroundColor: '#f8f9fa',
     padding: 8,
     borderRadius: 6,
@@ -1272,7 +1272,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
     backgroundColor: '#007AFF10',
