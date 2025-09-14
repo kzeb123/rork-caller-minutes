@@ -13,7 +13,7 @@ interface AddContactModalProps {
 }
 
 export default function AddContactModal({ visible, onClose, onAdd, onSelectContact }: AddContactModalProps) {
-  const { contacts, openCallNoteModal } = useContacts();
+  const { contacts, openCallNoteModal, updateContact } = useContacts();
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,6 +22,8 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [viewingBusinessCard, setViewingBusinessCard] = useState<string | null>(null);
   const [viewingContactName, setViewingContactName] = useState<string>('');
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [editingBusinessCard, setEditingBusinessCard] = useState<string | null>(null);
   
   // Get dimensions inside component
   const { width, height } = Dimensions.get('window');
@@ -85,6 +87,8 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     setPhoneNumber('');
     setBusinessCardImage(null);
     setShowAddForm(false);
+    setEditingContactId(null);
+    setEditingBusinessCard(null);
     onClose();
   };
 
@@ -156,6 +160,8 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
       setSearchQuery('');
       setBusinessCardImage(null);
       setShowAddForm(false);
+      setEditingContactId(null);
+      setEditingBusinessCard(null);
       onClose();
     });
   };
@@ -193,6 +199,8 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
         setSearchQuery('');
         setBusinessCardImage(null);
         setShowAddForm(false);
+        setEditingContactId(null);
+        setEditingBusinessCard(null);
         onClose();
         // Open call note modal after the close animation completes
         setTimeout(() => {
@@ -212,6 +220,66 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
       setViewingBusinessCard(contact.businessCardImage);
       setViewingContactName(contact.name);
       setShowImageViewer(true);
+    }
+  };
+
+  const handleAddBusinessCard = (contact: Contact) => {
+    setEditingContactId(contact.id);
+    setEditingBusinessCard(contact.businessCardImage || null);
+  };
+
+  const saveBusinessCard = async () => {
+    if (editingContactId && editingBusinessCard) {
+      updateContact({ 
+        id: editingContactId, 
+        updates: { businessCardImage: editingBusinessCard } 
+      });
+    }
+    setEditingContactId(null);
+    setEditingBusinessCard(null);
+  };
+
+  const cancelBusinessCardEdit = () => {
+    setEditingContactId(null);
+    setEditingBusinessCard(null);
+  };
+
+  const pickImageForContact = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'We need camera roll permissions to attach business cards.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.8,
+      base64: false,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setEditingBusinessCard(result.assets[0].uri);
+    }
+  };
+
+  const takePhotoForContact = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'We need camera permissions to take photos of business cards.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 0.8,
+      base64: false,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setEditingBusinessCard(result.assets[0].uri);
     }
   };
 
@@ -238,6 +306,15 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
             )}
           </View>
         </View>
+      </TouchableOpacity>
+      
+      {/* Add Business Card Button */}
+      <TouchableOpacity 
+        style={styles.addBusinessCardButton}
+        onPress={() => handleAddBusinessCard(item)}
+        activeOpacity={0.7}
+      >
+        <Plus size={18} color="#007AFF" />
       </TouchableOpacity>
       
       {/* Business Card Thumbnail */}
@@ -393,6 +470,8 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
                   setName('');
                   setPhoneNumber('');
                   setBusinessCardImage(null);
+                  setEditingContactId(null);
+                  setEditingBusinessCard(null);
                 }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -493,6 +572,74 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
               {viewingContactName ? `${viewingContactName}'s Business Card` : 'Business Card'}
             </Text>
             <Text style={styles.imageViewerSubtitle}>Pinch to zoom • Swipe to dismiss</Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Business Card Edit Modal */}
+      <Modal
+        visible={editingContactId !== null}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View style={styles.businessCardEditContainer}>
+          <View style={styles.businessCardEditHeader}>
+            <TouchableOpacity onPress={cancelBusinessCardEdit}>
+              <X size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <Text style={styles.businessCardEditTitle}>Business Card</Text>
+            <TouchableOpacity onPress={saveBusinessCard}>
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.businessCardEditContent}>
+            {editingBusinessCard ? (
+              <View style={styles.imageContainer}>
+                <TouchableOpacity 
+                  style={styles.imagePreview}
+                  onPress={() => {
+                    setViewingBusinessCard(editingBusinessCard);
+                    setViewingContactName(contacts.find(c => c.id === editingContactId)?.name || '');
+                    setShowImageViewer(true);
+                  }}
+                  activeOpacity={0.9}
+                >
+                  <Image 
+                    source={{ uri: editingBusinessCard }} 
+                    style={styles.businessCardImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.imageOverlay}>
+                    <Maximize2 size={24} color="#fff" />
+                    <Text style={styles.imageOverlayText}>Tap to view</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.removeImageButton}
+                  onPress={() => setEditingBusinessCard(null)}
+                >
+                  <X size={20} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.imageButtonsContainer}>
+                <TouchableOpacity 
+                  style={styles.imageButton}
+                  onPress={takePhotoForContact}
+                >
+                  <Camera size={24} color="#007AFF" />
+                  <Text style={styles.imageButtonText}>Take Photo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.imageButton}
+                  onPress={pickImageForContact}
+                >
+                  <ImageIcon size={24} color="#007AFF" />
+                  <Text style={styles.imageButtonText}>Choose Photo</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -838,5 +985,44 @@ const styles = StyleSheet.create({
   imageViewerSubtitle: {
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 14,
+  },
+  addBusinessCardButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F2F2F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#007AFF20',
+  },
+  businessCardEditContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  businessCardEditHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+  },
+  businessCardEditTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  businessCardEditContent: {
+    flex: 1,
+    padding: 20,
   },
 });

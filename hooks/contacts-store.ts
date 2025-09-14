@@ -353,6 +353,20 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     }
   });
 
+  const updateContactMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Contact> }) => {
+      const contacts = contactsQuery.data || [];
+      const updated = contacts.map(contact => 
+        contact.id === id ? { ...contact, ...updates } : contact
+      );
+      await AsyncStorage.setItem(CONTACTS_KEY, JSON.stringify(updated));
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+    }
+  });
+
   const deleteContactMutation = useMutation({
     mutationFn: async (contactId: string) => {
       const contacts = contactsQuery.data || [];
@@ -1115,6 +1129,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     showReminderSuggestionModal,
     currentNoteForReminder,
     addContact: addContactMutation.mutate,
+    updateContact: updateContactMutation.mutate,
     deleteContact: deleteContactMutation.mutate,
     importContacts: importContactsMutation.mutate,
     isImporting: importContactsMutation.isPending,
@@ -1180,6 +1195,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     showReminderSuggestionModal,
     currentNoteForReminder,
     addContactMutation.mutate,
+    updateContactMutation.mutate,
     deleteContactMutation.mutate,
     importContactsMutation.mutate,
     importContactsMutation.isPending,
