@@ -308,14 +308,16 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
         </View>
       </TouchableOpacity>
       
-      {/* Add Business Card Button */}
-      <TouchableOpacity 
-        style={styles.addBusinessCardButton}
-        onPress={() => handleAddBusinessCard(item)}
-        activeOpacity={0.7}
-      >
-        <Plus size={18} color="#007AFF" />
-      </TouchableOpacity>
+      {/* Add Business Card Button - only show if no business card exists */}
+      {!item.businessCardImage && (
+        <TouchableOpacity 
+          style={styles.addBusinessCardButton}
+          onPress={() => handleAddBusinessCard(item)}
+          activeOpacity={0.7}
+        >
+          <Plus size={18} color="#007AFF" />
+        </TouchableOpacity>
+      )}
       
       {/* Business Card Thumbnail */}
       {item.businessCardImage && (
