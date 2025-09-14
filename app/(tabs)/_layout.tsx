@@ -4,7 +4,7 @@ import React from "react";
 import Colors from "@/constants/colors";
 import { useContacts } from "@/hooks/contacts-store";
 
-export default function TabLayout() {
+function TabsContent() {
   const { premiumSettings } = useContacts();
   const showShopifyTab = premiumSettings?.showShopifyTab ?? false;
 
@@ -53,4 +53,8 @@ export default function TabLayout() {
       />
     </Tabs>
   );
+}
+
+export default function TabLayout() {
+  return <TabsContent />;
 }

@@ -30,7 +30,7 @@ Next steps:
 Additional notes:`;
 
 export const [ContactsProvider, useContacts] = createContextHook(() => {
-  // Always call hooks in the same order
+  // Always call hooks in the same order - state first
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
   const [showNoteModal, setShowNoteModal] = useState<boolean>(false);
@@ -42,6 +42,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
   const [showReminderSuggestionModal, setShowReminderSuggestionModal] = useState<boolean>(false);
   const [currentNoteForReminder, setCurrentNoteForReminder] = useState<CallNote | null>(null);
   
+  // Query client - always called
   const queryClient = useQueryClient();
 
   const contactsQuery = useQuery({
@@ -708,7 +709,9 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     }
   });
   
+  // Always extract mutations in the same order
   const { mutate: addNoteMutate } = addNoteMutation;
+  const { mutate: addReminderMutate } = addReminderMutation;
 
   const openCallNoteModal = useCallback((contact: Contact) => {
     const now = new Date();
@@ -1041,8 +1044,6 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
     }
   });
-
-  const { mutate: addReminderMutate } = addReminderMutation;
 
   const createReminderFromDetection = useCallback((detection: DetectedDateTime, title?: string) => {
     if (currentNoteForReminder) {
