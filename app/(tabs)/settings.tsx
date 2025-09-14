@@ -642,6 +642,25 @@ export default function SettingsScreen() {
                 disabled={!isPremium}
               />
             </View>
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleLeft}>
+                <Text style={styles.toggleTitle}>Enable Plan a Run Tab</Text>
+                <Text style={styles.toggleSubtitle}>Add a premium tab for planning contact visit routes with drag-and-drop functionality</Text>
+              </View>
+              <Switch
+                value={premiumSettings?.showPlanRunTab ?? false}
+                onValueChange={(value) => {
+                  if (!isPremium) {
+                    setShowPremiumModal(true);
+                    return;
+                  }
+                  updatePremiumSettings({ showPlanRunTab: value });
+                }}
+                trackColor={{ false: '#767577', true: '#007AFF' }}
+                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
+                disabled={!isPremium}
+              />
+            </View>
           </View>
           {!isPremium && (
             <View style={styles.premiumOverlay}>

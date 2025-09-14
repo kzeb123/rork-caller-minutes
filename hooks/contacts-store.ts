@@ -430,7 +430,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
 
   const premiumSettingsQuery = useQuery({
     queryKey: ['premiumSettings'],
-    queryFn: async (): Promise<{ isPremium: boolean; showShopifyTab: boolean }> => {
+    queryFn: async (): Promise<{ isPremium: boolean; showShopifyTab: boolean; showPlanRunTab: boolean }> => {
       try {
         const stored = await AsyncStorage.getItem(PREMIUM_SETTINGS_KEY);
         let settings: any = {};
@@ -453,6 +453,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         return {
           isPremium: settings.isPremium ?? false,
           showShopifyTab: settings.showShopifyTab ?? false,
+          showPlanRunTab: settings.showPlanRunTab ?? false,
         };
       } catch (error) {
         console.error('Error parsing premium settings from storage:', error);
@@ -461,6 +462,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
         return {
           isPremium: false,
           showShopifyTab: false,
+          showPlanRunTab: false,
         };
       }
     }
@@ -827,8 +829,8 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
   });
 
   const updatePremiumSettingsMutation = useMutation({
-    mutationFn: async (updates: Partial<{ isPremium: boolean; showShopifyTab: boolean }>) => {
-      const current = premiumSettingsQuery.data || { isPremium: false, showShopifyTab: false };
+    mutationFn: async (updates: Partial<{ isPremium: boolean; showShopifyTab: boolean; showPlanRunTab: boolean }>) => {
+      const current = premiumSettingsQuery.data || { isPremium: false, showShopifyTab: false, showPlanRunTab: false };
       const updated = { ...current, ...updates };
       await AsyncStorage.setItem(PREMIUM_SETTINGS_KEY, JSON.stringify(updated));
       return updated;
@@ -1246,7 +1248,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     productCatalogs: productCatalogsQuery.data || [],
     presetTags: presetTagsQuery.data || [],
     noteSettings: noteSettingsQuery.data || { showDuration: true, showDirection: true, passwordProtected: false },
-    premiumSettings: premiumSettingsQuery.data || { isPremium: false, showShopifyTab: false },
+    premiumSettings: premiumSettingsQuery.data || { isPremium: false, showShopifyTab: false, showPlanRunTab: false },
     noteTemplate: noteTemplateQuery.data || DEFAULT_NOTE_TEMPLATE,
     isLoading: contactsQuery.isLoading || notesQuery.isLoading || remindersQuery.isLoading || ordersQuery.isLoading || noteTemplateQuery.isLoading || foldersQuery.isLoading || productCatalogsQuery.isLoading || presetTagsQuery.isLoading || noteSettingsQuery.isLoading || premiumSettingsQuery.isLoading,
     incomingCall,

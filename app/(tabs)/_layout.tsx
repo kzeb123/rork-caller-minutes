@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { FileText, Settings, ShoppingBag, Bell, Globe } from "lucide-react-native";
+import { FileText, Settings, ShoppingBag, Bell, Globe, Route } from "lucide-react-native";
 import React from "react";
 import Colors from "@/constants/colors";
 import { useContacts } from "@/hooks/contacts-store";
@@ -7,6 +7,7 @@ import { useContacts } from "@/hooks/contacts-store";
 function TabsContent() {
   const { premiumSettings } = useContacts();
   const showShopifyTab = premiumSettings?.showShopifyTab ?? false;
+  const showPlanRunTab = premiumSettings?.showPlanRunTab ?? false;
 
   return (
     <Tabs
@@ -42,6 +43,14 @@ function TabsContent() {
           title: "Website",
           tabBarIcon: ({ color }) => <Globe color={color} size={24} />,
           href: showShopifyTab ? "/shopify" : null,
+        }}
+      />
+      <Tabs.Screen
+        name="plan-run"
+        options={{
+          title: "Plan Run",
+          tabBarIcon: ({ color }) => <Route color={color} size={24} />,
+          href: showPlanRunTab ? "/plan-run" : null,
         }}
       />
       <Tabs.Screen
