@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Image } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Image, PanResponder, Animated, useWindowDimensions } from 'react-native';
 import { ChevronRight, User, CreditCard, X, Edit3 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Contact } from '@/types/contact';
 import { useContacts } from '@/hooks/contacts-store';
+
+
 
 interface ContactCardProps {
   contact: Contact;
@@ -12,6 +14,82 @@ interface ContactCardProps {
 export default function ContactCard({ contact }: ContactCardProps) {
   const { openCallNoteModal, updateContact } = useContacts();
   const [showBusinessCard, setShowBusinessCard] = useState(false);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  
+  // Business card dimensions
+  const BUSINESS_CARD_WIDTH = screenWidth * 0.85;
+  const BUSINESS_CARD_HEIGHT = BUSINESS_CARD_WIDTH * 0.63; // Standard business card ratio (3.5:2.2)
+  
+  // Animation values for business card
+  const pan = useRef(new Animated.ValueXY()).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  const rotation = useRef(new Animated.Value(0)).current;
+  
+  // Calculate center position
+  const centerX = (screenWidth - BUSINESS_CARD_WIDTH) / 2;
+  const centerY = (screenHeight - BUSINESS_CARD_HEIGHT) / 2;
+  
+  // Pan responder for drag functionality
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        // Add slight scale and rotation on touch
+        Animated.parallel([
+          Animated.spring(scale, {
+            toValue: 1.05,
+            useNativeDriver: true,
+          }),
+          Animated.spring(rotation, {
+            toValue: (Math.random() - 0.5) * 0.1, // Random slight rotation
+            useNativeDriver: true,
+          })
+        ]).start();
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        // Update position based on gesture
+        pan.setValue({
+          x: gestureState.dx,
+          y: gestureState.dy,
+        });
+        
+        // Add dynamic rotation based on movement
+        const rotationValue = gestureState.dx * 0.0005;
+        rotation.setValue(rotationValue);
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        // Snap back to center with spring animation
+        Animated.parallel([
+          Animated.spring(pan, {
+            toValue: { x: 0, y: 0 },
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scale, {
+            toValue: 1,
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+          Animated.spring(rotation, {
+            toValue: 0,
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          })
+        ]).start();
+      },
+    })
+  ).current;
+  
+  // Reset animation values when modal opens
+  const handleShowBusinessCard = () => {
+    pan.setValue({ x: 0, y: 0 });
+    scale.setValue(1);
+    rotation.setValue(0);
+    setShowBusinessCard(true);
+  };
 
   const handleContactPress = () => {
     const options: any[] = [
@@ -25,7 +103,7 @@ export default function ContactCard({ contact }: ContactCardProps) {
     if (contact.businessCardImage) {
       options.splice(1, 0, {
         text: 'View Business Card',
-        onPress: () => setShowBusinessCard(true)
+        onPress: () => handleShowBusinessCard()
       });
     }
 
@@ -64,6 +142,10 @@ export default function ContactCard({ contact }: ContactCardProps) {
                 updates: { businessCardImage: result.assets[0].uri } 
               });
               setShowBusinessCard(false);
+              // Reset animation values
+              pan.setValue({ x: 0, y: 0 });
+              scale.setValue(1);
+              rotation.setValue(0);
             }
           }
         },
@@ -89,6 +171,10 @@ export default function ContactCard({ contact }: ContactCardProps) {
                 updates: { businessCardImage: result.assets[0].uri } 
               });
               setShowBusinessCard(false);
+              // Reset animation values
+              pan.setValue({ x: 0, y: 0 });
+              scale.setValue(1);
+              rotation.setValue(0);
             }
           }
         },
@@ -128,12 +214,24 @@ export default function ContactCard({ contact }: ContactCardProps) {
         visible={showBusinessCard}
         animationType="fade"
         transparent={true}
-        onRequestClose={() => setShowBusinessCard(false)}
+        onRequestClose={() => {
+          setShowBusinessCard(false);
+          // Reset animation values
+          pan.setValue({ x: 0, y: 0 });
+          scale.setValue(1);
+          rotation.setValue(0);
+        }}
       >
         <View style={styles.modalOverlay}>
           <TouchableOpacity 
             style={styles.closeButton}
-            onPress={() => setShowBusinessCard(false)}
+            onPress={() => {
+              setShowBusinessCard(false);
+              // Reset animation values
+              pan.setValue({ x: 0, y: 0 });
+              scale.setValue(1);
+              rotation.setValue(0);
+            }}
           >
             <X size={28} color="#fff" />
           </TouchableOpacity>
@@ -145,18 +243,44 @@ export default function ContactCard({ contact }: ContactCardProps) {
           >
             <Edit3 size={20} color="#fff" />
           </TouchableOpacity>
-          <View style={styles.modalContent}>
+          
+          {/* Interactive Business Card */}
+          <Animated.View
+            style={[
+              styles.businessCardContainer,
+              {
+                left: centerX,
+                top: centerY,
+                width: BUSINESS_CARD_WIDTH,
+                height: BUSINESS_CARD_HEIGHT,
+                transform: [
+                  { translateX: pan.x },
+                  { translateY: pan.y },
+                  { scale: scale },
+                  { rotate: rotation.interpolate({
+                    inputRange: [-1, 1],
+                    outputRange: ['-57.2958deg', '57.2958deg'] // Convert radians to degrees
+                  })}
+                ]
+              }
+            ]}
+            {...panResponder.panHandlers}
+          >
             {contact.businessCardImage && (
               <Image 
                 source={{ uri: contact.businessCardImage }}
                 style={styles.businessCardImage}
-                resizeMode="contain"
+                resizeMode="cover"
               />
             )}
-          </View>
+            
+            {/* Card shadow/border effect */}
+            <View style={styles.cardShadow} />
+          </Animated.View>
+          
           <View style={styles.modalFooter}>
             <Text style={styles.modalTitle}>{contact.name}&apos;s Business Card</Text>
-            <Text style={styles.modalSubtitle}>Pinch to zoom • Swipe to dismiss</Text>
+            <Text style={styles.modalSubtitle}>Drag to move • Release to snap back</Text>
           </View>
         </View>
       </Modal>
@@ -230,7 +354,7 @@ const styles = StyleSheet.create({
   },
   editButton: {
     position: 'absolute',
-    bottom: 120,
+    top: 50,
     left: 20,
     zIndex: 1,
     padding: 12,
@@ -241,16 +365,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 80,
+  businessCardContainer: {
+    position: 'absolute',
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   businessCardImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 12,
+  },
+  cardShadow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    pointerEvents: 'none',
   },
   modalFooter: {
     position: 'absolute',
