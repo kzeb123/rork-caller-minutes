@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   editButton: {
     position: 'absolute',
-    top: 50,
+    bottom: 120,
     left: 20,
     zIndex: 1,
     padding: 12,
