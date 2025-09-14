@@ -162,37 +162,93 @@ export default function BusinessCardEditor({
     if (!editingImage) return;
 
     try {
-      // Calculate the crop area
+      console.log('Starting image save process...');
+      console.log('Image size:', imageSize);
+      console.log('Container size:', containerSize);
+      console.log('Current transforms:', { currentScale, currentTranslateX, currentTranslateY, currentRotation });
+      
+      // Calculate the crop area based on the business card frame
       const cardWidth = containerSize.width * 0.8;
       const cardHeight = cardWidth / CARD_ASPECT_RATIO;
       
-      // Calculate the actual crop coordinates based on transforms
-      const cropX = Math.max(0, (imageSize.width - cardWidth / currentScale) / 2 - currentTranslateX / currentScale);
-      const cropY = Math.max(0, (imageSize.height - cardHeight / currentScale) / 2 - currentTranslateY / currentScale);
-      const cropWidth = Math.min(imageSize.width, cardWidth / currentScale);
-      const cropHeight = Math.min(imageSize.height, cardHeight / currentScale);
+      console.log('Card dimensions:', { cardWidth, cardHeight });
+      
+      // Get the actual image dimensions
+      const actualImageWidth = imageSize.width;
+      const actualImageHeight = imageSize.height;
+      
+      // Calculate scale factor between displayed image and actual image
+      const displayScale = Math.min(cardWidth / actualImageWidth, cardHeight / actualImageHeight);
+      
+      // Calculate crop coordinates in actual image space
+      const scaleFactor = 1 / currentScale;
+      const centerX = actualImageWidth / 2;
+      const centerY = actualImageHeight / 2;
+      
+      // Convert translate values to actual image coordinates
+      const translateXInImageSpace = -currentTranslateX / (displayScale * currentScale);
+      const translateYInImageSpace = -currentTranslateY / (displayScale * currentScale);
+      
+      // Calculate crop dimensions in actual image space
+      const cropWidthInImageSpace = cardWidth / (displayScale * currentScale);
+      const cropHeightInImageSpace = cardHeight / (displayScale * currentScale);
+      
+      // Calculate crop origin (top-left corner)
+      const cropX = Math.max(0, Math.min(actualImageWidth - cropWidthInImageSpace, 
+        centerX + translateXInImageSpace - cropWidthInImageSpace / 2));
+      const cropY = Math.max(0, Math.min(actualImageHeight - cropHeightInImageSpace,
+        centerY + translateYInImageSpace - cropHeightInImageSpace / 2));
+      
+      // Ensure crop dimensions don't exceed image bounds
+      const finalCropWidth = Math.min(cropWidthInImageSpace, actualImageWidth - cropX);
+      const finalCropHeight = Math.min(cropHeightInImageSpace, actualImageHeight - cropY);
+      
+      console.log('Crop parameters:', {
+        cropX,
+        cropY,
+        finalCropWidth,
+        finalCropHeight,
+        rotation: currentRotation
+      });
+
+      // Build manipulation actions
+      const actions: any[] = [];
+      
+      // Apply rotation first if needed
+      if (currentRotation !== 0) {
+        actions.push({ rotate: currentRotation });
+      }
+      
+      // Apply crop
+      actions.push({
+        crop: {
+          originX: Math.round(cropX),
+          originY: Math.round(cropY),
+          width: Math.round(finalCropWidth),
+          height: Math.round(finalCropHeight),
+        },
+      });
+      
+      // Resize to standard business card size
+      actions.push({ resize: { width: 800 } });
+      
+      console.log('Applying manipulations:', actions);
 
       // Apply transformations and crop
       const manipResult = await ImageManipulator.manipulateAsync(
         editingImage,
-        [
-          { rotate: currentRotation },
-          {
-            crop: {
-              originX: cropX,
-              originY: cropY,
-              width: cropWidth,
-              height: cropHeight,
-            },
-          },
-          { resize: { width: 800 } }, // Optimize size
-        ],
-        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+        actions,
+        { 
+          compress: 0.9, 
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: false
+        }
       );
 
+      console.log('Manipulation result:', manipResult);
       onSave(manipResult.uri);
     } catch (error) {
-      console.error('Error cropping image:', error);
+      console.error('Error processing image:', error);
       Alert.alert('Error', 'Failed to process the image. Please try again.');
     }
   };
@@ -306,9 +362,11 @@ export default function BusinessCardEditor({
                         {
                           width: imageSize.width,
                           height: imageSize.height,
+                          marginLeft: -imageSize.width / 2,
+                          marginTop: -imageSize.height / 2,
                         },
                       ]}
-                      resizeMode="contain"
+                      resizeMode="cover"
                     />
                   </Animated.View>
                 </View>
@@ -422,8 +480,7 @@ const styles = StyleSheet.create({
     left: '50%',
   },
   image: {
-    marginTop: -9999 / 2,
-    marginLeft: -9999 / 2,
+    position: 'absolute',
   },
   gridOverlay: {
     position: 'absolute',
