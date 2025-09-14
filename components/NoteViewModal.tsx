@@ -1,8 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Platform } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Platform, Animated, PanResponder, Dimensions } from 'react-native';
 import { X, Clock, Phone, PhoneIncoming, PhoneOutgoing, Tag, Circle, Edit3, Folder } from 'lucide-react-native';
 import { CallNote } from '@/types/contact';
 import { useContacts } from '@/hooks/contacts-store';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const CARD_WIDTH = screenWidth * 0.85;
+const CARD_HEIGHT = CARD_WIDTH * 0.6; // Business card aspect ratio
 
 interface NoteViewModalProps {
   visible: boolean;
@@ -13,6 +17,66 @@ interface NoteViewModalProps {
 
 export default function NoteViewModal({ visible, note, onClose, onEdit }: NoteViewModalProps) {
   const { folders } = useContacts();
+  const pan = useRef(new Animated.ValueXY()).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  const rotation = useRef(new Animated.Value(0)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      
+      onPanResponderGrant: () => {
+        // Scale up slightly when touched
+        Animated.spring(scale, {
+          toValue: 1.05,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 7,
+        }).start();
+      },
+      
+      onPanResponderMove: (evt, gestureState) => {
+        // Update position
+        pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+        
+        // Add rotation based on horizontal movement
+        const rotationValue = gestureState.dx / screenWidth * 15; // Max 15 degrees
+        rotation.setValue(rotationValue);
+      },
+      
+      onPanResponderRelease: (evt, gestureState) => {
+        // Calculate velocity for physics
+        const velocity = {
+          x: gestureState.vx,
+          y: gestureState.vy,
+        };
+        
+        // Snap back to center with spring physics
+        Animated.parallel([
+          Animated.spring(pan, {
+            toValue: { x: 0, y: 0 },
+            useNativeDriver: true,
+            velocity,
+            tension: 40,
+            friction: 8,
+          }),
+          Animated.spring(scale, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 7,
+          }),
+          Animated.spring(rotation, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 40,
+            friction: 8,
+          }),
+        ]).start();
+      },
+    })
+  ).current;
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -102,24 +166,66 @@ export default function NoteViewModal({ visible, note, onClose, onEdit }: NoteVi
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Contact Header */}
-          <View style={styles.contactHeader}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {note.contactName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactName}>{note.contactName}</Text>
-              <Text style={styles.contactDate}>
-                {new Date(note.callStartTime).toLocaleDateString([], {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </Text>
-            </View>
+          {/* Interactive Business Card */}
+          <View style={styles.cardContainer}>
+            <Animated.View
+              style={[
+                styles.businessCard,
+                {
+                  transform: [
+                    { translateX: pan.x },
+                    { translateY: pan.y },
+                    { scale: scale },
+                    { rotate: rotation.interpolate({
+                      inputRange: [-15, 15],
+                      outputRange: ['-15deg', '15deg'],
+                    })},
+                  ],
+                },
+              ]}
+              {...panResponder.panHandlers}
+            >
+              <View style={styles.cardContent}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardAvatar}>
+                    <Text style={styles.cardAvatarText}>
+                      {note.contactName.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardName}>{note.contactName}</Text>
+                    <Text style={styles.cardTitle}>Contact</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.cardDivider} />
+                
+                <View style={styles.cardDetails}>
+                  <View style={styles.cardDetailRow}>
+                    <Phone size={14} color="#666" />
+                    <Text style={styles.cardDetailText}>+1 (555) 123-4567</Text>
+                  </View>
+                  <View style={styles.cardDetailRow}>
+                    <Clock size={14} color="#666" />
+                    <Text style={styles.cardDetailText}>
+                      Last call: {formatCallTime(note.callStartTime)}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={styles.cardFooter}>
+                  <Text style={styles.cardDate}>
+                    {new Date(note.callStartTime).toLocaleDateString([], {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </Text>
+                </View>
+              </View>
+            </Animated.View>
+            
+            <Text style={styles.dragHint}>Drag the card to interact</Text>
           </View>
 
           {/* Call Details */}
@@ -279,45 +385,90 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
-  contactHeader: {
+  cardContainer: {
+    height: CARD_HEIGHT + 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  businessCard: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  cardContent: {
+    flex: 1,
+    padding: 20,
+  },
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  cardAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
-  avatarText: {
-    fontSize: 24,
+  cardAvatarText: {
+    fontSize: 20,
     fontWeight: '600',
     color: '#fff',
   },
-  contactInfo: {
+  cardInfo: {
     flex: 1,
   },
-  contactName: {
-    fontSize: 24,
+  cardName: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  contactDate: {
-    fontSize: 16,
+  cardTitle: {
+    fontSize: 14,
     color: '#666',
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#e1e5e9',
+    marginVertical: 12,
+  },
+  cardDetails: {
+    flex: 1,
+  },
+  cardDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  cardDetailText: {
+    fontSize: 13,
+    color: '#666',
+  },
+  cardFooter: {
+    alignItems: 'flex-end',
+  },
+  cardDate: {
+    fontSize: 11,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  dragHint: {
+    marginTop: 16,
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
   },
   callDetailsCard: {
     backgroundColor: '#fff',
