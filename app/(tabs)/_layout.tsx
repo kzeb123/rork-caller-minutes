@@ -36,15 +36,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <ShoppingBag color={color} size={24} />,
         }}
       />
-      {showShopifyTab && (
-        <Tabs.Screen
-          name="shopify"
-          options={{
-            title: "Website",
-            tabBarIcon: ({ color }) => <Globe color={color} size={24} />,
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="shopify"
+        options={{
+          title: "Website",
+          tabBarIcon: ({ color }) => <Globe color={color} size={24} />,
+          href: showShopifyTab ? "/shopify" : null,
+        }}
+      />
       <Tabs.Screen
         name="settings"
         options={{
