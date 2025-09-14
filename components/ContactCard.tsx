@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Image } from 'react-native';
-import { ChevronRight, User, CreditCard, X } from 'lucide-react-native';
+import { ChevronRight, User, CreditCard, X, Edit3 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Contact } from '@/types/contact';
 import { useContacts } from '@/hooks/contacts-store';
 
@@ -9,7 +10,7 @@ interface ContactCardProps {
 }
 
 export default function ContactCard({ contact }: ContactCardProps) {
-  const { openCallNoteModal } = useContacts();
+  const { openCallNoteModal, updateContact } = useContacts();
   const [showBusinessCard, setShowBusinessCard] = useState(false);
 
   const handleContactPress = () => {
@@ -32,6 +33,70 @@ export default function ContactCard({ contact }: ContactCardProps) {
       contact.name,
       contact.phoneNumber,
       options
+    );
+  };
+
+  const showBusinessCardEditOptions = () => {
+    Alert.alert(
+      'Business Card Options',
+      'What would you like to do?',
+      [
+        {
+          text: 'Change Business Card',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            
+            if (status !== 'granted') {
+              Alert.alert('Permission Denied', 'We need camera roll permissions to attach business cards.');
+              return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: false,
+              quality: 0.8,
+              base64: false,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+              updateContact({ 
+                id: contact.id, 
+                updates: { businessCardImage: result.assets[0].uri } 
+              });
+              setShowBusinessCard(false);
+            }
+          }
+        },
+        {
+          text: 'Take New Photo',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            
+            if (status !== 'granted') {
+              Alert.alert('Permission Denied', 'We need camera permissions to take photos of business cards.');
+              return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+              allowsEditing: false,
+              quality: 0.8,
+              base64: false,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+              updateContact({ 
+                id: contact.id, 
+                updates: { businessCardImage: result.assets[0].uri } 
+              });
+              setShowBusinessCard(false);
+            }
+          }
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
     );
   };
 
@@ -71,6 +136,14 @@ export default function ContactCard({ contact }: ContactCardProps) {
             onPress={() => setShowBusinessCard(false)}
           >
             <X size={28} color="#fff" />
+          </TouchableOpacity>
+          
+          {/* Edit Business Card Button */}
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={() => showBusinessCardEditOptions()}
+          >
+            <Edit3 size={20} color="#fff" />
           </TouchableOpacity>
           <View style={styles.modalContent}>
             {contact.businessCardImage && (
@@ -154,6 +227,15 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 1,
     padding: 8,
+  },
+  editButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 1,
+    padding: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 20,
   },
   modalContent: {
     flex: 1,
