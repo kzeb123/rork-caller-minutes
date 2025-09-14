@@ -307,6 +307,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   // Business card pan responder for interactive movement with physics
   const panResponder = useRef(
     PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         setIsDragging(true);
@@ -331,9 +332,9 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
           y: gestureState.dy,
         });
         
-        // Dynamic rotation based on horizontal velocity
-        const rotationValue = gestureState.vx * 0.05;
-        cardRotation.setValue(Math.max(-0.3, Math.min(0.3, rotationValue)));
+        // Dynamic rotation based on horizontal movement with limits
+        const rotationValue = Math.max(-15, Math.min(15, gestureState.dx * 0.05));
+        cardRotation.setValue(rotationValue);
         
         // Store velocity for momentum
         lastGestureRef.current = { vx: gestureState.vx, vy: gestureState.vy };
@@ -344,30 +345,30 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
         
         // Calculate momentum based on velocity
         const velocity = Math.sqrt(gestureState.vx ** 2 + gestureState.vy ** 2);
-        const momentumX = gestureState.dx + gestureState.vx * 100;
-        const momentumY = gestureState.dy + gestureState.vy * 100;
+        const momentumX = gestureState.dx + gestureState.vx * 150;
+        const momentumY = gestureState.dy + gestureState.vy * 150;
         
         // If velocity is high, add momentum before snapping back
-        if (velocity > 0.5) {
+        if (velocity > 1.0) {
           // First, continue movement with momentum
           Animated.parallel([
             Animated.timing(cardPan, {
               toValue: { x: momentumX, y: momentumY },
-              duration: 200,
+              duration: 300,
               useNativeDriver: true,
             }),
             Animated.timing(cardRotation, {
-              toValue: gestureState.vx * 0.1,
-              duration: 200,
+              toValue: gestureState.vx * 0.15,
+              duration: 300,
               useNativeDriver: true,
             })
           ]).start(() => {
-            // Then snap back to center
+            // Then snap back to center with spring physics
             Animated.parallel([
               Animated.spring(cardPan, {
                 toValue: { x: 0, y: 0 },
-                tension: 40,
-                friction: 7,
+                tension: 35,
+                friction: 6,
                 useNativeDriver: true,
               }),
               Animated.spring(cardScale, {
@@ -378,8 +379,8 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
               }),
               Animated.spring(cardRotation, {
                 toValue: 0,
-                tension: 60,
-                friction: 8,
+                tension: 50,
+                friction: 7,
                 useNativeDriver: true,
               })
             ]).start();
@@ -785,8 +786,8 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
                       { scale: cardScale },
                       { 
                         rotate: cardRotation.interpolate({
-                          inputRange: [-1, 1],
-                          outputRange: ['-30deg', '30deg']
+                          inputRange: [-15, 15],
+                          outputRange: ['-15deg', '15deg']
                         })
                       },
                       {
@@ -851,7 +852,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
               {viewingContactName ? `${viewingContactName}'s Business Card` : 'Business Card'}
             </Text>
             <Text style={styles.imageViewerSubtitle}>
-              {isDragging ? 'Swipe with momentum • Release to snap back' : 'Drag to move • Swipe for physics • Edit to modify'}
+              {isDragging ? 'Swipe with momentum • Release to snap back' : 'Drag to move • Swipe for momentum • Snaps back to center'}
             </Text>
           </Animated.View>
         </View>
