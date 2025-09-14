@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import * as Contacts from 'expo-contacts';
 import { Contact, CallNote, IncomingCall, ActiveCall, Reminder, Order, DetectedDateTime, NoteStatus, NoteFolder, NoteFilter, ProductCatalog, Product, NoteSettings } from '@/types/contact';
@@ -1107,7 +1107,7 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     return data;
   }, [getCallDirectoryData]);
 
-  return useMemo(() => ({
+  return {
     contacts: contactsQuery.data || [],
     notes: notesQuery.data || [],
     reminders: remindersQuery.data || [],
@@ -1164,71 +1164,5 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     isAddingFakeContacts: addFakeContactsMutation.isPending,
     createReminderFromDetection,
     closeReminderSuggestionModal,
-  }), [
-    contactsQuery.data,
-    notesQuery.data,
-    remindersQuery.data,
-    ordersQuery.data,
-    foldersQuery.data,
-    productCatalogsQuery.data,
-    presetTagsQuery.data,
-    noteSettingsQuery.data,
-    premiumSettingsQuery.data,
-    noteTemplateQuery.data,
-    contactsQuery.isLoading,
-    notesQuery.isLoading,
-    remindersQuery.isLoading,
-    ordersQuery.isLoading,
-    foldersQuery.isLoading,
-    productCatalogsQuery.isLoading,
-    presetTagsQuery.isLoading,
-    noteSettingsQuery.isLoading,
-    premiumSettingsQuery.isLoading,
-    noteTemplateQuery.isLoading,
-    incomingCall,
-    activeCall,
-    showNoteModal,
-    currentCallContact,
-    callStartTime,
-    callEndTime,
-    detectedDateTimes,
-    showReminderSuggestionModal,
-    currentNoteForReminder,
-    addContactMutation.mutate,
-    updateContactMutation.mutate,
-    deleteContactMutation.mutate,
-    importContactsMutation.mutate,
-    importContactsMutation.isPending,
-    updateNoteMutation.mutate,
-    deleteNoteMutation.mutate,
-    addReminderMutation.mutate,
-    updateReminderMutation.mutate,
-    deleteReminderMutation.mutate,
-    addOrderMutation.mutate,
-    updateOrderMutation.mutate,
-    deleteOrderMutation.mutate,
-    updateNoteTemplateMutation.mutate,
-    addFolderMutation.mutate,
-    updateFolderMutation.mutate,
-    deleteFolderMutation.mutate,
-    addProductCatalogMutation.mutate,
-    updateProductCatalogMutation.mutate,
-    deleteProductCatalogMutation.mutate,
-    updatePresetTagsMutation.mutate,
-    updateNoteSettingsMutation.mutate,
-    updatePremiumSettingsMutation.mutate,
-    openCallNoteModal,
-    simulateIncomingCall,
-    answerCall,
-    declineCall,
-    endCall,
-    closeNoteModal,
-    saveNote,
-    getFormattedNoteTemplate,
-    clearAllData,
-    addFakeContactsMutation.mutate,
-    addFakeContactsMutation.isPending,
-    createReminderFromDetection,
-    closeReminderSuggestionModal,
-  ]);
+  };
 });
