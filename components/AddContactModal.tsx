@@ -4,6 +4,7 @@ import { X, UserPlus, User, Phone, Search, Plus, Camera, Image as ImageIcon, Max
 import * as ImagePicker from 'expo-image-picker';
 import { useContacts } from '@/hooks/contacts-store';
 import { Contact } from '@/types/contact';
+import BusinessCardEditor from './BusinessCardEditor';
 
 interface AddContactModalProps {
   visible: boolean;
@@ -25,6 +26,9 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [editingBusinessCard, setEditingBusinessCard] = useState<string | null>(null);
   const [showBusinessCardOptions, setShowBusinessCardOptions] = useState<string | null>(null);
+  const [showCardEditor, setShowCardEditor] = useState(false);
+  const [cardEditorImage, setCardEditorImage] = useState<string | null>(null);
+  const [cardEditorContactName, setCardEditorContactName] = useState<string>('');
   
   // Get dimensions inside component
   const { width, height } = Dimensions.get('window');
@@ -116,7 +120,9 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     });
 
     if (!result.canceled && result.assets[0]) {
-      setBusinessCardImage(result.assets[0].uri);
+      setCardEditorImage(result.assets[0].uri);
+      setCardEditorContactName('');
+      setShowCardEditor(true);
     }
   };
 
@@ -135,7 +141,9 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     });
 
     if (!result.canceled && result.assets[0]) {
-      setBusinessCardImage(result.assets[0].uri);
+      setCardEditorImage(result.assets[0].uri);
+      setCardEditorContactName('');
+      setShowCardEditor(true);
     }
   };
 
@@ -272,10 +280,10 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
             });
 
             if (!result.canceled && result.assets[0]) {
-              updateContact({ 
-                id: contact.id, 
-                updates: { businessCardImage: result.assets[0].uri } 
-              });
+              setCardEditorImage(result.assets[0].uri);
+              setCardEditorContactName(contact.name);
+              setEditingContactId(contact.id);
+              setShowCardEditor(true);
             }
           }
         },
@@ -431,7 +439,10 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     });
 
     if (!result.canceled && result.assets[0]) {
-      setEditingBusinessCard(result.assets[0].uri);
+      setCardEditorImage(result.assets[0].uri);
+      const contact = contacts.find(c => c.id === editingContactId);
+      setCardEditorContactName(contact?.name || '');
+      setShowCardEditor(true);
     }
   };
 
@@ -450,7 +461,10 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     });
 
     if (!result.canceled && result.assets[0]) {
-      setEditingBusinessCard(result.assets[0].uri);
+      setCardEditorImage(result.assets[0].uri);
+      const contact = contacts.find(c => c.id === editingContactId);
+      setCardEditorContactName(contact?.name || '');
+      setShowCardEditor(true);
     }
   };
 
@@ -928,6 +942,32 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
           </View>
         </View>
       </Modal>
+
+      {/* Business Card Editor */}
+      <BusinessCardEditor
+        visible={showCardEditor}
+        imageUri={cardEditorImage}
+        contactName={cardEditorContactName}
+        onSave={(croppedUri) => {
+          if (editingContactId) {
+            // Updating existing contact's business card
+            updateContact({
+              id: editingContactId,
+              updates: { businessCardImage: croppedUri }
+            });
+            setEditingBusinessCard(croppedUri);
+          } else {
+            // Adding business card to new contact
+            setBusinessCardImage(croppedUri);
+          }
+          setShowCardEditor(false);
+          setCardEditorImage(null);
+        }}
+        onCancel={() => {
+          setShowCardEditor(false);
+          setCardEditorImage(null);
+        }}
+      />
     </Modal>
   );
 }
