@@ -279,7 +279,7 @@ export default function ContactCard({ contact }: ContactCardProps) {
           </Animated.View>
           
           <View style={styles.modalFooter}>
-            <Text style={styles.modalTitle}>{contact.name}'s Business Card</Text>
+            <Text style={styles.modalTitle}>{contact.name}&apos;s Business Card</Text>
             <Text style={styles.modalSubtitle}>Drag to move • Release to snap back</Text>
           </View>
         </View>
@@ -354,8 +354,8 @@ const styles = StyleSheet.create({
   },
   editButton: {
     position: 'absolute',
-    bottom: 50,
-    right: 20,
+    top: 50,
+    left: 20,
     zIndex: 1,
     padding: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
