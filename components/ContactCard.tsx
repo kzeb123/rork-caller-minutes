@@ -279,7 +279,7 @@ export default function ContactCard({ contact }: ContactCardProps) {
           </Animated.View>
           
           <View style={styles.modalFooter}>
-            <Text style={styles.modalTitle}>{contact.name}&apos;s Business Card</Text>
+            <Text style={styles.modalTitle}>{contact.name}'s Business Card</Text>
             <Text style={styles.modalSubtitle}>Drag to move • Release to snap back</Text>
           </View>
         </View>
