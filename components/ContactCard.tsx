@@ -354,8 +354,8 @@ const styles = StyleSheet.create({
   },
   editButton: {
     position: 'absolute',
-    top: 50,
-    left: 20,
+    bottom: 50,
+    right: 20,
     zIndex: 1,
     padding: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
