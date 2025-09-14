@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert, FlatList, ScrollView, Animated, Dimensions, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert, FlatList, ScrollView, Animated, Dimensions, Image, PanResponder } from 'react-native';
 import { X, UserPlus, User, Phone, Search, Plus, Camera, Image as ImageIcon, Maximize2, CreditCard, Edit3 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useContacts } from '@/hooks/contacts-store';
@@ -34,6 +34,12 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const translateXAnim = useRef(new Animated.Value(-width * 0.45)).current;
   const translateYAnim = useRef(new Animated.Value(height * 0.45)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  
+  // Business card animation values for interactive movement
+  const cardPan = useRef(new Animated.ValueXY()).current;
+  const cardScale = useRef(new Animated.Value(1)).current;
+  const cardRotation = useRef(new Animated.Value(0)).current;
+  const [isDragging, setIsDragging] = useState(false);
   
   useEffect(() => {
     if (visible) {
@@ -296,6 +302,59 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     setEditingBusinessCard(null);
     setShowBusinessCardOptions(null);
   };
+
+  // Business card pan responder for interactive movement
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        setIsDragging(true);
+        // Add slight scale and rotation when starting drag
+        Animated.parallel([
+          Animated.spring(cardScale, {
+            toValue: 1.05,
+            useNativeDriver: true,
+          }),
+          Animated.spring(cardRotation, {
+            toValue: (Math.random() - 0.5) * 0.1, // Random slight rotation
+            useNativeDriver: true,
+          })
+        ]).start();
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        // Update card position
+        cardPan.setValue({
+          x: gestureState.dx,
+          y: gestureState.dy,
+        });
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        setIsDragging(false);
+        
+        // Snap back to center with spring animation
+        Animated.parallel([
+          Animated.spring(cardPan, {
+            toValue: { x: 0, y: 0 },
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+          Animated.spring(cardScale, {
+            toValue: 1,
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+          Animated.spring(cardRotation, {
+            toValue: 0,
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          })
+        ]).start();
+      },
+    })
+  ).current;
 
   const pickImageForContact = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -616,6 +675,10 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
           setShowImageViewer(false);
           setViewingBusinessCard(null);
           setViewingContactName('');
+          // Reset card position when closing
+          cardPan.setValue({ x: 0, y: 0 });
+          cardScale.setValue(1);
+          cardRotation.setValue(0);
         }}
       >
         <View style={styles.imageViewerOverlay}>
@@ -625,6 +688,10 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
               setShowImageViewer(false);
               setViewingBusinessCard(null);
               setViewingContactName('');
+              // Reset card position when closing
+              cardPan.setValue({ x: 0, y: 0 });
+              cardScale.setValue(1);
+              cardRotation.setValue(0);
             }}
           >
             <X size={28} color="#fff" />
@@ -640,6 +707,10 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
                   setShowImageViewer(false);
                   setEditingContactId(contact.id);
                   setEditingBusinessCard(contact.businessCardImage || null);
+                  // Reset card position when editing
+                  cardPan.setValue({ x: 0, y: 0 });
+                  cardScale.setValue(1);
+                  cardRotation.setValue(0);
                 }
               }}
             >
@@ -648,18 +719,49 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
           )}
           <View style={styles.imageViewerContent}>
             {(businessCardImage || viewingBusinessCard) && (
-              <Image 
-                source={{ uri: businessCardImage || viewingBusinessCard || '' }}
-                style={styles.fullScreenImage}
-                resizeMode="contain"
-              />
+              <Animated.View
+                {...panResponder.panHandlers}
+                style={[
+                  styles.businessCardContainer,
+                  {
+                    transform: [
+                      { translateX: cardPan.x },
+                      { translateY: cardPan.y },
+                      { scale: cardScale },
+                      { 
+                        rotate: cardRotation.interpolate({
+                          inputRange: [-1, 1],
+                          outputRange: ['-5deg', '5deg']
+                        })
+                      }
+                    ]
+                  }
+                ]}
+              >
+                <View style={styles.businessCardFrame}>
+                  <Image 
+                    source={{ uri: businessCardImage || viewingBusinessCard || '' }}
+                    style={styles.businessCardCropped}
+                    resizeMode="cover"
+                  />
+                  {isDragging && (
+                    <View style={styles.dragIndicator}>
+                      <View style={styles.dragDot} />
+                      <View style={styles.dragDot} />
+                      <View style={styles.dragDot} />
+                    </View>
+                  )}
+                </View>
+              </Animated.View>
             )}
           </View>
           <View style={styles.imageViewerFooter}>
             <Text style={styles.imageViewerTitle}>
               {viewingContactName ? `${viewingContactName}'s Business Card` : 'Business Card'}
             </Text>
-            <Text style={styles.imageViewerSubtitle}>Pinch to zoom • Swipe to dismiss</Text>
+            <Text style={styles.imageViewerSubtitle}>
+              {isDragging ? 'Release to snap back to center' : 'Drag to move • Tap edit to modify'}
+            </Text>
           </View>
         </View>
       </Modal>
@@ -1083,6 +1185,47 @@ const styles = StyleSheet.create({
   imageViewerSubtitle: {
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 14,
+    textAlign: 'center',
+  },
+  businessCardContainer: {
+    width: 320,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  businessCardFrame: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+    position: 'relative',
+  },
+  businessCardCropped: {
+    width: '100%',
+    height: '100%',
+  },
+  dragIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    gap: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  dragDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#fff',
   },
   addBusinessCardButton: {
     width: 36,
