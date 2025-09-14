@@ -50,8 +50,23 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<Contact[]> => {
       try {
         const stored = await AsyncStorage.getItem(CONTACTS_KEY);
-        if (!stored) return [];
-        return JSON.parse(stored);
+        if (!stored || stored.trim() === '') return [];
+        
+        // Validate JSON before parsing
+        if (!stored.startsWith('[') && !stored.startsWith('{')) {
+          console.warn('Invalid JSON format in contacts storage, clearing data');
+          await AsyncStorage.removeItem(CONTACTS_KEY);
+          return [];
+        }
+        
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) {
+          console.warn('Contacts data is not an array, clearing data');
+          await AsyncStorage.removeItem(CONTACTS_KEY);
+          return [];
+        }
+        
+        return parsed;
       } catch (error) {
         console.error('Error parsing contacts from storage:', error);
         // Clear corrupted data
@@ -66,8 +81,21 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<CallNote[]> => {
       try {
         const stored = await AsyncStorage.getItem(NOTES_KEY);
-        if (!stored) return [];
+        if (!stored || stored.trim() === '') return [];
+        
+        // Validate JSON before parsing
+        if (!stored.startsWith('[') && !stored.startsWith('{')) {
+          console.warn('Invalid JSON format in notes storage, clearing data');
+          await AsyncStorage.removeItem(NOTES_KEY);
+          return [];
+        }
+        
         const notes = JSON.parse(stored);
+        if (!Array.isArray(notes)) {
+          console.warn('Notes data is not an array, clearing data');
+          await AsyncStorage.removeItem(NOTES_KEY);
+          return [];
+        }
         
         // Migrate old notes to include status field
         const migratedNotes = notes.map((note: any) => ({
@@ -97,8 +125,23 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<Reminder[]> => {
       try {
         const stored = await AsyncStorage.getItem(REMINDERS_KEY);
-        if (!stored) return [];
-        return JSON.parse(stored);
+        if (!stored || stored.trim() === '') return [];
+        
+        // Validate JSON before parsing
+        if (!stored.startsWith('[') && !stored.startsWith('{')) {
+          console.warn('Invalid JSON format in reminders storage, clearing data');
+          await AsyncStorage.removeItem(REMINDERS_KEY);
+          return [];
+        }
+        
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) {
+          console.warn('Reminders data is not an array, clearing data');
+          await AsyncStorage.removeItem(REMINDERS_KEY);
+          return [];
+        }
+        
+        return parsed;
       } catch (error) {
         console.error('Error parsing reminders from storage:', error);
         // Clear corrupted data
@@ -113,8 +156,23 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<Order[]> => {
       try {
         const stored = await AsyncStorage.getItem(ORDERS_KEY);
-        if (!stored) return [];
-        return JSON.parse(stored);
+        if (!stored || stored.trim() === '') return [];
+        
+        // Validate JSON before parsing
+        if (!stored.startsWith('[') && !stored.startsWith('{')) {
+          console.warn('Invalid JSON format in orders storage, clearing data');
+          await AsyncStorage.removeItem(ORDERS_KEY);
+          return [];
+        }
+        
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) {
+          console.warn('Orders data is not an array, clearing data');
+          await AsyncStorage.removeItem(ORDERS_KEY);
+          return [];
+        }
+        
+        return parsed;
       } catch (error) {
         console.error('Error parsing orders from storage:', error);
         // Clear corrupted data
@@ -142,7 +200,21 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<NoteFolder[]> => {
       try {
         const stored = await AsyncStorage.getItem(FOLDERS_KEY);
-        const folders = stored ? JSON.parse(stored) : [];
+        let folders = [];
+        
+        if (stored && stored.trim() !== '') {
+          // Validate JSON before parsing
+          if (stored.startsWith('[') || stored.startsWith('{')) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              folders = parsed;
+            } else {
+              console.warn('Folders data is not an array, using default folders');
+            }
+          } else {
+            console.warn('Invalid JSON format in folders storage, using default folders');
+          }
+        }
         
         // Add default folders if none exist
         if (folders.length === 0) {
@@ -226,8 +298,23 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<ProductCatalog[]> => {
       try {
         const stored = await AsyncStorage.getItem(PRODUCT_CATALOGS_KEY);
-        if (!stored) return [];
-        return JSON.parse(stored);
+        if (!stored || stored.trim() === '') return [];
+        
+        // Validate JSON before parsing
+        if (!stored.startsWith('[') && !stored.startsWith('{')) {
+          console.warn('Invalid JSON format in product catalogs storage, clearing data');
+          await AsyncStorage.removeItem(PRODUCT_CATALOGS_KEY);
+          return [];
+        }
+        
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) {
+          console.warn('Product catalogs data is not an array, clearing data');
+          await AsyncStorage.removeItem(PRODUCT_CATALOGS_KEY);
+          return [];
+        }
+        
+        return parsed;
       } catch (error) {
         console.error('Error parsing product catalogs from storage:', error);
         // Clear corrupted data
@@ -242,7 +329,21 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<string[]> => {
       try {
         const stored = await AsyncStorage.getItem(PRESET_TAGS_KEY);
-        const tags = stored ? JSON.parse(stored) : [];
+        let tags = [];
+        
+        if (stored && stored.trim() !== '') {
+          // Validate JSON before parsing
+          if (stored.startsWith('[') || stored.startsWith('{')) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              tags = parsed;
+            } else {
+              console.warn('Preset tags data is not an array, using default tags');
+            }
+          } else {
+            console.warn('Invalid JSON format in preset tags storage, using default tags');
+          }
+        }
         
         // Add default tags if none exist
         if (tags.length === 0) {
@@ -290,7 +391,21 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<NoteSettings> => {
       try {
         const stored = await AsyncStorage.getItem(NOTE_SETTINGS_KEY);
-        const settings = stored ? JSON.parse(stored) : {};
+        let settings: any = {};
+        
+        if (stored && stored.trim() !== '') {
+          // Validate JSON before parsing
+          if (stored.startsWith('{') || stored.startsWith('[')) {
+            const parsed = JSON.parse(stored);
+            if (typeof parsed === 'object' && parsed !== null) {
+              settings = parsed;
+            } else {
+              console.warn('Note settings data is not an object, using defaults');
+            }
+          } else {
+            console.warn('Invalid JSON format in note settings storage, using defaults');
+          }
+        }
         
         // Return with default values
         return {
@@ -318,7 +433,21 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
     queryFn: async (): Promise<{ isPremium: boolean; showShopifyTab: boolean }> => {
       try {
         const stored = await AsyncStorage.getItem(PREMIUM_SETTINGS_KEY);
-        const settings = stored ? JSON.parse(stored) : {};
+        let settings: any = {};
+        
+        if (stored && stored.trim() !== '') {
+          // Validate JSON before parsing
+          if (stored.startsWith('{') || stored.startsWith('[')) {
+            const parsed = JSON.parse(stored);
+            if (typeof parsed === 'object' && parsed !== null) {
+              settings = parsed;
+            } else {
+              console.warn('Premium settings data is not an object, using defaults');
+            }
+          } else {
+            console.warn('Invalid JSON format in premium settings storage, using defaults');
+          }
+        }
         
         // Return with default values
         return {
