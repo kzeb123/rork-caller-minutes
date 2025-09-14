@@ -336,72 +336,76 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     }
   };
 
-  const renderContact = ({ item }: { item: Contact }) => (
-    <View style={styles.contactItemContainer}>
-      {/* Edit Business Card Button - only show if business card exists */}
-      {item.businessCardImage && (
+  const renderContact = ({ item }: { item: Contact }) => {
+    console.log('Rendering contact:', item.name, 'businessCardImage:', item.businessCardImage);
+    
+    return (
+      <View style={styles.contactItemContainer}>
+        {/* Edit Business Card Button - only show if business card exists */}
+        {item.businessCardImage && (
+          <TouchableOpacity 
+            style={styles.editBusinessCardButton}
+            onPress={() => showBusinessCardEditOptions(item)}
+            activeOpacity={0.7}
+          >
+            <Edit3 size={16} color="#007AFF" />
+          </TouchableOpacity>
+        )}
+        
         <TouchableOpacity 
-          style={styles.editBusinessCardButton}
-          onPress={() => showBusinessCardEditOptions(item)}
+          style={styles.contactItem} 
+          onPress={() => handleContactSelect(item)}
           activeOpacity={0.7}
         >
-          <Edit3 size={16} color="#007AFF" />
-        </TouchableOpacity>
-      )}
-      
-      <TouchableOpacity 
-        style={styles.contactItem} 
-        onPress={() => handleContactSelect(item)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.contactAvatar}>
-          <User size={20} color="#666" />
-        </View>
-        <View style={styles.contactInfo}>
-          <Text style={styles.contactName}>{item.name}</Text>
-          <View style={styles.phoneContainer}>
-            <Phone size={12} color="#999" />
-            <Text style={styles.contactPhone}>{item.phoneNumber}</Text>
-            {item.businessCardImage && (
-              <View style={styles.businessCardBadge}>
-                <CreditCard size={10} color="#007AFF" />
-                <Text style={styles.businessCardBadgeText}>Card</Text>
-              </View>
-            )}
+          <View style={styles.contactAvatar}>
+            <User size={20} color="#666" />
           </View>
-        </View>
-      </TouchableOpacity>
-      
-      {/* Add Business Card Button - only show if no business card exists */}
-      {!item.businessCardImage && (
-        <TouchableOpacity 
-          style={styles.addBusinessCardButton}
-          onPress={() => handleAddBusinessCard(item)}
-          activeOpacity={0.7}
-        >
-          <Plus size={18} color="#007AFF" />
-        </TouchableOpacity>
-      )}
-      
-      {/* Business Card Thumbnail */}
-      {item.businessCardImage && (
-        <TouchableOpacity 
-          style={styles.businessCardThumbnail}
-          onPress={() => handleBusinessCardView(item)}
-          activeOpacity={0.8}
-        >
-          <Image 
-            source={{ uri: item.businessCardImage }}
-            style={styles.thumbnailImage}
-            resizeMode="cover"
-          />
-          <View style={styles.thumbnailOverlay}>
-            <Maximize2 size={16} color="#fff" />
+          <View style={styles.contactInfo}>
+            <Text style={styles.contactName}>{item.name}</Text>
+            <View style={styles.phoneContainer}>
+              <Phone size={12} color="#999" />
+              <Text style={styles.contactPhone}>{item.phoneNumber}</Text>
+              {item.businessCardImage && (
+                <View style={styles.businessCardBadge}>
+                  <CreditCard size={10} color="#007AFF" />
+                  <Text style={styles.businessCardBadgeText}>Card</Text>
+                </View>
+              )}
+            </View>
           </View>
         </TouchableOpacity>
-      )}
-    </View>
-  );
+        
+        {/* Add Business Card Button - only show if no business card exists */}
+        {!item.businessCardImage && (
+          <TouchableOpacity 
+            style={styles.addBusinessCardButton}
+            onPress={() => handleAddBusinessCard(item)}
+            activeOpacity={0.7}
+          >
+            <Plus size={18} color="#007AFF" />
+          </TouchableOpacity>
+        )}
+        
+        {/* Business Card Thumbnail */}
+        {item.businessCardImage && (
+          <TouchableOpacity 
+            style={styles.businessCardThumbnail}
+            onPress={() => handleBusinessCardView(item)}
+            activeOpacity={0.8}
+          >
+            <Image 
+              source={{ uri: item.businessCardImage }}
+              style={styles.thumbnailImage}
+              resizeMode="cover"
+            />
+            <View style={styles.thumbnailOverlay}>
+              <Maximize2 size={16} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
     <Modal
