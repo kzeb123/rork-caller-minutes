@@ -1788,10 +1788,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: 100,
   },
   summarySection: {
-    paddingVertical: 16,
+    paddingTop: 20,
+    paddingBottom: 24,
     backgroundColor: '#fff',
   },
   filterButtonContainer: {
@@ -1818,13 +1819,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   notesSection: {
-    paddingVertical: 16,
+    paddingTop: 20,
+    paddingBottom: 24,
     backgroundColor: '#fff',
   },
   notesFilterButtonContainer: {
     paddingHorizontal: 16,
     paddingTop: 0,
-    paddingBottom: 8,
+    paddingBottom: 12,
     flexDirection: 'row',
     gap: 12,
   },
@@ -1832,7 +1834,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 16,
+    marginBottom: 20,
     paddingHorizontal: 16,
   },
   summaryScrollContent: {
@@ -1901,9 +1903,11 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#e9ecef',
     marginHorizontal: 16,
+    marginVertical: 16,
   },
   notesList: {
     paddingHorizontal: 16,
+    paddingTop: 8,
   },
   list: {
     paddingVertical: 8,
@@ -2123,7 +2127,8 @@ const styles = StyleSheet.create({
   },
   groupSearchContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   groupSearchInputWrapper: {
     flexDirection: 'row',
@@ -2172,7 +2177,7 @@ const styles = StyleSheet.create({
   },
   noteGroup: {
     backgroundColor: '#fff',
-    marginBottom: 8,
+    marginBottom: 12,
     borderRadius: 12,
     marginHorizontal: 0,
     shadowColor: '#000',
@@ -2186,7 +2191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
   },
@@ -2218,8 +2223,8 @@ const styles = StyleSheet.create({
   },
   groupContent: {
     paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
     backgroundColor: '#fff',
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
@@ -2444,7 +2449,7 @@ const styles = StyleSheet.create({
     height: 0,
   },
   subGroup: {
-    marginBottom: 8,
+    marginBottom: 12,
     backgroundColor: '#FAFAFA',
     borderRadius: 8,
     overflow: 'hidden',
@@ -2454,7 +2459,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     backgroundColor: '#F0F0F0',
   },
   subGroupHeaderLeft: {
@@ -2477,19 +2482,20 @@ const styles = StyleSheet.create({
   },
   subGroupContent: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   noteItem: {
     backgroundColor: '#F2F2F7',
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
+    padding: 14,
+    marginBottom: 10,
   },
   noteItemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   noteCallInfo: {
     flexDirection: 'row',
@@ -2500,7 +2506,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#3C3C43',
     lineHeight: 18,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   noteTagsRow: {
     flexDirection: 'row',
