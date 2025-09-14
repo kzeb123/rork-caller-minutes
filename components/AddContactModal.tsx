@@ -40,6 +40,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const cardScale = useRef(new Animated.Value(1)).current;
   const cardRotation = useRef(new Animated.Value(0)).current;
   const [isDragging, setIsDragging] = useState(false);
+  const lastGestureRef = useRef({ vx: 0, vy: 0 });
   
   useEffect(() => {
     if (visible) {
@@ -303,55 +304,109 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     setShowBusinessCardOptions(null);
   };
 
-  // Business card pan responder for interactive movement
+  // Business card pan responder for interactive movement with physics
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         setIsDragging(true);
-        // Add slight scale and rotation when starting drag
+        // Stop any ongoing animations
+        cardPan.stopAnimation();
+        cardPan.extractOffset();
+        
+        // Add slight scale and dynamic rotation when starting drag
         Animated.parallel([
           Animated.spring(cardScale, {
-            toValue: 1.05,
+            toValue: 1.08,
+            tension: 300,
+            friction: 10,
             useNativeDriver: true,
           }),
-          Animated.spring(cardRotation, {
-            toValue: (Math.random() - 0.5) * 0.1, // Random slight rotation
-            useNativeDriver: true,
-          })
         ]).start();
       },
       onPanResponderMove: (evt, gestureState) => {
-        // Update card position
+        // Update card position with smooth movement
         cardPan.setValue({
           x: gestureState.dx,
           y: gestureState.dy,
         });
+        
+        // Dynamic rotation based on horizontal velocity
+        const rotationValue = gestureState.vx * 0.05;
+        cardRotation.setValue(Math.max(-0.3, Math.min(0.3, rotationValue)));
+        
+        // Store velocity for momentum
+        lastGestureRef.current = { vx: gestureState.vx, vy: gestureState.vy };
       },
       onPanResponderRelease: (evt, gestureState) => {
         setIsDragging(false);
+        cardPan.flattenOffset();
         
-        // Snap back to center with spring animation
-        Animated.parallel([
-          Animated.spring(cardPan, {
-            toValue: { x: 0, y: 0 },
-            tension: 100,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-          Animated.spring(cardScale, {
-            toValue: 1,
-            tension: 100,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-          Animated.spring(cardRotation, {
-            toValue: 0,
-            tension: 100,
-            friction: 8,
-            useNativeDriver: true,
-          })
-        ]).start();
+        // Calculate momentum based on velocity
+        const velocity = Math.sqrt(gestureState.vx ** 2 + gestureState.vy ** 2);
+        const momentumX = gestureState.dx + gestureState.vx * 100;
+        const momentumY = gestureState.dy + gestureState.vy * 100;
+        
+        // If velocity is high, add momentum before snapping back
+        if (velocity > 0.5) {
+          // First, continue movement with momentum
+          Animated.parallel([
+            Animated.timing(cardPan, {
+              toValue: { x: momentumX, y: momentumY },
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(cardRotation, {
+              toValue: gestureState.vx * 0.1,
+              duration: 200,
+              useNativeDriver: true,
+            })
+          ]).start(() => {
+            // Then snap back to center
+            Animated.parallel([
+              Animated.spring(cardPan, {
+                toValue: { x: 0, y: 0 },
+                tension: 40,
+                friction: 7,
+                useNativeDriver: true,
+              }),
+              Animated.spring(cardScale, {
+                toValue: 1,
+                tension: 100,
+                friction: 8,
+                useNativeDriver: true,
+              }),
+              Animated.spring(cardRotation, {
+                toValue: 0,
+                tension: 60,
+                friction: 8,
+                useNativeDriver: true,
+              })
+            ]).start();
+          });
+        } else {
+          // Direct snap back for slow movements
+          Animated.parallel([
+            Animated.spring(cardPan, {
+              toValue: { x: 0, y: 0 },
+              tension: 60,
+              friction: 7,
+              useNativeDriver: true,
+            }),
+            Animated.spring(cardScale, {
+              toValue: 1,
+              tension: 100,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+            Animated.spring(cardRotation, {
+              toValue: 0,
+              tension: 80,
+              friction: 8,
+              useNativeDriver: true,
+            })
+          ]).start();
+        }
       },
     })
   ).current;
@@ -731,38 +786,74 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
                       { 
                         rotate: cardRotation.interpolate({
                           inputRange: [-1, 1],
-                          outputRange: ['-5deg', '5deg']
+                          outputRange: ['-30deg', '30deg']
                         })
+                      },
+                      {
+                        perspective: 1000
                       }
-                    ]
+                    ],
+                    opacity: isDragging ? 0.95 : 1,
                   }
                 ]}
               >
-                <View style={styles.businessCardFrame}>
+                <Animated.View 
+                  style={[
+                    styles.businessCardFrame,
+                    {
+                      shadowOpacity: cardScale.interpolate({
+                        inputRange: [1, 1.08],
+                        outputRange: [0.3, 0.5]
+                      }),
+                      shadowRadius: cardScale.interpolate({
+                        inputRange: [1, 1.08],
+                        outputRange: [16, 24]
+                      }),
+                    }
+                  ]}
+                >
                   <Image 
                     source={{ uri: businessCardImage || viewingBusinessCard || '' }}
                     style={styles.businessCardCropped}
                     resizeMode="cover"
                   />
-                  {isDragging && (
-                    <View style={styles.dragIndicator}>
-                      <View style={styles.dragDot} />
-                      <View style={styles.dragDot} />
-                      <View style={styles.dragDot} />
-                    </View>
-                  )}
-                </View>
+                  <Animated.View 
+                    style={[
+                      styles.dragIndicator,
+                      {
+                        opacity: isDragging ? 1 : 0,
+                        transform: [
+                          {
+                            scale: isDragging ? 1 : 0.8
+                          }
+                        ]
+                      }
+                    ]}
+                  >
+                    <View style={styles.dragDot} />
+                    <View style={styles.dragDot} />
+                    <View style={styles.dragDot} />
+                    <View style={styles.dragDot} />
+                  </Animated.View>
+                </Animated.View>
               </Animated.View>
             )}
           </View>
-          <View style={styles.imageViewerFooter}>
+          <Animated.View 
+            style={[
+              styles.imageViewerFooter,
+              {
+                opacity: isDragging ? 0.3 : 1
+              }
+            ]}
+          >
             <Text style={styles.imageViewerTitle}>
               {viewingContactName ? `${viewingContactName}'s Business Card` : 'Business Card'}
             </Text>
             <Text style={styles.imageViewerSubtitle}>
-              {isDragging ? 'Release to snap back to center' : 'Drag to move • Tap edit to modify'}
+              {isDragging ? 'Swipe with momentum • Release to snap back' : 'Drag to move • Swipe for physics • Edit to modify'}
             </Text>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -1212,19 +1303,21 @@ const styles = StyleSheet.create({
   },
   dragIndicator: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: '50%',
+    left: '50%',
+    marginTop: -12,
+    marginLeft: -24,
     flexDirection: 'row',
-    gap: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    gap: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
   },
   dragDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#fff',
   },
   addBusinessCardButton: {
