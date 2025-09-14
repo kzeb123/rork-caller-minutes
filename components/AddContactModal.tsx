@@ -629,6 +629,23 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
           >
             <X size={28} color="#fff" />
           </TouchableOpacity>
+          {/* Edit Button - opposite corner from X button */}
+          {viewingBusinessCard && viewingContactName && (
+            <TouchableOpacity 
+              style={styles.imageViewerEditButton}
+              onPress={() => {
+                // Find the contact by name to get its ID
+                const contact = contacts.find(c => c.name === viewingContactName);
+                if (contact) {
+                  setShowImageViewer(false);
+                  setEditingContactId(contact.id);
+                  setEditingBusinessCard(contact.businessCardImage || null);
+                }
+              }}
+            >
+              <Edit3 size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
           <View style={styles.imageViewerContent}>
             {(businessCardImage || viewingBusinessCard) && (
               <Image 
@@ -1031,6 +1048,15 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 1,
     padding: 8,
+  },
+  imageViewerEditButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 1,
+    padding: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
   },
   imageViewerContent: {
     flex: 1,
