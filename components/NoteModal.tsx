@@ -116,10 +116,10 @@ export default function NoteModal() {
     
     let noteText = header + '\n\n';
     
-    templateSections.forEach(section => {
-      if (section.value.trim()) {
-        noteText += `${section.label}:\n${section.value.trim()}\n\n`;
-      }
+    // Only include sections that have actual content
+    const sectionsWithContent = templateSections.filter(section => section.value.trim());
+    sectionsWithContent.forEach(section => {
+      noteText += `${section.label}:\n${section.value.trim()}\n\n`;
     });
     
     if (noteText.trim() !== header.trim()) {
