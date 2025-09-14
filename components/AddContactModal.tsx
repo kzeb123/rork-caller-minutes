@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, Alert, FlatList, ScrollView, Animated, Dimensions, Image } from 'react-native';
-import { X, UserPlus, User, Phone, Search, Plus, Camera, Image as ImageIcon, Maximize2, CreditCard } from 'lucide-react-native';
+import { X, UserPlus, User, Phone, Search, Plus, Camera, Image as ImageIcon, Maximize2, CreditCard, Edit3 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useContacts } from '@/hooks/contacts-store';
 import { Contact } from '@/types/contact';
@@ -24,6 +24,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const [viewingContactName, setViewingContactName] = useState<string>('');
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [editingBusinessCard, setEditingBusinessCard] = useState<string | null>(null);
+  const [showBusinessCardOptions, setShowBusinessCardOptions] = useState<string | null>(null);
   
   // Get dimensions inside component
   const { width, height } = Dimensions.get('window');
@@ -162,6 +163,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
       setShowAddForm(false);
       setEditingContactId(null);
       setEditingBusinessCard(null);
+      setShowBusinessCardOptions(null);
       onClose();
     });
   };
@@ -201,6 +203,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
         setShowAddForm(false);
         setEditingContactId(null);
         setEditingBusinessCard(null);
+        setShowBusinessCardOptions(null);
         onClose();
         // Open call note modal after the close animation completes
         setTimeout(() => {
@@ -228,6 +231,55 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
     setEditingBusinessCard(contact.businessCardImage || null);
   };
 
+  const handleBusinessCardEdit = (contact: Contact) => {
+    setShowBusinessCardOptions(contact.id);
+  };
+
+  const showBusinessCardEditOptions = (contact: Contact) => {
+    setShowBusinessCardOptions(null);
+    Alert.alert(
+      'Business Card Options',
+      'What would you like to do?',
+      [
+        {
+          text: 'Change Business Card',
+          onPress: () => {
+            setEditingContactId(contact.id);
+            setEditingBusinessCard(contact.businessCardImage || null);
+          }
+        },
+        {
+          text: 'Take New Photo',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            
+            if (status !== 'granted') {
+              Alert.alert('Permission Denied', 'We need camera permissions to take photos of business cards.');
+              return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+              allowsEditing: false,
+              quality: 0.8,
+              base64: false,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+              updateContact({ 
+                id: contact.id, 
+                updates: { businessCardImage: result.assets[0].uri } 
+              });
+            }
+          }
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
   const saveBusinessCard = async () => {
     if (editingContactId && editingBusinessCard) {
       updateContact({ 
@@ -242,6 +294,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
   const cancelBusinessCardEdit = () => {
     setEditingContactId(null);
     setEditingBusinessCard(null);
+    setShowBusinessCardOptions(null);
   };
 
   const pickImageForContact = async () => {
@@ -285,6 +338,17 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
 
   const renderContact = ({ item }: { item: Contact }) => (
     <View style={styles.contactItemContainer}>
+      {/* Edit Business Card Button - only show if business card exists */}
+      {item.businessCardImage && (
+        <TouchableOpacity 
+          style={styles.editBusinessCardButton}
+          onPress={() => showBusinessCardEditOptions(item)}
+          activeOpacity={0.7}
+        >
+          <Edit3 size={16} color="#007AFF" />
+        </TouchableOpacity>
+      )}
+      
       <TouchableOpacity 
         style={styles.contactItem} 
         onPress={() => handleContactSelect(item)}
@@ -474,6 +538,7 @@ export default function AddContactModal({ visible, onClose, onAdd, onSelectConta
                   setBusinessCardImage(null);
                   setEditingContactId(null);
                   setEditingBusinessCard(null);
+                  setShowBusinessCardOptions(null);
                 }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -771,6 +836,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
     paddingVertical: 12,
+    position: 'relative',
   },
   contactItem: {
     flex: 1,
@@ -1026,5 +1092,24 @@ const styles = StyleSheet.create({
   businessCardEditContent: {
     flex: 1,
     padding: 20,
+  },
+  editBusinessCardButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F2F2F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    borderWidth: 1,
+    borderColor: '#007AFF20',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
 });
