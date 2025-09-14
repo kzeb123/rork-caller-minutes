@@ -961,13 +961,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   scrollContent: {
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingBottom: 20,
   },
   statsSection: {
-    paddingVertical: 16,
+    paddingVertical: 20,
     backgroundColor: '#fff',
-    marginTop: 16,
+    marginTop: 8,
   },
   statsGrid: {
     paddingHorizontal: 16,
@@ -1010,20 +1010,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
     paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 16,
+    marginBottom: 12,
     paddingHorizontal: 16,
   },
   addButton: {
@@ -1077,7 +1077,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   completedReminderTitle: {
     textDecorationLine: 'line-through',
@@ -1087,7 +1087,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   reminderMetaItem: {
     flexDirection: 'row',
@@ -1128,7 +1128,8 @@ const styles = StyleSheet.create({
   },
   infoSection: {
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
+    marginTop: 8,
   },
   infoCard: {
     backgroundColor: '#fff',
@@ -1472,7 +1473,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     gap: 8,
   },
   tab: {
@@ -1546,7 +1547,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   orderCompletionModal: {
     borderTopWidth: 3,
@@ -1577,7 +1578,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   groupByButton: {
     flexDirection: 'row',
