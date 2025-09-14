@@ -771,16 +771,15 @@ export default function SettingsScreen() {
             <View style={styles.templatePreviewSection}>
               <Text style={styles.templateSectionTitle}>Preview</Text>
               <View style={styles.templatePreview}>
-                <Text style={styles.templatePreviewText}>Call with [CONTACT_NAME] - [DATE]</Text>
-                <Text style={styles.templatePreviewText}>\n</Text>
+                <Text style={styles.templatePreviewText}>Call with [CONTACT_NAME] - [DATE]{"\n\n"}</Text>
                 {templateSections.filter(s => s.enabled).map(section => (
                   <Text key={section.id} style={styles.templatePreviewText}>
-                    {section.label}:\n\n
+                    {section.label}:{"\n\n"}
                   </Text>
                 ))}
                 {customPrompts.map((prompt, index) => (
                   <Text key={`custom-${index}`} style={styles.templatePreviewText}>
-                    {prompt}:\n\n
+                    {prompt}:{"\n\n"}
                   </Text>
                 ))}
               </View>
