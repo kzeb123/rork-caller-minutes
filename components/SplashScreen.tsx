@@ -5,10 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function CustomSplashScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const bounceAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const translateXAnim = useRef(new Animated.Value(0)).current;
-  const translateYAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -28,39 +26,7 @@ export default function CustomSplashScreen() {
       }),
     ]);
 
-    // Phase 2: Rotation and pulsing effect
-    const showoffAnimation = Animated.parallel([
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(rotateAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(rotateAnim, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-        { iterations: 2 }
-      ),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 1.2,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ]),
-        { iterations: 2 }
-      ),
-    ]);
+
 
     // Phase 3: Drive off to the right like a car with acceleration
     const exitAnimation = Animated.parallel([
@@ -84,22 +50,17 @@ export default function CustomSplashScreen() {
     // Execute animations in sequence
     Animated.sequence([
       entranceAnimation,
-      Animated.delay(500), // Pause before showoff
-      showoffAnimation,
-      Animated.delay(500), // Brief pause before driving off
+      Animated.delay(1000), // Brief pause before driving off
       exitAnimation,
     ]).start();
-  }, [bounceAnim, rotateAnim, scaleAnim, translateXAnim, translateYAnim, opacityAnim, screenWidth]);
+  }, [bounceAnim, scaleAnim, translateXAnim, opacityAnim, screenWidth]);
 
   const bounceInterpolate = bounceAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [50, 0],
   });
 
-  const rotateInterpolate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+
 
   return (
     <View style={styles.container}>
@@ -113,7 +74,6 @@ export default function CustomSplashScreen() {
                   { translateY: bounceInterpolate },
                   { translateX: translateXAnim },
                   { scale: scaleAnim },
-                  { rotate: rotateInterpolate },
                 ],
                 opacity: opacityAnim,
               },
