@@ -74,6 +74,7 @@ export default function CustomSplashScreen() {
                   { translateY: bounceInterpolate },
                   { translateX: translateXAnim },
                   { scale: scaleAnim },
+                  { skewX: '-15deg' },
                 ],
                 opacity: opacityAnim,
               },
