@@ -62,28 +62,32 @@ export default function CustomSplashScreen() {
       ),
     ]);
 
-    // Phase 3: Accelerate off screen like a car
-    const exitAnimation = Animated.parallel([
+    // Phase 3: Drive off screen like a car with acceleration
+    const exitAnimation = Animated.sequence([
+      // Initial acceleration (slow start)
       Animated.timing(translateXAnim, {
-        toValue: screenWidth + 200,
-        duration: 800,
+        toValue: 100,
+        duration: 400,
         useNativeDriver: true,
       }),
-      Animated.timing(translateYAnim, {
-        toValue: -50,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 0.5,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
+      // Accelerate faster (like a car picking up speed)
+      Animated.parallel([
+        Animated.timing(translateXAnim, {
+          toValue: screenWidth + 300,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.3,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]),
     ]);
 
     // Execute animations in sequence
@@ -91,7 +95,7 @@ export default function CustomSplashScreen() {
       entranceAnimation,
       Animated.delay(500), // Pause before showoff
       showoffAnimation,
-      Animated.delay(300), // Brief pause before exit
+      Animated.delay(500), // Brief pause before driving off
       exitAnimation,
     ]).start();
   }, [bounceAnim, rotateAnim, scaleAnim, translateXAnim, translateYAnim, opacityAnim, screenWidth]);
@@ -117,7 +121,6 @@ export default function CustomSplashScreen() {
                 transform: [
                   { translateY: bounceInterpolate },
                   { translateX: translateXAnim },
-                  { translateY: translateYAnim },
                   { scale: scaleAnim },
                   { rotate: rotateInterpolate },
                 ],
