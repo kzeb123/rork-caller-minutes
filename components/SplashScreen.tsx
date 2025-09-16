@@ -62,32 +62,23 @@ export default function CustomSplashScreen() {
       ),
     ]);
 
-    // Phase 3: Drive off screen like a car with acceleration
-    const exitAnimation = Animated.sequence([
-      // Initial acceleration (slow start)
+    // Phase 3: Drive off to the right like a car with acceleration
+    const exitAnimation = Animated.parallel([
       Animated.timing(translateXAnim, {
-        toValue: 100,
-        duration: 400,
+        toValue: screenWidth + 200, // Drive off to the right
+        duration: 800,
         useNativeDriver: true,
       }),
-      // Accelerate faster (like a car picking up speed)
-      Animated.parallel([
-        Animated.timing(translateXAnim, {
-          toValue: screenWidth + 300,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.3,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]),
+      Animated.timing(scaleAnim, {
+        toValue: 0.8, // Slightly smaller as it drives away
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
     ]);
 
     // Execute animations in sequence
