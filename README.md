@@ -1,217 +1,433 @@
-# Caller Minutes
+# Rork Caller Minutes - Mac Setup Guide
 
 A comprehensive contact management and call notes app built with React Native and Expo.
 
-## Features
+## Complete Mac Setup from Scratch
 
-- 📞 Call notes and contact management
-- 📝 Note-taking with templates
-- 📋 Reminders and task management
-- 🛍️ Shopify integration
-- 💼 Business card management
-- 🏃‍♂️ Plan a run feature
-- 📱 Cross-platform (iOS, Android, Web)
+Follow this guide to set up and run the app on a Mac with no prior development environment.
 
-## Prerequisites
+---
 
-Before you begin, ensure you have the following installed on your system:
+## Step 1: Install Prerequisites
 
-### For Windows PC:
+### 1.1 Install Homebrew (Package Manager)
 
-1. **Node.js** (v18 or later)
-- Download from [nodejs.org](https://nodejs.org/)
-- Choose the LTS version
-- Verify installation: `node --version` and `npm --version`
+Open Terminal and run:
 
-2. **Bun** (Package manager and runtime)
-- Install via PowerShell: `powershell -c "irm bun.sh/install.ps1 | iex"`
-- Or download from [bun.sh](https://bun.sh/)
-- Verify installation: `bun --version`
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-3. **Git**
-- Download from [git-scm.com](https://git-scm.com/download/win)
-- Verify installation: `git --version`
+After installation, follow the on-screen instructions to add Homebrew to your PATH.
 
-4. **Expo CLI** (Optional, for additional features)
-- Install globally: `npm install -g @expo/cli`
+### 1.2 Install Node.js via NVM (Recommended)
 
-### For Mac:
+NVM allows you to manage multiple Node.js versions easily.
 
-1. **Node.js** (v18 or later)
-- Install via Homebrew: `brew install node`
-- Or download from [nodejs.org](https://nodejs.org/)
-- Verify installation: `node --version` and `npm --version`
+```bash
+# Install NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 
-2. **Bun** (Package manager and runtime)
-- Install via curl: `curl -fsSL https://bun.sh/install | bash`
-- Or via Homebrew: `brew install bun`
-- Verify installation: `bun --version`
+# Restart your terminal or run:
+source ~/.zshrc
 
-3. **Git** (Usually pre-installed)
-- If not installed: `brew install git`
-- Verify installation: `git --version`
+# Install Node.js 18 (LTS)
+nvm install 18
+nvm use 18
+nvm alias default 18
 
-4. **Expo CLI** (Optional, for additional features)
-- Install globally: `npm install -g @expo/cli`
+# Verify installation
+node --version  # Should show v18.x.x
+npm --version   # Should show 9.x.x or higher
+```
 
-## Installation
+**Alternative:** Install Node.js directly via Homebrew:
+```bash
+brew install node@18
+```
 
-### 1. Clone the Repository
-bash
-git clone <your-repository-url>
-cd caller-minutes
-### 2. Install Dependencies
-bash
-bun install
-## Running the App
+### 1.3 Install Git (if not already installed)
 
-### Development Server
+```bash
+# Check if Git is installed
+git --version
 
-To start the development server:
-bash
-bun run start
-This will start the Expo development server with tunneling enabled, allowing you to test on physical devices.
+# If not installed:
+brew install git
+```
 
-### Web Development
+### 1.4 Install Xcode (for iOS development)
 
-To run the app in web browser:
-bash
-bun run start-web
-For web development with debug logs:
-bash
-bun run start-web-dev
-### Testing on Mobile Devices
+1. Open the **Mac App Store**
+2. Search for **Xcode**
+3. Click **Install** (this is a large download, ~15GB+)
+4. After installation, open Xcode and accept the license agreement
+5. Install Command Line Tools:
 
-1. **Install Expo Go** on your mobile device:
-- iOS: Download from App Store
-- Android: Download from Google Play Store
+```bash
+xcode-select --install
+```
 
-2. **Scan QR Code**:
-- After running `bun run start`, a QR code will appear in your terminal
-- Open Expo Go and scan the QR code
-- The app will load on your device
+### 1.5 Install CocoaPods (iOS dependency manager)
 
-### Testing on Simulators/Emulators
+```bash
+sudo gem install cocoapods
+```
 
-#### iOS Simulator (Mac only):
-1. Install Xcode from the Mac App Store
-2. Open Xcode and install iOS Simulator
-3. Run `bun run start` and press `i` to open in iOS Simulator
+---
 
-#### Android Emulator:
-1. Install Android Studio
-2. Set up an Android Virtual Device (AVD)
-3. Start the emulator
-4. Run `bun run start` and press `a` to open in Android Emulator
+## Step 2: Clone and Setup Project
+
+### 2.1 Clone the Repository
+
+```bash
+# Navigate to where you want to store the project
+cd ~/Developer  # or your preferred location
+
+# Clone the repository
+git clone <your-repository-url> rork-caller-minutes
+cd rork-caller-minutes
+```
+
+### 2.2 Install Dependencies
+
+**Important:** This project requires the `--legacy-peer-deps` flag due to React 19 compatibility:
+
+```bash
+npm install --legacy-peer-deps
+```
+
+This process will:
+- Install all Node.js dependencies
+- May take 3-5 minutes depending on your internet connection
+
+---
+
+## Step 3: Running the App
+
+### Option A: Run on iOS Simulator (Recommended for Testing)
+
+```bash
+npx expo run:ios
+```
+
+**What happens:**
+1. First run will take 10-15 minutes as it:
+   - Creates the native iOS project
+   - Installs CocoaPods dependencies
+   - Compiles all native modules
+2. iOS Simulator will launch automatically
+3. The app will install and open in the simulator
+
+**Subsequent runs:** Much faster (1-2 minutes) as native modules are already compiled.
+
+### Option B: Run on Physical Device
+
+```bash
+npm run start
+# or
+npx expo start --tunnel
+```
+
+Then:
+1. Install **Expo Go** from the iOS App Store
+2. Scan the QR code that appears in your terminal
+3. The app will load on your device
+
+### Option C: Run Android Version
+
+```bash
+npm run android
+# or
+npx expo run:android
+```
+
+**Note:** Requires Android Studio and Android emulator setup.
+
+### Option D: Run Web Version
+
+```bash
+npm run start-web
+# or
+npx expo start --web
+```
+
+Opens the app in your default web browser.
+
+---
+
+## Step 4: Development Workflow
+
+### Hot Reloading
+
+The app automatically reloads when you save changes to your code. No need to rebuild!
+
+### Useful Commands
+
+```bash
+# Start development server
+npm run start
+
+# Run on iOS simulator
+npm run ios
+
+# Run on Android emulator
+npm run android
+
+# Run linter
+npm run lint
+
+# Clear cache and restart
+npx expo start --clear
+
+# Show available commands
+npx expo --help
+```
+
+---
+
+## Troubleshooting
+
+### Issue: `Cannot find module 'ajv/dist/compile/codegen'`
+
+**Solution:**
+```bash
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+```
+
+### Issue: `Command not found: npm`
+
+**Solution:** Your shell isn't loading NVM. Add this to `~/.zshrc`:
+```bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+```
+
+Then reload: `source ~/.zshrc`
+
+### Issue: iOS build fails with CocoaPods errors
+
+**Solution:**
+```bash
+cd ios
+pod install
+cd ..
+npm run ios
+```
+
+### Issue: Xcode license not accepted
+
+**Solution:**
+```bash
+sudo xcodebuild -license accept
+```
+
+### Issue: Simulator doesn't launch
+
+**Solution:**
+```bash
+# Open Simulator manually
+open -a Simulator
+
+# Then run the app again
+npm run ios
+```
+
+### Issue: Port already in use
+
+**Solution:**
+```bash
+# Kill the process on port 8081
+lsof -ti:8081 | xargs kill -9
+
+# Restart the dev server
+npm run start
+```
+
+### Issue: Build stuck or very slow
+
+**Solution:**
+```bash
+# Clear all caches
+rm -rf node_modules
+rm -rf ios/Pods
+rm -rf ios/build
+rm package-lock.json
+npm install --legacy-peer-deps
+```
+
+### Issue: M1/M2 Mac compatibility issues
+
+**Solution:**
+```bash
+# Ensure you're using the correct architecture
+arch -x86_64 pod install  # If needed for compatibility
+```
+
+---
 
 ## Project Structure
-├── app/                    # App screens and routing
-│   ├── (tabs)/            # Tab-based navigation screens
-│   ├── _layout.tsx        # Root layout
-│   └── index.tsx          # Home screen
+
+```
+rork-caller-minutes/
+├── app/                    # App screens and routing (Expo Router)
+│   ├── (tabs)/            # Tab-based navigation
+│   └── _layout.tsx        # Root layout
 ├── components/            # Reusable UI components
 ├── hooks/                 # Custom React hooks
 ├── types/                 # TypeScript type definitions
-├── constants/             # App constants and colors
-├── assets/                # Images and static assets
-└── package.json           # Dependencies and scripts
+├── constants/             # App constants
+├── assets/                # Images and static files
+├── ios/                   # Native iOS code (generated)
+├── android/               # Native Android code (generated)
+├── node_modules/          # Dependencies (not committed)
+├── package.json           # Project metadata and scripts
+└── package-lock.json      # Locked dependency versions
+```
+
+---
+
 ## Key Technologies
 
-- **React Native**: Cross-platform mobile development
-- **Expo**: Development platform and tools
-- **TypeScript**: Type-safe JavaScript
-- **Expo Router**: File-based routing
-- **React Query**: Server state management
-- **AsyncStorage**: Local data persistence
-- **Lucide Icons**: Icon library
+- **React Native 0.79.1**: Cross-platform mobile framework
+- **Expo 53**: Development platform and tools
+- **React 19**: UI library
+- **TypeScript 5.8**: Type-safe JavaScript
+- **Expo Router 5**: File-based navigation
+- **React Query 5**: Server state management
+- **Zustand 5**: Client state management
+- **NativeWind 4**: Tailwind CSS for React Native
+- **Lucide Icons**: Modern icon library
 
-## Permissions
+---
 
-The app requires the following permissions:
+## Required Permissions
 
-### iOS:
+### iOS (configured in app.json):
 - Contacts access
 - Photo library access
 - Camera access
+- Location access
 - Microphone access
 
 ### Android:
 - Vibration
 - Read/Write contacts
 - Camera
-- External storage access
+- Storage access
 
-## Troubleshooting
+---
 
-### Common Issues:
+## Environment Variables
 
-1. **Metro bundler issues**:
-bash
-   bun run start --clear
-   
-2. **Node modules issues**:
-bash
-   rm -rf node_modules
-   bun install
-   
-3. **Cache issues**:
-bash
-   expo r -c
-   
-4. **Port conflicts**:
-- The app uses a custom port configuration
-- If you encounter port issues, check the `start` script in package.json
+This project uses Rork for development. The project ID is configured in `package.json`:
 
-### Platform-Specific Issues:
+```json
+"start": "bunx rork start -p 0eaf3v66gpagx4bd97rl1 --tunnel"
+```
 
-#### Windows:
-- Ensure Windows Defender doesn't block the development server
-- Use PowerShell or Command Prompt as administrator if needed
-- Check firewall settings for Metro bundler
-
-#### Mac:
-- Ensure Xcode Command Line Tools are installed: `xcode-select --install`
-- For M1/M2 Macs, ensure Node.js is the correct architecture
-
-## Development Tips
-
-1. **Hot Reloading**: The app supports hot reloading - changes will appear automatically
-2. **Debugging**: Use React Native Debugger or browser dev tools
-3. **Linting**: Run `bun run lint` to check code quality
-4. **Type Checking**: TypeScript will show type errors in your editor
+---
 
 ## Building for Production
 
-This project uses Expo Go for development. For production builds, you would need:
+### Using Expo Application Services (EAS)
 
-1. **Expo Application Services (EAS)**:
-bash
-   npm install -g eas-cli
-   eas build
-   
-2. **Local builds** (requires additional setup):
-- iOS: Xcode and Apple Developer account
-- Android: Android Studio and keystore
+```bash
+# Install EAS CLI
+npm install -g eas-cli
 
-## Contributing
+# Login to Expo
+eas login
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes
-4. Run tests and linting: `bun run lint`
-5. Commit your changes: `git commit -m 'Add feature'`
-6. Push to the branch: `git push origin feature-name`
-7. Submit a pull request
+# Configure the project
+eas build:configure
+
+# Build for iOS
+eas build --platform ios
+
+# Build for Android
+eas build --platform android
+```
+
+### Local Production Build
+
+**iOS:**
+Requires:
+- Apple Developer Account ($99/year)
+- Provisioning profiles and certificates
+- Xcode
+
+```bash
+npx expo run:ios --configuration Release
+```
+
+**Android:**
+```bash
+npx expo run:android --variant release
+```
+
+---
+
+## Development Tips
+
+1. **Use iOS Simulator for rapid development** - Hot reloading works best here
+2. **Test on real devices periodically** - Some features behave differently
+3. **Keep dependencies updated** - Run `npm outdated` to check for updates
+4. **Use TypeScript strictly** - Catches bugs before runtime
+5. **Monitor bundle size** - Large bundles slow down the app
+
+---
+
+## Additional Resources
+
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Documentation](https://reactnative.dev/)
+- [Expo Router Documentation](https://docs.expo.dev/router/introduction/)
+- [NativeWind Documentation](https://www.nativewind.dev/)
+- [React Query Documentation](https://tanstack.com/query/latest)
+
+---
 
 ## Support
 
-If you encounter any issues:
+For issues or questions:
 
-1. Check the [Expo documentation](https://docs.expo.dev/)
-2. Review [React Native documentation](https://reactnative.dev/docs/getting-started)
-3. Search existing issues in the repository
-4. Create a new issue with detailed information
+1. Check this README first
+2. Search existing issues in the repository
+3. Review Expo and React Native documentation
+4. Create a new issue with:
+   - Clear description of the problem
+   - Steps to reproduce
+   - Error messages or screenshots
+   - Your environment (Mac OS version, Node version, etc.)
+
+---
 
 ## License
 
 This project is private and proprietary.
+
+---
+
+## Quick Start Checklist
+
+Use this checklist for first-time setup:
+
+- [ ] Install Homebrew
+- [ ] Install NVM and Node.js 18
+- [ ] Install Git
+- [ ] Install Xcode from Mac App Store
+- [ ] Run `xcode-select --install`
+- [ ] Install CocoaPods (`sudo gem install cocoapods`)
+- [ ] Clone the repository
+- [ ] Run `npm install --legacy-peer-deps`
+- [ ] Run `npx expo run:ios`
+- [ ] Wait for build to complete (10-15 minutes first time)
+- [ ] App opens in iOS Simulator
+- [ ] Start coding!
+
+---
+
+**Last Updated:** October 2025
+**Tested On:** macOS Sequoia 15.0+, Node.js 18.20.8, Expo SDK 53
