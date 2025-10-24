@@ -1,14 +1,13 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, TextInput, Animated, SafeAreaView, Modal } from 'react-native';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Animated, SafeAreaView, Modal } from 'react-native';
 import { Stack } from 'expo-router';
 import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, ChevronRight, ChevronUp, X, Plus, CheckCircle } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
-import { CallNote, NoteStatus, NoteFolder, NoteFilter, FilterType, GroupByOption } from '@/types/contact';
+import { CallNote, NoteStatus, NoteFilter, FilterType, GroupByOption } from '@/types/contact';
 import EditNoteModal from '@/components/EditNoteModal';
 import NoteViewModal from '@/components/NoteViewModal';
 import FolderManagementModal from '@/components/FolderManagementModal';
 import AddContactModal from '@/components/AddContactModal';
-import { COLORS } from '@/constants/colors';
 
 export default function NotesScreen() {
   const { notes, contacts, folders, updateNote, deleteNote, addContact } = useContacts();
@@ -775,7 +774,7 @@ export default function NotesScreen() {
   };
 
   const renderNote = ({ item }: { item: CallNote }) => (
-    <TouchableOpacity 
+    <Pressable 
       style={[
         styles.noteCard,
         highlightedNoteId === item.id && styles.highlightedNoteCard
@@ -800,9 +799,9 @@ export default function NotesScreen() {
         </View>
         
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => handleEditNote(item)} style={styles.editButton}>
+          <Pressable onPress={() => handleEditNote(item)} style={styles.editButton}>
             <Edit3 size={16} color="#007AFF" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
       
@@ -872,7 +871,7 @@ export default function NotesScreen() {
           {item.note}
         </Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   const renderEmpty = () => (
@@ -892,9 +891,9 @@ export default function NotesScreen() {
   const FilterChip = ({ filter }: { filter: NoteFilter }) => (
     <View style={styles.filterChip}>
       <Text style={styles.filterChipText}>{filter.label}</Text>
-      <TouchableOpacity onPress={() => removeFilter(filter)} style={styles.filterChipRemove}>
+      <Pressable onPress={() => removeFilter(filter)} style={styles.filterChipRemove}>
         <X size={12} color="#007AFF" />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 
@@ -904,12 +903,12 @@ export default function NotesScreen() {
     label: string;
     icon: React.ReactNode;
   }) => (
-    <TouchableOpacity
+    <Pressable
       style={styles.filterOption}
       onPress={() => addFilter(type, value, label)}
     >
       <Text style={styles.filterOptionText}>{icon} {label}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   const toggleGroup = (groupId: string) => {
@@ -934,10 +933,12 @@ export default function NotesScreen() {
     if (group.type === 'time-based' && group.subGroups) {
       return (
         <View style={styles.noteGroup}>
-          <TouchableOpacity
-            style={styles.groupHeader}
+          <Pressable
+            style={({ pressed }) => [
+              styles.groupHeader,
+              pressed && { opacity: 0.7 }
+            ]}
             onPress={() => toggleGroup(group.id)}
-            activeOpacity={0.7}
           >
             <View style={styles.groupHeaderLeft}>
               {isExpanded ? (
@@ -948,7 +949,7 @@ export default function NotesScreen() {
               <Text style={styles.groupTitle}>{group.title}</Text>
             </View>
             <Text style={styles.groupCount}>{group.notes.length}</Text>
-          </TouchableOpacity>
+          </Pressable>
 
           {isExpanded && (
             <View style={styles.groupContent}>
@@ -960,10 +961,12 @@ export default function NotesScreen() {
                 
                 return (
                   <View key={subGroup.id} style={styles.subGroup}>
-                    <TouchableOpacity
-                      style={styles.subGroupHeader}
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.subGroupHeader,
+                        pressed && { opacity: 0.7 }
+                      ]}
                       onPress={() => toggleGroup(subGroup.id)}
-                      activeOpacity={0.7}
                     >
                       <View style={styles.subGroupHeaderLeft}>
                         {subGroupExpanded ? (
@@ -977,19 +980,19 @@ export default function NotesScreen() {
                         <Text style={styles.subGroupTitle}>{subGroup.title}</Text>
                       </View>
                       <Text style={styles.subGroupCount}>{subGroup.notes.length}</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                     
                     {subGroupExpanded && (
                       <View style={styles.subGroupContent}>
                         {subGroupNotes.map(item => (
-                          <TouchableOpacity 
-                            key={item.id} 
-                            style={[
+                          <Pressable
+                            key={item.id}
+                            style={({ pressed }) => [
                               styles.noteItem,
-                              highlightedNoteId === item.id && styles.highlightedNoteItem
+                              highlightedNoteId === item.id && styles.highlightedNoteItem,
+                              pressed && { opacity: 0.7 }
                             ]}
                             onPress={() => handleViewNote(item)}
-                            activeOpacity={0.7}
                           >
                             <View style={styles.noteItemHeader}>
                               <View style={styles.noteTimeInfo}>
@@ -1012,13 +1015,13 @@ export default function NotesScreen() {
                                 </Text>
                               </View>
                             </View>
-                            
+
                             {item.note && !item.isAutoGenerated && (
                               <Text style={styles.notePreview} numberOfLines={2}>
                                 {item.note}
                               </Text>
                             )}
-                            
+
                             <View style={styles.noteTagsRow}>
                               <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20' }]}>
                                 <Text style={[styles.statusTagText, { color: getStatusColor(item.status) }]}>
@@ -1032,7 +1035,7 @@ export default function NotesScreen() {
                                 </View>
                               )}
                             </View>
-                          </TouchableOpacity>
+                          </Pressable>
                         ))}
                       </View>
                     )}
@@ -1048,10 +1051,12 @@ export default function NotesScreen() {
     // For contact-based groups (default grouping)
     return (
       <View style={styles.noteGroup}>
-        <TouchableOpacity
-          style={styles.groupHeader}
+        <Pressable
+          style={({ pressed }) => [
+            styles.groupHeader,
+            pressed && { opacity: 0.7 }
+          ]}
           onPress={() => toggleGroup(group.id)}
-          activeOpacity={0.7}
         >
           <View style={styles.groupHeaderLeft}>
             {isExpanded ? (
@@ -1065,19 +1070,19 @@ export default function NotesScreen() {
             <Text style={styles.groupTitle}>{group.title}</Text>
           </View>
           <Text style={styles.groupCount}>{group.notes.length}</Text>
-        </TouchableOpacity>
+        </Pressable>
 
         {isExpanded && (
           <View style={styles.groupContent}>
             {sortedGroupNotes.map(item => (
-              <TouchableOpacity 
-                key={item.id} 
-                style={[
+              <Pressable
+                key={item.id}
+                style={({ pressed }) => [
                   styles.noteItem,
-                  highlightedNoteId === item.id && styles.highlightedNoteItem
+                  highlightedNoteId === item.id && styles.highlightedNoteItem,
+                  pressed && { opacity: 0.7 }
                 ]}
                 onPress={() => handleViewNote(item)}
-                activeOpacity={0.7}
               >
                 <View style={styles.noteItemHeader}>
                   <View style={styles.noteTimeInfo}>
@@ -1103,13 +1108,13 @@ export default function NotesScreen() {
                     </Text>
                   </View>
                 </View>
-                
+
                 {item.note && !item.isAutoGenerated && (
                   <Text style={styles.notePreview} numberOfLines={2}>
                     {item.note}
                   </Text>
                 )}
-                
+
                 <View style={styles.noteTagsRow}>
                   <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20' }]}>
                     <Text style={[styles.statusTagText, { color: getStatusColor(item.status) }]}>
@@ -1123,7 +1128,7 @@ export default function NotesScreen() {
                     </View>
                   )}
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         )}
@@ -1228,12 +1233,12 @@ export default function NotesScreen() {
           title: 'Notes & Summary',
           headerRight: () => (
             <View style={styles.headerActions}>
-              <TouchableOpacity onPress={() => setShowFolderModal(true)} style={styles.headerButton}>
+              <Pressable onPress={() => setShowFolderModal(true)} style={styles.headerButton}>
                 <Settings size={20} color="#007AFF" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={toggleSearch} style={styles.headerButton}>
+              </Pressable>
+              <Pressable onPress={toggleSearch} style={styles.headerButton}>
                 <Search size={20} color="#007AFF" />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ),
         }} 
@@ -1272,9 +1277,9 @@ export default function NotesScreen() {
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Pressable onPress={() => setSearchQuery('')}>
                 <X size={18} color="#8E8E93" />
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
           {searchQuery.length > 0 && (
@@ -1285,14 +1290,14 @@ export default function NotesScreen() {
               {searchQuery.length > 0 && (
                 <View style={styles.searchSuggestions}>
                   {getSearchSuggestions().map((suggestion, index) => (
-                    <TouchableOpacity
+                    <Pressable
                       key={index}
                       style={styles.searchSuggestion}
                       onPress={() => setSearchQuery(suggestion)}
                     >
                       <Search size={14} color="#8E8E93" />
                       <Text style={styles.searchSuggestionText}>{suggestion}</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   ))}
                 </View>
               )}
@@ -1366,9 +1371,9 @@ export default function NotesScreen() {
               {activeFilters.map((filter, index) => (
                 <FilterChip key={`${filter.type}-${filter.value}-${index}`} filter={filter} />
               ))}
-              <TouchableOpacity onPress={clearAllFilters} style={styles.clearFiltersButton}>
+              <Pressable onPress={clearAllFilters} style={styles.clearFiltersButton}>
                 <Text style={styles.clearFiltersText}>Clear All</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </ScrollView>
         </View>
@@ -1389,14 +1394,14 @@ export default function NotesScreen() {
         <View style={styles.notesSection}>
           {/* Group By Options above Call Notes title */}
           <View style={styles.notesFilterButtonContainer}>
-            <TouchableOpacity 
+            <Pressable 
               style={styles.groupByButton}
               onPress={() => setShowGroupByModal(true)}
             >
               <Filter size={16} color="#007AFF" />
               <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
               <ChevronDown size={16} color="#007AFF" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           
           {/* Divider */}
@@ -1423,12 +1428,12 @@ export default function NotesScreen() {
                   returnKeyType="search"
                 />
                 {groupSearchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => {
+                  <Pressable onPress={() => {
                     setGroupSearchQuery('');
                     setSearchResultsExpanded(false);
                   }}>
                     <X size={16} color="#8E8E93" />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
               
@@ -1439,12 +1444,12 @@ export default function NotesScreen() {
                     <Text style={styles.searchResultsTitle}>
                       {getSearchResults().length} result{getSearchResults().length !== 1 ? 's' : ''} found
                     </Text>
-                    <TouchableOpacity 
+                    <Pressable 
                       onPress={() => setSearchResultsExpanded(false)}
                       style={styles.collapseButton}
                     >
                       <X size={16} color="#8E8E93" />
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                   
                   <ScrollView 
@@ -1453,11 +1458,13 @@ export default function NotesScreen() {
                     nestedScrollEnabled={true}
                   >
                     {getSearchResults().map((result, index) => (
-                      <TouchableOpacity
+                      <Pressable
                         key={`${result.note.id}-${index}`}
-                        style={styles.searchResultItem}
+                        style={({ pressed }) => [
+                          styles.searchResultItem,
+                          pressed && { opacity: 0.7 }
+                        ]}
                         onPress={() => handleSearchResultPress(result.note.id)}
-                        activeOpacity={0.7}
                       >
                         <View style={styles.searchResultContent}>
                           <View style={styles.searchResultHeader}>
@@ -1466,7 +1473,7 @@ export default function NotesScreen() {
                                 <User size={12} color="#666" />
                               </View>
                               <Text style={styles.searchResultContactName}>
-                                {result.matchType === 'contact' 
+                                {result.matchType === 'contact'
                                   ? highlightText(result.matchText, result.highlightStart, result.highlightEnd)
                                   : result.note.contactName
                                 }
@@ -1485,7 +1492,7 @@ export default function NotesScreen() {
                               </View>
                             </View>
                           </View>
-                          
+
                           <View style={styles.searchResultMatch}>
                             {result.matchType === 'content' && (
                               <Text style={styles.searchResultMatchText}>
@@ -1508,7 +1515,7 @@ export default function NotesScreen() {
                             )}
                           </View>
                         </View>
-                      </TouchableOpacity>
+                      </Pressable>
                     ))}
                     
                     {getSearchResults().length === 0 && (
@@ -1577,19 +1584,19 @@ export default function NotesScreen() {
         transparent={true}
         onRequestClose={() => setShowGroupByModal(false)}
       >
-        <TouchableOpacity 
+        <Pressable
           style={styles.modalOverlay}
-          activeOpacity={1}
           onPress={() => setShowGroupByModal(false)}
         >
           <View style={styles.groupByModalContainer}>
             <Text style={styles.groupByModalTitle}>Group Notes By</Text>
             {(['none', 'day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map((option) => (
-              <TouchableOpacity
+              <Pressable
                 key={option}
-                style={[
+                style={({ pressed }) => [
                   styles.groupByModalOption,
-                  groupBy === option && styles.selectedGroupByOption
+                  groupBy === option && styles.selectedGroupByOption,
+                  pressed && { opacity: 0.7 }
                 ]}
                 onPress={() => {
                   setGroupBy(option);
@@ -1603,10 +1610,10 @@ export default function NotesScreen() {
                   {option === 'none' ? 'No Grouping' : option.charAt(0).toUpperCase() + option.slice(1)}
                 </Text>
                 {groupBy === option && <CheckCircle size={20} color="#007AFF" />}
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
       
       <AddContactModal
@@ -1629,10 +1636,12 @@ export default function NotesScreen() {
           }
         ]}
       >
-        <TouchableOpacity 
-          style={styles.floatingButtonTouchable}
+        <Pressable
+          style={({ pressed }) => [
+            styles.floatingButtonTouchable,
+            pressed && { opacity: 0.9 }
+          ]}
           onPress={handleFloatingButtonPress}
-          activeOpacity={0.9}
           disabled={isAnimating}
         >
           <Animated.View
@@ -1672,7 +1681,7 @@ export default function NotesScreen() {
             >
               <Plus size={26} color="#fff" strokeWidth={2.5} />
             </Animated.View>
-            
+
             {/* Phone Icon - fades in immediately after plus fades */}
             <Animated.View
               style={[
@@ -1702,7 +1711,7 @@ export default function NotesScreen() {
               <Phone size={24} color="#fff" strokeWidth={2} />
             </Animated.View>
           </Animated.View>
-        </TouchableOpacity>
+        </Pressable>
         
         {/* Radiating ripple effects from corner with blue color fade */}
         <Animated.View
