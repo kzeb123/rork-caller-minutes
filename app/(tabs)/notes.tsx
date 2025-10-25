@@ -16,7 +16,6 @@ import {
   User,
   Clock,
   Phone,
-  MessageCircle,
   PhoneIncoming,
   PhoneOutgoing,
   BarChart3,
@@ -24,7 +23,6 @@ import {
   TrendingUp,
   Search,
   Tag,
-  Edit3,
   Circle,
   Filter,
   Folder,
@@ -93,18 +91,7 @@ export default function NotesScreen() {
     }
   };
 
-  const formatCallDuration = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s`;
-  };
-
-  const formatCallTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const getStatusColor = (status: NoteStatus, customStatus?: string) => {
+  const getStatusColor = (status: NoteStatus) => {
     switch (status) {
       case 'follow-up':
         return '#FF9500';
@@ -165,16 +152,6 @@ export default function NotesScreen() {
     }
   };
 
-  const toggleFilters = () => {
-    const toValue = showFilters ? 0 : 1;
-    setShowFilters(!showFilters);
-    Animated.timing(filterAnimation, {
-      toValue,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
   const addFilter = (type: FilterType, value: string, label: string) => {
     const existingFilter = activeFilters.find(f => f.type === type && f.value === value);
     if (!existingFilter) {
@@ -193,10 +170,6 @@ export default function NotesScreen() {
 
   const clearAllFilters = () => {
     setActiveFilters([]);
-  };
-
-  const getFolderById = (folderId: string) => {
-    return folders.find(f => f.id === folderId);
   };
 
   // Get search suggestions based on current query
@@ -693,7 +666,7 @@ export default function NotesScreen() {
       notesByTimePeriod.get(timeKey)!.push(note);
     });
 
-    // Now create groups with contact-based subgrouping for time periods
+    // Now create groups with contact-based subgroup for time periods
     notesByTimePeriod.forEach((notesInPeriod, key) => {
       // Group notes by contact within this time period
       const notesByContact = new Map<string, CallNote[]>();
