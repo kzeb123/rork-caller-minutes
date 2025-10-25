@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Stack } from 'expo-router';
 import { ShoppingBag, FileText, Plus, Download, Package, DollarSign, User, Calendar, Clock, CheckCircle, X, Minus, Search, ChevronDown, Edit3, Trash2, Upload } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
@@ -386,8 +386,7 @@ export default function StoreScreen() {
                 <FileText size={24} color="#FF6B35" />
                 <Text style={styles.catalogTitle}>Product Lists</Text>
               </View>
-              <TouchableOpacity 
-                style={styles.addCatalogButton}
+              <Pressable style={({ pressed }) => [styles.addCatalogButton, pressed && { opacity: 0.7 }]}
                 onPress={() => {
                   setEditingCatalog(null);
                   setSelectingProductsForOrder(false);
@@ -396,7 +395,7 @@ export default function StoreScreen() {
               >
                 <Upload size={16} color="#fff" />
                 <Text style={styles.addCatalogButtonText}>Upload PDF</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
             
             {productCatalogs.length === 0 ? (
@@ -420,8 +419,7 @@ export default function StoreScreen() {
                         {catalog.products.length} products
                       </Text>
                       <View style={styles.catalogActions}>
-                        <TouchableOpacity 
-                          style={styles.catalogActionButton}
+                        <Pressable style={({ pressed }) => [styles.catalogActionButton, pressed && { opacity: 0.7 }]}
                           onPress={() => {
                             setEditingCatalog(catalog);
                             setSelectingProductsForOrder(false);
@@ -429,9 +427,8 @@ export default function StoreScreen() {
                           }}
                         >
                           <Edit3 size={14} color="#007AFF" />
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.catalogActionButton}
+                        </Pressable>
+                        <Pressable style={({ pressed }) => [styles.catalogActionButton, pressed && { opacity: 0.7 }]}
                           onPress={() => {
                             Alert.alert(
                               'Delete Catalog',
@@ -448,7 +445,7 @@ export default function StoreScreen() {
                           }}
                         >
                           <Trash2 size={14} color="#FF3B30" />
-                        </TouchableOpacity>
+                        </Pressable>
                       </View>
                     </View>
                   ))}
@@ -467,8 +464,7 @@ export default function StoreScreen() {
         <View style={styles.section}>
           <View style={styles.ordersHeader}>
             <Text style={styles.sectionTitle}>Orders</Text>
-            <TouchableOpacity 
-              style={styles.createOrderButton}
+            <Pressable style={({ pressed }) => [styles.createOrderButton, pressed && { opacity: 0.7 }]}
               onPress={() => {
                 if (contacts.length === 0) {
                   Alert.alert('No Contacts', 'Add some contacts first to create orders.');
@@ -479,7 +475,7 @@ export default function StoreScreen() {
             >
               <Plus size={16} color="#fff" />
               <Text style={styles.createOrderButtonText}>New Order</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           
           {orders.length === 0 ? (
@@ -545,40 +541,35 @@ export default function StoreScreen() {
                       </View>
                       
                       <View style={styles.orderActions}>
-                        <TouchableOpacity 
-                          style={[styles.actionButton, { backgroundColor: '#007AFF' }]}
+                        <Pressable style={({ pressed }) => [styles.actionButton, { backgroundColor: '#007AFF' }, pressed && { opacity: 0.7 }]}
                           onPress={() => handleEditOrder(order)}
                         >
                           <Edit3 size={14} color="#fff" />
                           <Text style={styles.actionButtonText}>Edit</Text>
-                        </TouchableOpacity>
+                        </Pressable>
                         
                         {order.status === 'pending' && (
-                          <TouchableOpacity 
-                            style={[styles.actionButton, { backgroundColor: '#FF9500' }]}
+                          <Pressable style={({ pressed }) => [styles.actionButton, { backgroundColor: '#FF9500' }, pressed && { opacity: 0.7 }]}
                             onPress={() => updateOrderStatus(order.id, 'confirmed')}
                           >
                             <Text style={styles.actionButtonText}>Confirm</Text>
-                          </TouchableOpacity>
+                          </Pressable>
                         )}
                         {order.status === 'confirmed' && (
-                          <TouchableOpacity 
-                            style={[styles.actionButton, { backgroundColor: '#5856D6' }]}
+                          <Pressable style={({ pressed }) => [styles.actionButton, { backgroundColor: '#5856D6' }, pressed && { opacity: 0.7 }]}
                             onPress={() => updateOrderStatus(order.id, 'shipped')}
                           >
                             <Text style={styles.actionButtonText}>Ship</Text>
-                          </TouchableOpacity>
+                          </Pressable>
                         )}
                         {order.status === 'shipped' && (
-                          <TouchableOpacity 
-                            style={[styles.actionButton, { backgroundColor: '#34C759' }]}
+                          <Pressable style={({ pressed }) => [styles.actionButton, { backgroundColor: '#34C759' }, pressed && { opacity: 0.7 }]}
                             onPress={() => updateOrderStatus(order.id, 'delivered')}
                           >
                             <Text style={styles.actionButtonText}>Deliver</Text>
-                          </TouchableOpacity>
+                          </Pressable>
                         )}
-                        <TouchableOpacity 
-                          style={[styles.actionButton, { backgroundColor: '#FF3B30' }]}
+                        <Pressable style={({ pressed }) => [styles.actionButton, { backgroundColor: '#FF3B30' }, pressed && { opacity: 0.7 }]}
                           onPress={() => {
                             Alert.alert(
                               'Delete Order',
@@ -591,7 +582,7 @@ export default function StoreScreen() {
                           }}
                         >
                           <Trash2 size={14} color="#fff" />
-                        </TouchableOpacity>
+                        </Pressable>
                       </View>
                     </View>
                   </View>
@@ -613,15 +604,14 @@ export default function StoreScreen() {
         >
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{editingOrder ? 'Edit Order' : 'Create New Order'}</Text>
-            <TouchableOpacity 
-              style={styles.closeButton}
+            <Pressable style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
               onPress={() => {
                 setShowOrderModal(false);
                 resetOrderForm();
               }}
             >
               <X size={24} color="#000" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           
           <ScrollView 
@@ -633,8 +623,7 @@ export default function StoreScreen() {
             <View style={styles.formSection}>
               <Text style={styles.formLabel}>Select Contact</Text>
               <View style={styles.contactSearchContainer}>
-                <TouchableOpacity 
-                  style={styles.contactSearchInput}
+                <Pressable style={({ pressed }) => [styles.contactSearchInput, pressed && { opacity: 0.7 }]}
                   onPress={() => setShowContactDropdown(!showContactDropdown)}
                 >
                   <View style={styles.searchInputContent}>
@@ -654,14 +643,14 @@ export default function StoreScreen() {
                     />
                     <ChevronDown size={16} color="#666" />
                   </View>
-                </TouchableOpacity>
+                </Pressable>
                 
                 {showContactDropdown && (
                   <View style={styles.contactDropdown}>
                     <ScrollView style={styles.contactDropdownScroll} nestedScrollEnabled>
                       {filteredContacts.length > 0 ? (
                         filteredContacts.map((contact) => (
-                          <TouchableOpacity
+                          <Pressable
                             key={contact.id}
                             style={[
                               styles.contactDropdownItem,
@@ -686,7 +675,7 @@ export default function StoreScreen() {
                             {selectedContactId === contact.id && (
                               <CheckCircle size={16} color="#007AFF" />
                             )}
-                          </TouchableOpacity>
+                          </Pressable>
                         ))
                       ) : (
                         <View style={styles.noContactsFound}>
@@ -714,8 +703,7 @@ export default function StoreScreen() {
               <View style={styles.formLabelRow}>
                 <Text style={styles.formLabel}>Add Items</Text>
                 {productCatalogs.length > 0 && (
-                  <TouchableOpacity
-                    style={styles.fromCatalogButton}
+                  <Pressable style={({ pressed }) => [styles.fromCatalogButton, pressed && { opacity: 0.7 }]}
                     onPress={() => {
                       setSelectingProductsForOrder(true);
                       setShowProductCatalogModal(true);
@@ -723,7 +711,7 @@ export default function StoreScreen() {
                   >
                     <FileText size={14} color="#007AFF" />
                     <Text style={styles.fromCatalogButtonText}>From Catalog</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
               
@@ -744,7 +732,7 @@ export default function StoreScreen() {
                     <View style={styles.productSuggestionsDropdown}>
                       <ScrollView style={styles.productSuggestionsScroll} nestedScrollEnabled>
                         {productSuggestions.map((product) => (
-                          <TouchableOpacity
+                          <Pressable
                             key={product.id}
                             style={styles.productSuggestionItem}
                             onPress={() => selectProductSuggestion(product)}
@@ -761,7 +749,7 @@ export default function StoreScreen() {
                               </Text>
                             </View>
                             <Package size={16} color="#666" />
-                          </TouchableOpacity>
+                          </Pressable>
                         ))}
                       </ScrollView>
                     </View>
@@ -790,10 +778,10 @@ export default function StoreScreen() {
                     keyboardType="number-pad"
                   />
                 </View>
-                <TouchableOpacity style={styles.addItemButton} onPress={addItemToOrder}>
+                <Pressable style={({ pressed }) => [styles.addItemButton, pressed && { opacity: 0.7 }]} onPress={addItemToOrder}>
                   <Plus size={16} color="#fff" />
                   <Text style={styles.addItemButtonText}>Add Item</Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
               
               {orderItems.length > 0 && (
@@ -811,25 +799,22 @@ export default function StoreScreen() {
                         </Text>
                       </View>
                       <View style={styles.orderItemActions}>
-                        <TouchableOpacity 
-                          style={styles.quantityButton}
+                        <Pressable style={({ pressed }) => [styles.quantityButton, pressed && { opacity: 0.7 }]}
                           onPress={() => updateItemQuantity(item.id, item.quantity - 1)}
                         >
                           <Minus size={16} color="#007AFF" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <Text style={styles.quantityText}>{item.quantity}</Text>
-                        <TouchableOpacity 
-                          style={styles.quantityButton}
+                        <Pressable style={({ pressed }) => [styles.quantityButton, pressed && { opacity: 0.7 }]}
                           onPress={() => updateItemQuantity(item.id, item.quantity + 1)}
                         >
                           <Plus size={16} color="#007AFF" />
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.removeItemButton}
+                        </Pressable>
+                        <Pressable style={({ pressed }) => [styles.removeItemButton, pressed && { opacity: 0.7 }]}
                           onPress={() => removeItemFromOrder(item.id)}
                         >
                           <X size={16} color="#FF3B30" />
-                        </TouchableOpacity>
+                        </Pressable>
                       </View>
                     </View>
                   ))}
@@ -907,21 +892,19 @@ export default function StoreScreen() {
           </ScrollView>
           
           <View style={styles.modalFooter}>
-            <TouchableOpacity 
-              style={styles.cancelButton}
+            <Pressable style={({ pressed }) => [styles.cancelButton, pressed && { opacity: 0.7 }]}
               onPress={() => {
                 setShowOrderModal(false);
                 resetOrderForm();
               }}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.createButton}
+            </Pressable>
+            <Pressable style={({ pressed }) => [styles.createButton, pressed && { opacity: 0.7 }]}
               onPress={createOrder}
             >
               <Text style={styles.createButtonText}>{editingOrder ? 'Update Order' : 'Create Order'}</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </KeyboardAvoidingView>
       </Modal>
