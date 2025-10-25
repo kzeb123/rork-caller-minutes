@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal, SafeAreaView, Animated, AppState, SectionList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Modal, SafeAreaView, Animated, Pressable } from 'react-native';
 import { Stack } from 'expo-router';
 import { Bell, CheckCircle, Circle, Calendar, User, AlertCircle, Plus, X, Edit3, Trash2, Archive, Cloud, Search, Clock, Filter, Phone, Package, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
@@ -251,9 +251,9 @@ export default function RemindersScreen() {
                 onChangeText={setContactSearch}
               />
               {contactSearch.length > 0 && (
-                <TouchableOpacity onPress={() => setContactSearch('')}>
+                <Pressable onPress={() => setContactSearch('')}>
                   <X size={16} color="#8E8E93" />
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
             
@@ -261,15 +261,15 @@ export default function RemindersScreen() {
               <View style={styles.selectedContactCard}>
                 <User size={16} color="#007AFF" />
                 <Text style={styles.selectedContactName}>{selectedContact.name}</Text>
-                <TouchableOpacity onPress={() => onSelect('')}>
+                <Pressable onPress={() => onSelect('')}>
                   <X size={16} color="#666" />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             )}
             
             <ScrollView style={styles.contactScrollView} showsVerticalScrollIndicator={false}>
               {filteredContacts.map((contact) => (
-                <TouchableOpacity
+                <Pressable
                   key={contact.id}
                   style={[
                     styles.contactItem,
@@ -307,7 +307,7 @@ export default function RemindersScreen() {
                   {selectedId === contact.id && (
                     <CheckCircle size={20} color="#007AFF" />
                   )}
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </ScrollView>
           </>
@@ -336,7 +336,7 @@ export default function RemindersScreen() {
           {quickDates.map((quickDate) => {
             const isSelected = date.toDateString() === quickDate.date.toDateString();
             return (
-              <TouchableOpacity
+              <Pressable
                 key={quickDate.label}
                 style={[
                   styles.dateChip,
@@ -350,7 +350,7 @@ export default function RemindersScreen() {
                 ]}>
                   {quickDate.label}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </ScrollView>
@@ -370,13 +370,13 @@ export default function RemindersScreen() {
     >
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={() => setShowAddModal(false)}>
+          <Pressable onPress={() => setShowAddModal(false)}>
             <X size={24} color="#666" />
-          </TouchableOpacity>
+          </Pressable>
           <Text style={styles.modalTitle}>Add Reminder</Text>
-          <TouchableOpacity onPress={handleAddReminder}>
+          <Pressable onPress={handleAddReminder}>
             <Text style={styles.saveButton}>Save</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <ScrollView style={styles.modalContent}>
@@ -464,7 +464,7 @@ export default function RemindersScreen() {
               )}
 
               <View style={styles.completionActions}>
-                <TouchableOpacity 
+                <Pressable 
                   style={[styles.completionActionButton, isOrderReminder ? styles.deliveredButton : styles.archiveButton]}
                   onPress={handleArchiveReminder}
                 >
@@ -475,25 +475,25 @@ export default function RemindersScreen() {
                   <Text style={styles.completionActionSubtext}>
                     {isOrderReminder ? 'Order completed' : 'Save to archive'}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity 
+                <Pressable 
                   style={[styles.completionActionButton, styles.deleteButton]}
                   onPress={handleDeleteCompletedReminder}
                 >
                   <Trash2 size={20} color="#fff" />
                   <Text style={styles.completionActionText}>Delete</Text>
                   <Text style={styles.completionActionSubtext}>Remove reminder</Text>
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity 
+                <Pressable 
                   style={[styles.completionActionButton, styles.keepButton]}
                   onPress={handleKeepReminder}
                 >
                   <CheckCircle size={20} color="#fff" />
                   <Text style={styles.completionActionText}>Keep</Text>
                   <Text style={styles.completionActionSubtext}>Mark as completed</Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -509,7 +509,7 @@ export default function RemindersScreen() {
       <Text style={styles.emptyText}>
         Create reminders to follow up with your contacts after calls
       </Text>
-      <TouchableOpacity 
+      <Pressable 
         style={styles.emptyActionButton}
         onPress={() => {
           if (contacts.length === 0) {
@@ -521,7 +521,7 @@ export default function RemindersScreen() {
       >
         <Plus size={20} color="#fff" />
         <Text style={styles.emptyActionButtonText}>Create First Reminder</Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 
@@ -611,7 +611,7 @@ export default function RemindersScreen() {
         isOverdue && styles.overdueReminderCard,
         isOrder && styles.orderReminderCard
       ]}>
-        <TouchableOpacity 
+        <Pressable 
           style={styles.reminderCheckbox}
           onPress={() => handleReminderToggle(reminder)}
         >
@@ -620,7 +620,7 @@ export default function RemindersScreen() {
           ) : (
             <Circle size={24} color={isOverdue ? "#FF3B30" : isOrder ? "#FF9500" : "#8E8E93"} />
           )}
-        </TouchableOpacity>
+        </Pressable>
         
         <View style={styles.reminderContent}>
           <View style={styles.reminderHeader}>
@@ -676,7 +676,7 @@ export default function RemindersScreen() {
         </View>
         
         <View style={styles.reminderActions}>
-          <TouchableOpacity 
+          <Pressable 
             style={styles.actionButton}
             onPress={() => {
               if (isOrder) {
@@ -716,7 +716,7 @@ export default function RemindersScreen() {
             }}
           >
             <Trash2 size={18} color="#FF3B30" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     );
@@ -775,7 +775,7 @@ export default function RemindersScreen() {
 
           {/* Tab Selector */}
           <View style={styles.tabContainer}>
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.tab, activeTab === 'all' && styles.activeTab]}
               onPress={() => setActiveTab('all')}
             >
@@ -785,9 +785,9 @@ export default function RemindersScreen() {
                   {callReminders.length + orderReminders.length}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
             
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.tab, activeTab === 'calls' && styles.activeTab]}
               onPress={() => setActiveTab('calls')}
             >
@@ -798,9 +798,9 @@ export default function RemindersScreen() {
                   {callReminders.length}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
             
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.tab, activeTab === 'orders' && styles.activeTab]}
               onPress={() => setActiveTab('orders')}
             >
@@ -811,27 +811,27 @@ export default function RemindersScreen() {
                   {orderReminders.length}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {/* Group By Selector */}
           <View style={styles.groupBySection}>
-            <TouchableOpacity 
+            <Pressable 
               style={styles.groupByButton}
               onPress={() => setShowGroupByModal(true)}
             >
               <Filter size={16} color="#007AFF" />
               <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
               <ChevronDown size={16} color="#007AFF" />
-            </TouchableOpacity>
+            </Pressable>
             {activeTab === 'calls' && (
-              <TouchableOpacity 
+              <Pressable 
                 style={styles.addButton}
                 onPress={() => setShowAddModal(true)}
               >
                 <Plus size={16} color="#fff" />
                 <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
 
@@ -920,19 +920,19 @@ export default function RemindersScreen() {
         transparent={true}
         onRequestClose={() => setShowGroupByModal(false)}
       >
-        <TouchableOpacity 
+        <Pressable
           style={styles.modalOverlay}
-          activeOpacity={1}
           onPress={() => setShowGroupByModal(false)}
         >
           <View style={styles.groupByModalContainer}>
             <Text style={styles.groupByModalTitle}>Group Reminders By</Text>
             {(['none', 'day', 'week', 'month', 'year'] as GroupByOption[]).map((option) => (
-              <TouchableOpacity
+              <Pressable
                 key={option}
-                style={[
+                style={({ pressed }) => [
                   styles.groupByOption,
-                  groupBy === option && styles.selectedGroupByOption
+                  groupBy === option && styles.selectedGroupByOption,
+                  pressed && { opacity: 0.7 }
                 ]}
                 onPress={() => {
                   setGroupBy(option);
@@ -946,10 +946,10 @@ export default function RemindersScreen() {
                   {option === 'none' ? 'No Grouping' : option.charAt(0).toUpperCase() + option.slice(1)}
                 </Text>
                 {groupBy === option && <CheckCircle size={20} color="#007AFF" />}
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
-        </TouchableOpacity>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
