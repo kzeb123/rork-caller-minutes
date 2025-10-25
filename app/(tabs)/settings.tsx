@@ -1,7 +1,40 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView, SafeAreaView, Switch, Share } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Platform,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  SafeAreaView,
+  Switch,
+  Share,
+  Pressable,
+} from 'react-native';
 import { Stack } from 'expo-router';
-import { Plus, Download, Users, Settings as SettingsIcon, Trash2, Info, Edit3, X, Save, Check, ChevronRight, Tag, Crown, FileText, Archive, Star, BarChart3, TrendingUp, Calendar, PieChart } from 'lucide-react-native';
+import {
+  Plus,
+  Download,
+  Users,
+  Settings as SettingsIcon,
+  Trash2,
+  Info,
+  Edit3,
+  X,
+  Save,
+  Check,
+  Tag,
+  Crown,
+  FileText,
+  Archive,
+  Star,
+  BarChart3,
+  TrendingUp,
+  Calendar,
+} from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import AddContactModal from '@/components/AddContactModal';
 
@@ -13,7 +46,26 @@ interface TemplateSection {
 }
 
 export default function SettingsScreen() {
-  const { contacts, notes, orders, reminders, addContact, importContacts, isImporting, clearAllData, noteTemplate, updateNoteTemplate, addFakeContacts, isAddingFakeContacts, presetTags, updatePresetTags, noteSettings, updateNoteSettings, premiumSettings, updatePremiumSettings } = useContacts();
+  const {
+    contacts,
+    notes,
+    orders,
+    reminders,
+    addContact,
+    importContacts,
+    isImporting,
+    clearAllData,
+    noteTemplate,
+    updateNoteTemplate,
+    addFakeContacts,
+    isAddingFakeContacts,
+    presetTags,
+    updatePresetTags,
+    noteSettings,
+    updateNoteSettings,
+    premiumSettings,
+    updatePremiumSettings,
+  } = useContacts();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -28,7 +80,7 @@ export default function SettingsScreen() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
-  
+
   // Parse existing template or use default sections
   const parseTemplateToSections = (template: string): TemplateSection[] => {
     const defaultSections: TemplateSection[] = [
@@ -38,16 +90,16 @@ export default function SettingsScreen() {
       { id: 'nextsteps', label: 'Next steps', enabled: true },
       { id: 'additional', label: 'Additional notes', enabled: true },
     ];
-    
+
     // Check which sections exist in the current template
     defaultSections.forEach(section => {
       section.enabled = template.toLowerCase().includes(section.label.toLowerCase());
     });
-    
+
     return defaultSections;
   };
-  
-  const [templateSections, setTemplateSections] = useState<TemplateSection[]>(() => 
+
+  const [templateSections, setTemplateSections] = useState<TemplateSection[]>(() =>
     parseTemplateToSections(noteTemplate)
   );
   const [customPrompts, setCustomPrompts] = useState<string[]>([]);
@@ -79,11 +131,9 @@ export default function SettingsScreen() {
           [{ text: 'OK' }]
         );
       } else {
-        Alert.alert(
-          'No New Contacts',
-          'All your device contacts are already in the app.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('No New Contacts', 'All your device contacts are already in the app.', [
+          { text: 'OK' },
+        ]);
       }
     } catch (error: any) {
       Alert.alert(
@@ -110,11 +160,9 @@ export default function SettingsScreen() {
           [{ text: 'OK' }]
         );
       } else {
-        Alert.alert(
-          'No New Contacts',
-          'All fake contacts are already in the app.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('No New Contacts', 'All fake contacts are already in the app.', [
+          { text: 'OK' },
+        ]);
       }
     } catch (error: any) {
       Alert.alert(
@@ -156,18 +204,18 @@ export default function SettingsScreen() {
   const handleSaveTemplate = () => {
     // Build template from enabled sections
     let template = 'Call with [CONTACT_NAME] - [DATE]\n\n';
-    
+
     templateSections.forEach(section => {
       if (section.enabled) {
         template += `${section.label}:\n\n`;
       }
     });
-    
+
     // Add custom prompts
     customPrompts.forEach(prompt => {
       template += `${prompt}:\n\n`;
     });
-    
+
     updateNoteTemplate(template.trim());
     setShowTemplateModal(false);
     Alert.alert('Template Updated', 'Your call note template has been updated successfully.');
@@ -180,15 +228,13 @@ export default function SettingsScreen() {
     setNewPromptText('');
     setShowAddPrompt(false);
   };
-  
+
   const toggleSection = (id: string) => {
-    setTemplateSections(prev => 
-      prev.map(section => 
-        section.id === id ? { ...section, enabled: !section.enabled } : section
-      )
+    setTemplateSections(prev =>
+      prev.map(section => (section.id === id ? { ...section, enabled: !section.enabled } : section))
     );
   };
-  
+
   const addCustomPrompt = () => {
     if (newPromptText.trim()) {
       setCustomPrompts(prev => [...prev, newPromptText.trim()]);
@@ -196,7 +242,7 @@ export default function SettingsScreen() {
       setShowAddPrompt(false);
     }
   };
-  
+
   const removeCustomPrompt = (index: number) => {
     setCustomPrompts(prev => prev.filter((_, i) => i !== index));
   };
@@ -240,7 +286,7 @@ export default function SettingsScreen() {
         orders,
         reminders,
         exportDate: new Date().toISOString(),
-        version: '1.0'
+        version: '1.0',
       };
 
       const jsonString = JSON.stringify(exportData, null, 2);
@@ -262,7 +308,7 @@ export default function SettingsScreen() {
         // Mobile share
         await Share.share({
           message: jsonString,
-          title: 'Call Notes Export'
+          title: 'Call Notes Export',
         });
       }
     } catch (error) {
@@ -304,8 +350,8 @@ export default function SettingsScreen() {
             setIsPremium(true);
             setShowPremiumModal(false);
             Alert.alert('Welcome to Premium!', 'You now have access to all premium features.');
-          }
-        }
+          },
+        },
       ]
     );
   };
@@ -323,31 +369,42 @@ export default function SettingsScreen() {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
+
     // Filter recent data
     const recentNotes = notes.filter(note => new Date(note.createdAt) >= thirtyDaysAgo);
     const recentOrders = orders.filter(order => new Date(order.createdAt) >= thirtyDaysAgo);
-    const recentReminders = reminders.filter(reminder => new Date(reminder.createdAt) >= thirtyDaysAgo);
-    
+    const recentReminders = reminders.filter(
+      reminder => new Date(reminder.createdAt) >= thirtyDaysAgo
+    );
+
     const weeklyNotes = notes.filter(note => new Date(note.createdAt) >= sevenDaysAgo);
     const weeklyOrders = orders.filter(order => new Date(order.createdAt) >= sevenDaysAgo);
-    
+
     // Calculate trends
-    const notesGrowth = weeklyNotes.length > 0 ? ((weeklyNotes.length / Math.max(recentNotes.length - weeklyNotes.length, 1)) * 100) : 0;
-    const ordersGrowth = weeklyOrders.length > 0 ? ((weeklyOrders.length / Math.max(recentOrders.length - weeklyOrders.length, 1)) * 100) : 0;
-    
+    const notesGrowth =
+      weeklyNotes.length > 0
+        ? (weeklyNotes.length / Math.max(recentNotes.length - weeklyNotes.length, 1)) * 100
+        : 0;
+    const ordersGrowth =
+      weeklyOrders.length > 0
+        ? (weeklyOrders.length / Math.max(recentOrders.length - weeklyOrders.length, 1)) * 100
+        : 0;
+
     // Most active contacts
-    const contactActivity = contacts.map(contact => {
-      const contactNotes = notes.filter(note => note.contactId === contact.id);
-      const contactOrders = orders.filter(order => order.contactId === contact.id);
-      return {
-        contact,
-        totalActivity: contactNotes.length + contactOrders.length,
-        notes: contactNotes.length,
-        orders: contactOrders.length
-      };
-    }).sort((a, b) => b.totalActivity - a.totalActivity).slice(0, 5);
-    
+    const contactActivity = contacts
+      .map(contact => {
+        const contactNotes = notes.filter(note => note.contactId === contact.id);
+        const contactOrders = orders.filter(order => order.contactId === contact.id);
+        return {
+          contact,
+          totalActivity: contactNotes.length + contactOrders.length,
+          notes: contactNotes.length,
+          orders: contactOrders.length,
+        };
+      })
+      .sort((a, b) => b.totalActivity - a.totalActivity)
+      .slice(0, 5);
+
     // Tag frequency
     const tagCounts: { [key: string]: number } = {};
     notes.forEach(note => {
@@ -358,66 +415,64 @@ export default function SettingsScreen() {
       }
     });
     const topTags = Object.entries(tagCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([tag, count]) => ({ tag, count }));
-    
+
     // Weekly activity chart data
     const weeklyData = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-      
+
       const dayNotes = notes.filter(note => {
         const noteDate = new Date(note.createdAt);
         return noteDate >= dayStart && noteDate < dayEnd;
       }).length;
-      
+
       const dayOrders = orders.filter(order => {
         const orderDate = new Date(order.createdAt);
         return orderDate >= dayStart && orderDate < dayEnd;
       }).length;
-      
+
       weeklyData.push({
         day: date.toLocaleDateString('en', { weekday: 'short' }),
         notes: dayNotes,
         orders: dayOrders,
-        total: dayNotes + dayOrders
+        total: dayNotes + dayOrders,
       });
     }
-    
+
     return {
       totalStats: {
         contacts: contacts.length,
         notes: notes.length,
         orders: orders.length,
-        reminders: reminders.length
+        reminders: reminders.length,
       },
       recentStats: {
         notes: recentNotes.length,
         orders: recentOrders.length,
-        reminders: recentReminders.length
+        reminders: recentReminders.length,
       },
       trends: {
         notesGrowth: Math.round(notesGrowth),
-        ordersGrowth: Math.round(ordersGrowth)
+        ordersGrowth: Math.round(ordersGrowth),
       },
       topContacts: contactActivity,
       topTags,
-      weeklyActivity: weeklyData
+      weeklyActivity: weeklyData,
     };
   };
 
-
-
-  const SettingItem = ({ 
-    icon, 
-    title, 
-    subtitle, 
-    onPress, 
-    disabled = false, 
-    destructive = false 
+  const SettingItem = ({
+    icon,
+    title,
+    subtitle,
+    onPress,
+    disabled = false,
+    destructive = false,
   }: {
     icon: React.ReactNode;
     title: string;
@@ -426,19 +481,32 @@ export default function SettingsScreen() {
     disabled?: boolean;
     destructive?: boolean;
   }) => (
-    <TouchableOpacity 
-      style={[styles.settingItem, disabled && styles.settingItemDisabled]}
+    <Pressable
+      style={({ pressed }) => [
+        styles.settingItem,
+        disabled && styles.settingItemDisabled,
+        pressed && { opacity: 0.7 },
+      ]}
       onPress={onPress}
       disabled={disabled}
     >
       <View style={[styles.iconContainer, destructive && styles.destructiveIconContainer]}>
-        {React.cloneElement(icon as React.ReactElement, { 
-          color: disabled ? '#999' : destructive ? '#FF3B30' : '#007AFF', 
-          size: 20 
-        } as any)}
+        {React.cloneElement(
+          icon as React.ReactElement,
+          {
+            color: disabled ? '#999' : destructive ? '#FF3B30' : '#007AFF',
+            size: 20,
+          } as any
+        )}
       </View>
       <View style={styles.settingContent}>
-        <Text style={[styles.settingTitle, disabled && styles.settingTitleDisabled, destructive && styles.destructiveTitle]}>
+        <Text
+          style={[
+            styles.settingTitle,
+            disabled && styles.settingTitleDisabled,
+            destructive && styles.destructiveTitle,
+          ]}
+        >
           {title}
         </Text>
         {subtitle && (
@@ -447,7 +515,7 @@ export default function SettingsScreen() {
           </Text>
         )}
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   const InfoCard = ({ title, description }: { title: string; description: string }) => (
@@ -463,7 +531,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Settings' }} />
-      
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contacts</Text>
@@ -477,7 +545,11 @@ export default function SettingsScreen() {
             <SettingItem
               icon={<Download />}
               title={isImporting ? 'Importing...' : 'Import from Device'}
-              subtitle={Platform.OS === 'web' ? 'Not available on web' : `Sync contacts from your device (${contacts.length} contacts)`}
+              subtitle={
+                Platform.OS === 'web'
+                  ? 'Not available on web'
+                  : `Sync contacts from your device (${contacts.length} contacts)`
+              }
               onPress={handleImportContacts}
               disabled={isImporting || Platform.OS === 'web'}
             />
@@ -490,8 +562,6 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
-
-
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
@@ -521,7 +591,7 @@ export default function SettingsScreen() {
               onPress={handleEditTags}
             />
           </View>
-          
+
           <View style={[styles.settingsGroup, { marginTop: 12 }]}>
             <View style={styles.toggleItem}>
               <View style={styles.toggleLeft}>
@@ -530,12 +600,12 @@ export default function SettingsScreen() {
               </View>
               <Switch
                 value={noteSettings?.showDuration ?? true}
-                onValueChange={(value) => updateNoteSettings({ showDuration: value })}
+                onValueChange={value => updateNoteSettings({ showDuration: value })}
                 trackColor={{ false: '#767577', true: '#007AFF' }}
                 thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
               />
             </View>
-            
+
             <View style={styles.toggleItem}>
               <View style={styles.toggleLeft}>
                 <Text style={styles.toggleTitle}>Show Call Direction</Text>
@@ -543,13 +613,11 @@ export default function SettingsScreen() {
               </View>
               <Switch
                 value={noteSettings?.showDirection ?? true}
-                onValueChange={(value) => updateNoteSettings({ showDirection: value })}
+                onValueChange={value => updateNoteSettings({ showDirection: value })}
                 trackColor={{ false: '#767577', true: '#007AFF' }}
                 thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
               />
             </View>
-            
-
           </View>
         </View>
 
@@ -558,13 +626,13 @@ export default function SettingsScreen() {
             <Crown size={20} color="#FFD700" />
             <Text style={styles.sectionTitle}>Premium Features</Text>
             {!isPremium && (
-              <TouchableOpacity 
-                style={styles.upgradeButton}
+              <Pressable
+                style={({ pressed }) => [styles.upgradeButton, pressed && { opacity: 0.7 }]}
                 onPress={() => setShowPremiumModal(true)}
               >
                 <Star size={16} color="#FFD700" />
                 <Text style={styles.upgradeButtonText}>Upgrade</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
           <View style={[styles.settingsGroup, !isPremium && styles.settingsGroupDisabled]}>
@@ -594,7 +662,7 @@ export default function SettingsScreen() {
               </View>
               <Switch
                 value={noteSettings?.passwordProtected ?? false}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   if (!isPremium) {
                     setShowPremiumModal(true);
                     return;
@@ -626,11 +694,13 @@ export default function SettingsScreen() {
             <View style={styles.toggleItem}>
               <View style={styles.toggleLeft}>
                 <Text style={styles.toggleTitle}>Enable Shopify/Website Tab</Text>
-                <Text style={styles.toggleSubtitle}>Add a premium tab for Shopify store or website integration</Text>
+                <Text style={styles.toggleSubtitle}>
+                  Add a premium tab for Shopify store or website integration
+                </Text>
               </View>
               <Switch
                 value={premiumSettings?.showShopifyTab ?? false}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   if (!isPremium) {
                     setShowPremiumModal(true);
                     return;
@@ -645,11 +715,14 @@ export default function SettingsScreen() {
             <View style={styles.toggleItem}>
               <View style={styles.toggleLeft}>
                 <Text style={styles.toggleTitle}>Enable Plan a Run Tab</Text>
-                <Text style={styles.toggleSubtitle}>Add a premium tab for planning contact visit routes with drag-and-drop functionality</Text>
+                <Text style={styles.toggleSubtitle}>
+                  Add a premium tab for planning contact visit routes with drag-and-drop
+                  functionality
+                </Text>
               </View>
               <Switch
                 value={premiumSettings?.showPlanRunTab ?? false}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   if (!isPremium) {
                     setShowPremiumModal(true);
                     return;
@@ -666,7 +739,9 @@ export default function SettingsScreen() {
             <View style={styles.premiumOverlay}>
               <Crown size={24} color="#FFD700" />
               <Text style={styles.premiumOverlayText}>Premium Feature</Text>
-              <Text style={styles.premiumOverlaySubtext}>Upgrade to access cloud backup, export, and password protection</Text>
+              <Text style={styles.premiumOverlaySubtext}>
+                Upgrade to access cloud backup, export, and password protection
+              </Text>
             </View>
           )}
         </View>
@@ -691,22 +766,18 @@ export default function SettingsScreen() {
         onAdd={addContact}
       />
 
-      <Modal
-        visible={showTemplateModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showTemplateModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.templateModalContainer}>
           <View style={styles.templateHeader}>
-            <TouchableOpacity onPress={handleCloseTemplate}>
+            <Pressable onPress={handleCloseTemplate}>
               <X size={24} color="#007AFF" />
-            </TouchableOpacity>
-            
+            </Pressable>
+
             <Text style={styles.templateTitle}>Template Settings</Text>
-            
-            <TouchableOpacity onPress={handleSaveTemplate}>
+
+            <Pressable onPress={handleSaveTemplate}>
               <Save size={24} color="#007AFF" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <ScrollView style={styles.templateContent} showsVerticalScrollIndicator={false}>
@@ -714,10 +785,10 @@ export default function SettingsScreen() {
             <Text style={styles.templateDescription}>
               Select which sections to include in your call notes
             </Text>
-            
+
             <View style={styles.templateSections}>
               {templateSections.map(section => (
-                <TouchableOpacity
+                <Pressable
                   key={section.id}
                   style={styles.templateSectionItem}
                   onPress={() => toggleSection(section.id)}
@@ -728,25 +799,25 @@ export default function SettingsScreen() {
                     </View>
                     <Text style={styles.templateSectionLabel}>{section.label}</Text>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
-            
+
             <View style={styles.customPromptsSection}>
               <Text style={styles.templateSectionTitle}>Custom Prompts</Text>
               <Text style={styles.templateDescription}>
                 Add your own custom prompts to the template
               </Text>
-              
+
               {customPrompts.map((prompt, index) => (
                 <View key={index} style={styles.customPromptItem}>
                   <Text style={styles.customPromptText}>{prompt}</Text>
-                  <TouchableOpacity onPress={() => removeCustomPrompt(index)}>
+                  <Pressable onPress={() => removeCustomPrompt(index)}>
                     <X size={20} color="#FF3B30" />
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               ))}
-              
+
               {showAddPrompt ? (
                 <View style={styles.addPromptContainer}>
                   <TextInput
@@ -759,46 +830,57 @@ export default function SettingsScreen() {
                     onSubmitEditing={addCustomPrompt}
                   />
                   <View style={styles.addPromptButtons}>
-                    <TouchableOpacity 
-                      style={styles.addPromptButton} 
+                    <Pressable
+                      style={({ pressed }) => [styles.addPromptButton, pressed && { opacity: 0.7 }]}
                       onPress={() => {
                         setShowAddPrompt(false);
                         setNewPromptText('');
                       }}
                     >
                       <Text style={styles.addPromptButtonCancel}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.addPromptButton, styles.addPromptButtonPrimary]} 
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.addPromptButton,
+                        styles.addPromptButtonPrimary,
+                        pressed && { opacity: 0.7 },
+                      ]}
                       onPress={addCustomPrompt}
                     >
                       <Text style={styles.addPromptButtonAdd}>Add</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                 </View>
               ) : (
-                <TouchableOpacity 
-                  style={styles.addCustomPromptButton}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.addCustomPromptButton,
+                    pressed && { opacity: 0.7 },
+                  ]}
                   onPress={() => setShowAddPrompt(true)}
                 >
                   <Plus size={20} color="#007AFF" />
                   <Text style={styles.addCustomPromptText}>Add Custom Prompt</Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
-            
+
             <View style={styles.templatePreviewSection}>
               <Text style={styles.templateSectionTitle}>Preview</Text>
               <View style={styles.templatePreview}>
-                <Text style={styles.templatePreviewText}>Call with [CONTACT_NAME] - [DATE]{"\n\n"}</Text>
-                {templateSections.filter(s => s.enabled).map(section => (
-                  <Text key={section.id} style={styles.templatePreviewText}>
-                    {section.label}:{"\n\n"}
-                  </Text>
-                ))}
+                <Text style={styles.templatePreviewText}>
+                  Call with [CONTACT_NAME] - [DATE]{'\n\n'}
+                </Text>
+                {templateSections
+                  .filter(s => s.enabled)
+                  .map(section => (
+                    <Text key={section.id} style={styles.templatePreviewText}>
+                      {section.label}:{'\n\n'}
+                    </Text>
+                  ))}
                 {customPrompts.map((prompt, index) => (
                   <Text key={`custom-${index}`} style={styles.templatePreviewText}>
-                    {prompt}:{"\n\n"}
+                    {prompt}:{'\n\n'}
                   </Text>
                 ))}
               </View>
@@ -806,29 +888,28 @@ export default function SettingsScreen() {
           </ScrollView>
 
           <View style={styles.templateFooter}>
-            <TouchableOpacity style={styles.templateSaveButton} onPress={handleSaveTemplate}>
+            <Pressable
+              style={({ pressed }) => [styles.templateSaveButton, pressed && { opacity: 0.7 }]}
+              onPress={handleSaveTemplate}
+            >
               <Text style={styles.templateSaveButtonText}>Save Template</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </SafeAreaView>
       </Modal>
 
-      <Modal
-        visible={showTagsModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showTagsModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.templateModalContainer}>
           <View style={styles.templateHeader}>
-            <TouchableOpacity onPress={handleCloseTags}>
+            <Pressable onPress={handleCloseTags}>
               <X size={24} color="#007AFF" />
-            </TouchableOpacity>
-            
+            </Pressable>
+
             <Text style={styles.templateTitle}>Manage Tags</Text>
-            
-            <TouchableOpacity onPress={handleSaveTags}>
+
+            <Pressable onPress={handleSaveTags}>
               <Save size={24} color="#007AFF" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <ScrollView style={styles.templateContent} showsVerticalScrollIndicator={false}>
@@ -836,17 +917,17 @@ export default function SettingsScreen() {
             <Text style={styles.templateDescription}>
               These tags will be available as quick options when adding call notes
             </Text>
-            
+
             <View style={styles.tagsGrid}>
               {editableTags.map((tag, index) => (
                 <View key={index} style={styles.editableTag}>
                   <Text style={styles.editableTagText}>{tag}</Text>
-                  <TouchableOpacity onPress={() => removeTag(index)} style={styles.editableTagRemove}>
+                  <Pressable onPress={() => removeTag(index)} style={styles.editableTagRemove}>
                     <X size={16} color="#FF3B30" />
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               ))}
-              
+
               {showAddTag ? (
                 <View style={styles.addTagInputContainer}>
                   <TextInput
@@ -867,16 +948,16 @@ export default function SettingsScreen() {
                   />
                 </View>
               ) : (
-                <TouchableOpacity 
-                  style={styles.addTagButton}
+                <Pressable
+                  style={({ pressed }) => [styles.addTagButton, pressed && { opacity: 0.7 }]}
                   onPress={() => setShowAddTag(true)}
                 >
                   <Plus size={16} color="#007AFF" />
                   <Text style={styles.addTagButtonText}>Add Tag</Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
-            
+
             <View style={styles.tagPreviewSection}>
               <Text style={styles.templateSectionTitle}>Preview</Text>
               <Text style={styles.templateDescription}>
@@ -893,41 +974,43 @@ export default function SettingsScreen() {
           </ScrollView>
 
           <View style={styles.templateFooter}>
-            <TouchableOpacity style={styles.templateSaveButton} onPress={handleSaveTags}>
+            <Pressable
+              style={({ pressed }) => [styles.templateSaveButton, pressed && { opacity: 0.7 }]}
+              onPress={handleSaveTags}
+            >
               <Text style={styles.templateSaveButtonText}>Save Tags</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </SafeAreaView>
       </Modal>
 
-      <Modal
-        visible={showPasswordModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showPasswordModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.templateModalContainer}>
           <View style={styles.templateHeader}>
-            <TouchableOpacity onPress={() => {
-              setShowPasswordModal(false);
-              setPassword('');
-              setConfirmPassword('');
-            }}>
+            <Pressable
+              onPress={() => {
+                setShowPasswordModal(false);
+                setPassword('');
+                setConfirmPassword('');
+              }}
+            >
               <X size={24} color="#007AFF" />
-            </TouchableOpacity>
-            
+            </Pressable>
+
             <Text style={styles.templateTitle}>Set Password</Text>
-            
+
             <View style={{ width: 24 }} />
           </View>
 
-          <KeyboardAvoidingView 
+          <KeyboardAvoidingView
             style={styles.passwordContent}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           >
             <Text style={styles.passwordDescription}>
-              Set a password to protect your call notes. You'll need to enter this password to view notes.
+              Set a password to protect your call notes. You'll need to enter this password to view
+              notes.
             </Text>
-            
+
             <View style={styles.passwordInputContainer}>
               <Text style={styles.passwordLabel}>Password</Text>
               <TextInput
@@ -941,7 +1024,7 @@ export default function SettingsScreen() {
                 autoCorrect={false}
               />
             </View>
-            
+
             <View style={styles.passwordInputContainer}>
               <Text style={styles.passwordLabel}>Confirm Password</Text>
               <TextInput
@@ -955,15 +1038,17 @@ export default function SettingsScreen() {
                 autoCorrect={false}
               />
             </View>
-            
+
             {password && confirmPassword && password !== confirmPassword && (
               <Text style={styles.passwordError}>Passwords do not match</Text>
             )}
-            
-            <TouchableOpacity
-              style={[
+
+            <Pressable
+              style={({ pressed }) => [
                 styles.passwordSaveButton,
-                (!password || !confirmPassword || password !== confirmPassword) && styles.passwordSaveButtonDisabled
+                (!password || !confirmPassword || password !== confirmPassword) &&
+                  styles.passwordSaveButtonDisabled,
+                pressed && { opacity: 0.7 },
               ]}
               onPress={() => {
                 if (password && confirmPassword && password === confirmPassword) {
@@ -976,33 +1061,32 @@ export default function SettingsScreen() {
               }}
               disabled={!password || !confirmPassword || password !== confirmPassword}
             >
-              <Text style={[
-                styles.passwordSaveButtonText,
-                (!password || !confirmPassword || password !== confirmPassword) && styles.passwordSaveButtonTextDisabled
-              ]}>
+              <Text
+                style={[
+                  styles.passwordSaveButtonText,
+                  (!password || !confirmPassword || password !== confirmPassword) &&
+                    styles.passwordSaveButtonTextDisabled,
+                ]}
+              >
                 Set Password
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </KeyboardAvoidingView>
         </SafeAreaView>
       </Modal>
 
-      <Modal
-        visible={showPremiumModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showPremiumModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.premiumModalContainer}>
           <View style={styles.premiumModalHeader}>
-            <TouchableOpacity onPress={() => setShowPremiumModal(false)}>
+            <Pressable onPress={() => setShowPremiumModal(false)}>
               <X size={24} color="#007AFF" />
-            </TouchableOpacity>
-            
+            </Pressable>
+
             <View style={styles.premiumTitleContainer}>
               <Crown size={24} color="#FFD700" />
               <Text style={styles.premiumModalTitle}>Premium Features</Text>
             </View>
-            
+
             <View style={{ width: 24 }} />
           </View>
 
@@ -1010,7 +1094,9 @@ export default function SettingsScreen() {
             <View style={styles.premiumHero}>
               <Crown size={48} color="#FFD700" />
               <Text style={styles.premiumHeroTitle}>Unlock Premium</Text>
-              <Text style={styles.premiumHeroSubtitle}>Get access to advanced features and cloud storage</Text>
+              <Text style={styles.premiumHeroSubtitle}>
+                Get access to advanced features and cloud storage
+              </Text>
             </View>
 
             <View style={styles.premiumFeatures}>
@@ -1018,47 +1104,59 @@ export default function SettingsScreen() {
                 <Archive size={24} color="#007AFF" />
                 <View style={styles.premiumFeatureContent}>
                   <Text style={styles.premiumFeatureTitle}>Export All Data</Text>
-                  <Text style={styles.premiumFeatureDescription}>Export contacts, notes, orders, and reminders in JSON format</Text>
+                  <Text style={styles.premiumFeatureDescription}>
+                    Export contacts, notes, orders, and reminders in JSON format
+                  </Text>
                 </View>
               </View>
-              
+
               <View style={styles.premiumFeature}>
                 <FileText size={24} color="#007AFF" />
                 <View style={styles.premiumFeatureContent}>
                   <Text style={styles.premiumFeatureTitle}>Cloud Backup</Text>
-                  <Text style={styles.premiumFeatureDescription}>Automatically save your logs to secure cloud storage</Text>
+                  <Text style={styles.premiumFeatureDescription}>
+                    Automatically save your logs to secure cloud storage
+                  </Text>
                 </View>
               </View>
-              
+
               <View style={styles.premiumFeature}>
                 <Users size={24} color="#007AFF" />
                 <View style={styles.premiumFeatureContent}>
                   <Text style={styles.premiumFeatureTitle}>Unlimited Storage</Text>
-                  <Text style={styles.premiumFeatureDescription}>Store unlimited contacts, notes, and call history</Text>
+                  <Text style={styles.premiumFeatureDescription}>
+                    Store unlimited contacts, notes, and call history
+                  </Text>
                 </View>
               </View>
-              
+
               <View style={styles.premiumFeature}>
                 <SettingsIcon size={24} color="#007AFF" />
                 <View style={styles.premiumFeatureContent}>
                   <Text style={styles.premiumFeatureTitle}>Password Protection</Text>
-                  <Text style={styles.premiumFeatureDescription}>Secure your call notes with password protection</Text>
+                  <Text style={styles.premiumFeatureDescription}>
+                    Secure your call notes with password protection
+                  </Text>
                 </View>
               </View>
-              
+
               <View style={styles.premiumFeature}>
                 <BarChart3 size={24} color="#007AFF" />
                 <View style={styles.premiumFeatureContent}>
                   <Text style={styles.premiumFeatureTitle}>Analytics & Reports</Text>
-                  <Text style={styles.premiumFeatureDescription}>Detailed insights, trends, and exportable reports</Text>
+                  <Text style={styles.premiumFeatureDescription}>
+                    Detailed insights, trends, and exportable reports
+                  </Text>
                 </View>
               </View>
-              
+
               <View style={styles.premiumFeature}>
                 <Star size={24} color="#007AFF" />
                 <View style={styles.premiumFeatureContent}>
                   <Text style={styles.premiumFeatureTitle}>Priority Support</Text>
-                  <Text style={styles.premiumFeatureDescription}>Get priority customer support and feature requests</Text>
+                  <Text style={styles.premiumFeatureDescription}>
+                    Get priority customer support and feature requests
+                  </Text>
                 </View>
               </View>
             </View>
@@ -1087,66 +1185,69 @@ export default function SettingsScreen() {
           </ScrollView>
 
           <View style={styles.premiumModalFooter}>
-            <TouchableOpacity style={styles.premiumUpgradeButton} onPress={handleUpgradeToPremium}>
+            <Pressable
+              style={({ pressed }) => [styles.premiumUpgradeButton, pressed && { opacity: 0.7 }]}
+              onPress={handleUpgradeToPremium}
+            >
               <Crown size={20} color="#fff" />
               <Text style={styles.premiumUpgradeButtonText}>Upgrade to Premium</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.premiumCancelButton} 
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.premiumCancelButton, pressed && { opacity: 0.7 }]}
               onPress={() => setShowPremiumModal(false)}
             >
               <Text style={styles.premiumCancelButtonText}>Maybe Later</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </SafeAreaView>
       </Modal>
 
-      <Modal
-        visible={showReportsModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showReportsModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.reportsModalContainer}>
           <View style={styles.reportsHeader}>
-            <TouchableOpacity onPress={() => setShowReportsModal(false)}>
+            <Pressable onPress={() => setShowReportsModal(false)}>
               <X size={24} color="#007AFF" />
-            </TouchableOpacity>
-            
+            </Pressable>
+
             <View style={styles.reportsTitleContainer}>
               <BarChart3 size={24} color="#007AFF" />
               <Text style={styles.reportsModalTitle}>Analytics & Reports</Text>
             </View>
-            
-            <TouchableOpacity onPress={() => {
-              const analytics = getAnalytics();
-              const reportData = {
-                generatedAt: new Date().toISOString(),
-                summary: analytics.totalStats,
-                trends: analytics.trends,
-                topContacts: analytics.topContacts,
-                topTags: analytics.topTags,
-                weeklyActivity: analytics.weeklyActivity
-              };
-              
-              if (Platform.OS === 'web') {
-                const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `analytics-report-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-              } else {
-                Share.share({
-                  message: JSON.stringify(reportData, null, 2),
-                  title: 'Analytics Report'
-                });
-              }
-            }}>
+
+            <Pressable
+              onPress={() => {
+                const analytics = getAnalytics();
+                const reportData = {
+                  generatedAt: new Date().toISOString(),
+                  summary: analytics.totalStats,
+                  trends: analytics.trends,
+                  topContacts: analytics.topContacts,
+                  topTags: analytics.topTags,
+                  weeklyActivity: analytics.weeklyActivity,
+                };
+
+                if (Platform.OS === 'web') {
+                  const blob = new Blob([JSON.stringify(reportData, null, 2)], {
+                    type: 'application/json',
+                  });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `analytics-report-${new Date().toISOString().split('T')[0]}.json`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                } else {
+                  Share.share({
+                    message: JSON.stringify(reportData, null, 2),
+                    title: 'Analytics Report',
+                  });
+                }
+              }}
+            >
               <Download size={24} color="#007AFF" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <ScrollView style={styles.reportsContent} showsVerticalScrollIndicator={false}>
@@ -1187,21 +1288,39 @@ export default function SettingsScreen() {
                     <View style={styles.trendsGrid}>
                       <View style={styles.trendCard}>
                         <View style={styles.trendHeader}>
-                          <TrendingUp size={20} color={analytics.trends.notesGrowth >= 0 ? '#34C759' : '#FF3B30'} />
+                          <TrendingUp
+                            size={20}
+                            color={analytics.trends.notesGrowth >= 0 ? '#34C759' : '#FF3B30'}
+                          />
                           <Text style={styles.trendTitle}>Notes Growth</Text>
                         </View>
-                        <Text style={[styles.trendValue, { color: analytics.trends.notesGrowth >= 0 ? '#34C759' : '#FF3B30' }]}>
-                          {analytics.trends.notesGrowth >= 0 ? '+' : ''}{analytics.trends.notesGrowth}%
+                        <Text
+                          style={[
+                            styles.trendValue,
+                            { color: analytics.trends.notesGrowth >= 0 ? '#34C759' : '#FF3B30' },
+                          ]}
+                        >
+                          {analytics.trends.notesGrowth >= 0 ? '+' : ''}
+                          {analytics.trends.notesGrowth}%
                         </Text>
                         <Text style={styles.trendSubtitle}>vs last week</Text>
                       </View>
                       <View style={styles.trendCard}>
                         <View style={styles.trendHeader}>
-                          <TrendingUp size={20} color={analytics.trends.ordersGrowth >= 0 ? '#34C759' : '#FF3B30'} />
+                          <TrendingUp
+                            size={20}
+                            color={analytics.trends.ordersGrowth >= 0 ? '#34C759' : '#FF3B30'}
+                          />
                           <Text style={styles.trendTitle}>Orders Growth</Text>
                         </View>
-                        <Text style={[styles.trendValue, { color: analytics.trends.ordersGrowth >= 0 ? '#34C759' : '#FF3B30' }]}>
-                          {analytics.trends.ordersGrowth >= 0 ? '+' : ''}{analytics.trends.ordersGrowth}%
+                        <Text
+                          style={[
+                            styles.trendValue,
+                            { color: analytics.trends.ordersGrowth >= 0 ? '#34C759' : '#FF3B30' },
+                          ]}
+                        >
+                          {analytics.trends.ordersGrowth >= 0 ? '+' : ''}
+                          {analytics.trends.ordersGrowth}%
                         </Text>
                         <Text style={styles.trendSubtitle}>vs last week</Text>
                       </View>
@@ -1214,13 +1333,32 @@ export default function SettingsScreen() {
                     <View style={styles.chartContainer}>
                       <View style={styles.chartGrid}>
                         {analytics.weeklyActivity.map((day, index) => {
-                          const maxActivity = Math.max(...analytics.weeklyActivity.map(d => d.total));
+                          const maxActivity = Math.max(
+                            ...analytics.weeklyActivity.map(d => d.total)
+                          );
                           const height = maxActivity > 0 ? (day.total / maxActivity) * 120 : 0;
                           return (
                             <View key={index} style={styles.chartColumn}>
                               <View style={styles.chartBars}>
-                                <View style={[styles.chartBar, styles.chartBarNotes, { height: maxActivity > 0 ? (day.notes / maxActivity) * 120 : 0 }]} />
-                                <View style={[styles.chartBar, styles.chartBarOrders, { height: maxActivity > 0 ? (day.orders / maxActivity) * 120 : 0 }]} />
+                                <View
+                                  style={[
+                                    styles.chartBar,
+                                    styles.chartBarNotes,
+                                    {
+                                      height: maxActivity > 0 ? (day.notes / maxActivity) * 120 : 0,
+                                    },
+                                  ]}
+                                />
+                                <View
+                                  style={[
+                                    styles.chartBar,
+                                    styles.chartBarOrders,
+                                    {
+                                      height:
+                                        maxActivity > 0 ? (day.orders / maxActivity) * 120 : 0,
+                                    },
+                                  ]}
+                                />
                               </View>
                               <Text style={styles.chartLabel}>{day.day}</Text>
                               <Text style={styles.chartValue}>{day.total}</Text>
@@ -1290,8 +1428,8 @@ export default function SettingsScreen() {
                   <View style={styles.exportSection}>
                     <Text style={styles.reportsSectionTitle}>Export Options</Text>
                     <View style={styles.exportButtons}>
-                      <TouchableOpacity 
-                        style={styles.exportButton}
+                      <Pressable
+                        style={({ pressed }) => [styles.exportButton, pressed && { opacity: 0.7 }]}
                         onPress={() => {
                           const summaryData = {
                             generatedAt: new Date().toISOString(),
@@ -1304,14 +1442,23 @@ export default function SettingsScreen() {
                               recentNotes: analytics.recentStats.notes,
                               recentOrders: analytics.recentStats.orders,
                               notesGrowth: analytics.trends.notesGrowth,
-                              ordersGrowth: analytics.trends.ordersGrowth
+                              ordersGrowth: analytics.trends.ordersGrowth,
                             },
                             topContacts: analytics.topContacts.slice(0, 3),
-                            topTags: analytics.topTags.slice(0, 3)
+                            topTags: analytics.topTags.slice(0, 3),
                           };
-                          
-                          const summaryText = `Call Notes Summary Report\n\nGenerated: ${new Date().toLocaleDateString()}\n\nOverview:\n• Total Contacts: ${analytics.totalStats.contacts}\n• Total Notes: ${analytics.totalStats.notes}\n• Total Orders: ${analytics.totalStats.orders}\n• Total Reminders: ${analytics.totalStats.reminders}\n\nRecent Activity (30 days):\n• Notes: ${analytics.recentStats.notes}\n• Orders: ${analytics.recentStats.orders}\n\nTop Contacts:\n${analytics.topContacts.slice(0, 3).map((c, i) => `${i + 1}. ${c.contact.name} (${c.totalActivity} activities)`).join('\n')}\n\nTop Tags:\n${analytics.topTags.slice(0, 3).map((t, i) => `${i + 1}. ${t.tag} (${t.count} uses)`).join('\n')}`;
-                          
+
+                          const summaryText = `Call Notes Summary Report\n\nGenerated: ${new Date().toLocaleDateString()}\n\nOverview:\n• Total Contacts: ${analytics.totalStats.contacts}\n• Total Notes: ${analytics.totalStats.notes}\n• Total Orders: ${analytics.totalStats.orders}\n• Total Reminders: ${analytics.totalStats.reminders}\n\nRecent Activity (30 days):\n• Notes: ${analytics.recentStats.notes}\n• Orders: ${analytics.recentStats.orders}\n\nTop Contacts:\n${analytics.topContacts
+                            .slice(0, 3)
+                            .map(
+                              (c, i) =>
+                                `${i + 1}. ${c.contact.name} (${c.totalActivity} activities)`
+                            )
+                            .join('\n')}\n\nTop Tags:\n${analytics.topTags
+                            .slice(0, 3)
+                            .map((t, i) => `${i + 1}. ${t.tag} (${t.count} uses)`)
+                            .join('\n')}`;
+
                           if (Platform.OS === 'web') {
                             const blob = new Blob([summaryText], { type: 'text/plain' });
                             const url = URL.createObjectURL(blob);
@@ -1325,31 +1472,52 @@ export default function SettingsScreen() {
                           } else {
                             Share.share({
                               message: summaryText,
-                              title: 'Summary Report'
+                              title: 'Summary Report',
                             });
                           }
                         }}
                       >
                         <FileText size={20} color="#007AFF" />
                         <Text style={styles.exportButtonText}>Export Summary</Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity 
-                        style={styles.exportButton}
+                      </Pressable>
+
+                      <Pressable
+                        style={({ pressed }) => [styles.exportButton, pressed && { opacity: 0.7 }]}
                         onPress={() => {
                           const detailedData = {
                             generatedAt: new Date().toISOString(),
                             analytics: analytics,
                             rawData: {
-                              contacts: contacts.map(c => ({ id: c.id, name: c.name, phoneNumber: c.phoneNumber })),
-                              notes: notes.map(n => ({ id: n.id, contactId: n.contactId, createdAt: n.createdAt, tags: n.tags })),
-                              orders: orders.map(o => ({ id: o.id, contactId: o.contactId, createdAt: o.createdAt, status: o.status })),
-                              reminders: reminders.map(r => ({ id: r.id, contactId: r.contactId, createdAt: r.createdAt, title: r.title }))
-                            }
+                              contacts: contacts.map(c => ({
+                                id: c.id,
+                                name: c.name,
+                                phoneNumber: c.phoneNumber,
+                              })),
+                              notes: notes.map(n => ({
+                                id: n.id,
+                                contactId: n.contactId,
+                                createdAt: n.createdAt,
+                                tags: n.tags,
+                              })),
+                              orders: orders.map(o => ({
+                                id: o.id,
+                                contactId: o.contactId,
+                                createdAt: o.createdAt,
+                                status: o.status,
+                              })),
+                              reminders: reminders.map(r => ({
+                                id: r.id,
+                                contactId: r.contactId,
+                                createdAt: r.createdAt,
+                                title: r.title,
+                              })),
+                            },
                           };
-                          
+
                           if (Platform.OS === 'web') {
-                            const blob = new Blob([JSON.stringify(detailedData, null, 2)], { type: 'application/json' });
+                            const blob = new Blob([JSON.stringify(detailedData, null, 2)], {
+                              type: 'application/json',
+                            });
                             const url = URL.createObjectURL(blob);
                             const link = document.createElement('a');
                             link.href = url;
@@ -1361,14 +1529,14 @@ export default function SettingsScreen() {
                           } else {
                             Share.share({
                               message: JSON.stringify(detailedData, null, 2),
-                              title: 'Detailed Analytics Report'
+                              title: 'Detailed Analytics Report',
                             });
                           }
                         }}
                       >
                         <BarChart3 size={20} color="#007AFF" />
                         <Text style={styles.exportButtonText}>Export Detailed</Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     </View>
                   </View>
                 </>
