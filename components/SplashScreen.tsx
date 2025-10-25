@@ -26,8 +26,6 @@ export default function CustomSplashScreen() {
       }),
     ]);
 
-
-
     // Phase 3: Drive off to the right like a car with acceleration
     const exitAnimation = Animated.parallel([
       Animated.timing(translateXAnim, {
@@ -59,8 +57,6 @@ export default function CustomSplashScreen() {
     inputRange: [0, 1],
     outputRange: [50, 0],
   });
-
-
 
   return (
     <View style={styles.container}>
