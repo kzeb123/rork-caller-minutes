@@ -49,10 +49,10 @@ yarn-debug.*
 yarn-error.*
 lerna-debug.*
 
-# Lock files (if using npm with multiple package managers)
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# Lock files (only if using multiple package managers - keep the one you use!)
+# package-lock.json  # Keep this for npm
+yarn.lock            # Ignore if not using yarn
+pnpm-lock.yaml       # Ignore if not using pnpm
 
 # macOS
 .DS_Store
@@ -86,7 +86,9 @@ coverage/
 
 # IDEs and editors
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 *.swp
 *.swo
 *~
