@@ -1,6 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, TextInput, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
-import { Users, Search, Phone, Calendar } from 'lucide-react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SectionList,
+  TextInput,
+  SafeAreaView,
+  Pressable,
+} from 'react-native';
+import { Users, Search, Calendar } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import ContactCard from '@/components/ContactCard';
 import NoteModal from '@/components/NoteModal';
@@ -8,7 +16,7 @@ import CallGroupManager from '@/components/CallGroupManager';
 import { GroupByOption } from '@/types/contact';
 
 export default function ContactsScreen() {
-  const { contacts, notes, isLoading } = useContacts();
+  const { contacts, notes } = useContacts();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'contacts' | 'calls'>('contacts');
   const [groupBy, setGroupBy] = useState<GroupByOption>('day');
@@ -16,36 +24,33 @@ export default function ContactsScreen() {
   const filteredContacts = useMemo(() => {
     if (!searchQuery.trim()) return contacts;
     const query = searchQuery.toLowerCase();
-    return contacts.filter(contact => 
-      contact.name.toLowerCase().includes(query) ||
-      contact.phoneNumber.includes(query)
+    return contacts.filter(
+      contact => contact.name.toLowerCase().includes(query) || contact.phoneNumber.includes(query)
     );
   }, [contacts, searchQuery]);
 
   const sectionedContacts = useMemo(() => {
     if (!filteredContacts.length) return [];
-    
+
     const sorted = [...filteredContacts].sort((a, b) => a.name.localeCompare(b.name));
     const sections: { title: string; data: typeof contacts }[] = [];
-    
+
     sorted.forEach(contact => {
       const firstLetter = contact.name.charAt(0).toUpperCase();
       let section = sections.find(s => s.title === firstLetter);
-      
+
       if (!section) {
         section = { title: firstLetter, data: [] };
         sections.push(section);
       }
-      
+
       section.data.push(contact);
     });
-    
+
     return sections.sort((a, b) => a.title.localeCompare(b.title));
   }, [filteredContacts]);
 
-  const renderContact = ({ item }: { item: any }) => (
-    <ContactCard contact={item} />
-  );
+  const renderContact = ({ item }: { item: any }) => <ContactCard contact={item} />;
 
   const renderSectionHeader = ({ section }: { section: { title: string } }) => (
     <View style={styles.sectionHeader}>
@@ -67,24 +72,32 @@ export default function ContactsScreen() {
     <SafeAreaView style={styles.container}>
       {/* View Mode Tabs */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'contacts' && styles.activeTab]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.tab,
+            viewMode === 'contacts' && styles.activeTab,
+            pressed && { opacity: 0.7 },
+          ]}
           onPress={() => setViewMode('contacts')}
         >
           <Users size={18} color={viewMode === 'contacts' ? '#007AFF' : '#8E8E93'} />
           <Text style={[styles.tabText, viewMode === 'contacts' && styles.activeTabText]}>
             Contacts
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, viewMode === 'calls' && styles.activeTab]}
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [
+            styles.tab,
+            viewMode === 'calls' && styles.activeTab,
+            pressed && { opacity: 0.7 },
+          ]}
           onPress={() => setViewMode('calls')}
         >
           <Calendar size={18} color={viewMode === 'calls' ? '#007AFF' : '#8E8E93'} />
           <Text style={[styles.tabText, viewMode === 'calls' && styles.activeTabText]}>
             Call History
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {viewMode === 'contacts' ? (
@@ -108,7 +121,7 @@ export default function ContactsScreen() {
               sections={sectionedContacts}
               renderItem={renderContact}
               renderSectionHeader={renderSectionHeader}
-              keyExtractor={(item) => item.id}
+              keyExtractor={item => item.id}
               style={styles.list}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
@@ -119,11 +132,7 @@ export default function ContactsScreen() {
           )}
         </>
       ) : (
-        <CallGroupManager
-          notes={notes}
-          groupBy={groupBy}
-          onGroupByChange={setGroupBy}
-        />
+        <CallGroupManager notes={notes} groupBy={groupBy} onGroupByChange={setGroupBy} />
       )}
 
       <NoteModal />

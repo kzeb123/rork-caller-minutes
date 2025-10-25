@@ -1,7 +1,40 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Animated, SafeAreaView, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  TextInput,
+  Animated,
+  SafeAreaView,
+  Modal,
+} from 'react-native';
 import { Stack } from 'expo-router';
-import { FileText, User, Clock, Phone, MessageCircle, PhoneIncoming, PhoneOutgoing, BarChart3, Brain, TrendingUp, Search, Tag, Edit3, Circle, Filter, Folder, Settings, ChevronDown, ChevronRight, ChevronUp, X, Plus, CheckCircle } from 'lucide-react-native';
+import {
+  FileText,
+  User,
+  Clock,
+  Phone,
+  MessageCircle,
+  PhoneIncoming,
+  PhoneOutgoing,
+  BarChart3,
+  Brain,
+  TrendingUp,
+  Search,
+  Tag,
+  Edit3,
+  Circle,
+  Filter,
+  Folder,
+  Settings,
+  ChevronDown,
+  ChevronRight,
+  X,
+  Plus,
+  CheckCircle,
+} from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import { CallNote, NoteStatus, NoteFilter, FilterType, GroupByOption } from '@/types/contact';
 import EditNoteModal from '@/components/EditNoteModal';
@@ -43,49 +76,69 @@ export default function NotesScreen() {
 
     if (diffInHours < 24) {
       return noteDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInHours < 168) { // 7 days
-      return noteDate.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 168) {
+      // 7 days
+      return noteDate.toLocaleDateString([], {
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     } else {
-      return noteDate.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return noteDate.toLocaleDateString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     }
   };
-  
+
   const formatCallDuration = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
   };
-  
+
   const formatCallTime = (date: Date) => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const getStatusColor = (status: NoteStatus, customStatus?: string) => {
     switch (status) {
-      case 'follow-up': return '#FF9500';
-      case 'waiting-reply': return '#007AFF';
-      case 'closed': return '#34C759';
-      case 'other': return '#5856D6';
-      default: return '#999';
+      case 'follow-up':
+        return '#FF9500';
+      case 'waiting-reply':
+        return '#007AFF';
+      case 'closed':
+        return '#34C759';
+      case 'other':
+        return '#5856D6';
+      default:
+        return '#999';
     }
   };
 
   const getStatusText = (status: NoteStatus, customStatus?: string) => {
     if (status === 'other' && customStatus) return customStatus;
     switch (status) {
-      case 'follow-up': return 'Follow-up';
-      case 'waiting-reply': return 'Waiting Reply';
-      case 'closed': return 'Closed';
-      case 'other': return 'Other';
-      default: return 'Unknown';
+      case 'follow-up':
+        return 'Follow-up';
+      case 'waiting-reply':
+        return 'Waiting Reply';
+      case 'closed':
+        return 'Closed';
+      case 'other':
+        return 'Other';
+      default:
+        return 'Unknown';
     }
   };
 
   const toggleSearch = () => {
     const toValue = showSearch ? 0 : 1;
     setShowSearch(!showSearch);
-    
+
     // Apple-style animation with spring effect
     Animated.parallel([
       Animated.timing(searchAnimation, {
@@ -104,9 +157,9 @@ export default function NotesScreen() {
         useNativeDriver: true,
         tension: 100,
         friction: 10,
-      })
+      }),
     ]).start();
-    
+
     if (showSearch) {
       setSearchQuery('');
     }
@@ -131,9 +184,11 @@ export default function NotesScreen() {
   };
 
   const removeFilter = (filterToRemove: NoteFilter) => {
-    setActiveFilters(activeFilters.filter(f => 
-      !(f.type === filterToRemove.type && f.value === filterToRemove.value)
-    ));
+    setActiveFilters(
+      activeFilters.filter(
+        f => !(f.type === filterToRemove.type && f.value === filterToRemove.value)
+      )
+    );
   };
 
   const clearAllFilters = () => {
@@ -147,17 +202,17 @@ export default function NotesScreen() {
   // Get search suggestions based on current query
   const getSearchSuggestions = useCallback(() => {
     if (!searchQuery.trim() || searchQuery.length < 2) return [];
-    
+
     const query = searchQuery.toLowerCase();
     const suggestions = new Set<string>();
-    
+
     // Add matching contact names
     contacts.forEach(contact => {
       if (contact.name.toLowerCase().includes(query) && contact.name.toLowerCase() !== query) {
         suggestions.add(contact.name);
       }
     });
-    
+
     // Add matching keywords from notes
     notes.forEach(note => {
       // Split note into words and find matches
@@ -168,7 +223,7 @@ export default function NotesScreen() {
           suggestions.add(cleanWord);
         }
       });
-      
+
       // Add matching tags
       if (note.tags) {
         note.tags.forEach(tag => {
@@ -177,23 +232,25 @@ export default function NotesScreen() {
           }
         });
       }
-      
+
       // Add matching categories
-      if (note.category && note.category.toLowerCase().includes(query) && note.category.toLowerCase() !== query) {
+      if (
+        note.category &&
+        note.category.toLowerCase().includes(query) &&
+        note.category.toLowerCase() !== query
+      ) {
         suggestions.add(note.category);
       }
     });
-    
+
     return Array.from(suggestions).slice(0, 5); // Limit to 5 suggestions
   }, [searchQuery, contacts, notes]);
-
-
 
   const highlightText = (text: string, start: number, end: number) => {
     const before = text.substring(0, start);
     const match = text.substring(start, end);
     const after = text.substring(end);
-    
+
     return (
       <Text>
         {before}
@@ -206,7 +263,7 @@ export default function NotesScreen() {
   const handleSearchResultPress = (noteId: string) => {
     setHighlightedNoteId(noteId);
     setSearchResultsExpanded(false);
-    
+
     // Auto-expand the group containing this note
     const note = notes.find(n => n.id === noteId);
     if (note) {
@@ -215,7 +272,7 @@ export default function NotesScreen() {
         const noteInGroup = group.notes.find(n => n.id === noteId);
         if (noteInGroup) {
           setExpandedGroups(prev => new Set([...prev, group.id]));
-          
+
           // If it's a time-based group with subgroups, also expand the contact subgroup
           if (group.subGroups) {
             group.subGroups.forEach(subGroup => {
@@ -228,7 +285,7 @@ export default function NotesScreen() {
         }
       });
     }
-    
+
     // Clear highlight after 3 seconds
     setTimeout(() => {
       setHighlightedNoteId(null);
@@ -244,54 +301,58 @@ export default function NotesScreen() {
       filtered = filtered.filter(note => {
         // Contact name matching
         const contactMatch = note.contactName.toLowerCase().includes(query);
-        
+
         // Note content matching (word boundaries for better relevance)
         const noteWords = note.note.toLowerCase().split(/\s+/);
-        const noteMatch = noteWords.some(word => 
-          word.includes(query) || note.note.toLowerCase().includes(query)
+        const noteMatch = noteWords.some(
+          word => word.includes(query) || note.note.toLowerCase().includes(query)
         );
-        
+
         // Status matching
-        const statusMatch = getStatusText(note.status, note.customStatus).toLowerCase().includes(query);
-        
+        const statusMatch = getStatusText(note.status, note.customStatus)
+          .toLowerCase()
+          .includes(query);
+
         // Tags matching
         const tagsMatch = note.tags && note.tags.some(tag => tag.toLowerCase().includes(query));
-        
+
         // Category matching
         const categoryMatch = note.category && note.category.toLowerCase().includes(query);
-        
+
         // Phone number matching (if searching for numbers)
         const phoneMatch = contacts.find(c => c.id === note.contactId)?.phoneNumber.includes(query);
-        
+
         return contactMatch || noteMatch || statusMatch || tagsMatch || categoryMatch || phoneMatch;
       });
     }
-    
+
     // Apply group search filter (from search bar under group by)
     if (groupSearchQuery.trim()) {
       const query = groupSearchQuery.toLowerCase();
       filtered = filtered.filter(note => {
         // Contact name matching
         const contactMatch = note.contactName.toLowerCase().includes(query);
-        
+
         // Note content matching (word boundaries for better relevance)
         const noteWords = note.note.toLowerCase().split(/\s+/);
-        const noteMatch = noteWords.some(word => 
-          word.includes(query) || note.note.toLowerCase().includes(query)
+        const noteMatch = noteWords.some(
+          word => word.includes(query) || note.note.toLowerCase().includes(query)
         );
-        
+
         // Status matching
-        const statusMatch = getStatusText(note.status, note.customStatus).toLowerCase().includes(query);
-        
+        const statusMatch = getStatusText(note.status, note.customStatus)
+          .toLowerCase()
+          .includes(query);
+
         // Tags matching
         const tagsMatch = note.tags && note.tags.some(tag => tag.toLowerCase().includes(query));
-        
+
         // Category matching
         const categoryMatch = note.category && note.category.toLowerCase().includes(query);
-        
+
         // Phone number matching (if searching for numbers)
         const phoneMatch = contacts.find(c => c.id === note.contactId)?.phoneNumber.includes(query);
-        
+
         return contactMatch || noteMatch || statusMatch || tagsMatch || categoryMatch || phoneMatch;
       });
     }
@@ -315,7 +376,7 @@ export default function NotesScreen() {
         case 'direction':
           filtered = filtered.filter(note => note.callDirection === filter.value);
           break;
-        case 'date':
+        case 'date': {
           const today = new Date();
           switch (filter.value) {
             case 'today':
@@ -324,22 +385,25 @@ export default function NotesScreen() {
                 return createdDate.toDateString() === today.toDateString();
               });
               break;
-            case 'week':
+            case 'week': {
               const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
               filtered = filtered.filter(note => {
                 const createdDate = new Date(note.createdAt);
                 return createdDate >= weekAgo;
               });
               break;
-            case 'month':
+            }
+            case 'month': {
               const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
               filtered = filtered.filter(note => {
                 const createdDate = new Date(note.createdAt);
                 return createdDate >= monthAgo;
               });
               break;
+            }
           }
           break;
+        }
       }
     });
 
@@ -349,7 +413,7 @@ export default function NotesScreen() {
   // Get search results with highlighting info
   const getSearchResults = useCallback(() => {
     if (!groupSearchQuery.trim()) return [];
-    
+
     const query = groupSearchQuery.toLowerCase();
     const results: {
       note: CallNote;
@@ -358,7 +422,7 @@ export default function NotesScreen() {
       highlightStart: number;
       highlightEnd: number;
     }[] = [];
-    
+
     filteredNotes.forEach(note => {
       // Contact name matching
       const contactNameLower = note.contactName.toLowerCase();
@@ -369,11 +433,11 @@ export default function NotesScreen() {
           matchType: 'contact',
           matchText: note.contactName,
           highlightStart: contactIndex,
-          highlightEnd: contactIndex + query.length
+          highlightEnd: contactIndex + query.length,
         });
         return;
       }
-      
+
       // Note content matching
       const noteLower = note.note.toLowerCase();
       const noteIndex = noteLower.indexOf(query);
@@ -383,17 +447,17 @@ export default function NotesScreen() {
         const contextEnd = Math.min(note.note.length, noteIndex + query.length + 20);
         const contextText = note.note.substring(contextStart, contextEnd);
         const adjustedStart = noteIndex - contextStart;
-        
+
         results.push({
           note,
           matchType: 'content',
           matchText: contextText,
           highlightStart: adjustedStart,
-          highlightEnd: adjustedStart + query.length
+          highlightEnd: adjustedStart + query.length,
         });
         return;
       }
-      
+
       // Tags matching
       if (note.tags) {
         for (const tag of note.tags) {
@@ -404,13 +468,13 @@ export default function NotesScreen() {
               matchType: 'tag',
               matchText: tag,
               highlightStart: tagIndex,
-              highlightEnd: tagIndex + query.length
+              highlightEnd: tagIndex + query.length,
             });
             return;
           }
         }
       }
-      
+
       // Category matching
       if (note.category) {
         const categoryIndex = note.category.toLowerCase().indexOf(query);
@@ -420,22 +484,31 @@ export default function NotesScreen() {
             matchType: 'category',
             matchText: note.category,
             highlightStart: categoryIndex,
-            highlightEnd: categoryIndex + query.length
+            highlightEnd: categoryIndex + query.length,
           });
         }
       }
     });
-    
+
     return results.slice(0, 10); // Limit to 10 results
   }, [groupSearchQuery, filteredNotes]);
 
   const groupedNotes = useMemo(() => {
-    const groups: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string; subGroups?: any[] }[] = [];
+    const groups: {
+      id: string;
+      title: string;
+      notes: CallNote[];
+      type: 'time-based' | 'folder-based' | 'contact-based';
+      folderId?: string;
+      date?: Date;
+      contactName?: string;
+      subGroups?: any[];
+    }[] = [];
 
     if (groupBy === 'none') {
       // Group by contact name for collapsible view
       const notesByContact = new Map<string, CallNote[]>();
-      
+
       filteredNotes.forEach(note => {
         const contactName = note.contactName;
         if (!notesByContact.has(contactName)) {
@@ -445,10 +518,10 @@ export default function NotesScreen() {
       });
 
       notesByContact.forEach((contactNotes, contactName) => {
-        const sortedNotes = contactNotes.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        const sortedNotes = contactNotes.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-        
+
         groups.push({
           id: `contact-${contactName}`,
           title: contactName,
@@ -469,13 +542,13 @@ export default function NotesScreen() {
 
     if (groupBy === 'folder') {
       const ungrouped: CallNote[] = [];
-      
+
       folders.forEach(folder => {
         const folderNotes = filteredNotes.filter(n => n.folderId === folder.id);
         if (folderNotes.length > 0) {
           // Group by contact within each folder
           const notesByContactInFolder = new Map<string, CallNote[]>();
-          
+
           folderNotes.forEach(note => {
             const contactName = note.contactName;
             if (!notesByContactInFolder.has(contactName)) {
@@ -490,8 +563,8 @@ export default function NotesScreen() {
             contactGroups.push({
               id: `${folder.id}-${contactName}`,
               title: contactName,
-              notes: contactNotes.sort((a, b) => 
-                new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
+              notes: contactNotes.sort(
+                (a, b) => new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
               ),
               type: 'contact-based',
               contactName,
@@ -500,8 +573,12 @@ export default function NotesScreen() {
 
           // Sort contact groups by most recent call
           contactGroups.sort((a, b) => {
-            const aLatest = Math.max(...a.notes.map((n: CallNote) => new Date(n.callStartTime).getTime()));
-            const bLatest = Math.max(...b.notes.map((n: CallNote) => new Date(n.callStartTime).getTime()));
+            const aLatest = Math.max(
+              ...a.notes.map((n: CallNote) => new Date(n.callStartTime).getTime())
+            );
+            const bLatest = Math.max(
+              ...b.notes.map((n: CallNote) => new Date(n.callStartTime).getTime())
+            );
             return bLatest - aLatest;
           });
 
@@ -525,7 +602,7 @@ export default function NotesScreen() {
       if (ungrouped.length > 0) {
         // Group ungrouped notes by contact
         const notesByContactUngrouped = new Map<string, CallNote[]>();
-        
+
         ungrouped.forEach(note => {
           const contactName = note.contactName;
           if (!notesByContactUngrouped.has(contactName)) {
@@ -540,8 +617,8 @@ export default function NotesScreen() {
           ungroupedContactGroups.push({
             id: `ungrouped-${contactName}`,
             title: contactName,
-            notes: contactNotes.sort((a, b) => 
-              new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
+            notes: contactNotes.sort(
+              (a, b) => new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
             ),
             type: 'contact-based',
             contactName,
@@ -562,7 +639,7 @@ export default function NotesScreen() {
 
     // Time-based grouping with contact sub-grouping
     const notesByTimePeriod = new Map<string, CallNote[]>();
-    
+
     filteredNotes.forEach(note => {
       const date = new Date(note.callStartTime);
       let timeKey: string;
@@ -571,33 +648,34 @@ export default function NotesScreen() {
       switch (groupBy) {
         case 'day':
           timeKey = date.toDateString();
-          timeTitle = date.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            month: 'long', 
-            day: 'numeric', 
-            year: 'numeric' 
+          timeTitle = date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
           });
           break;
-        case 'week':
+        case 'week': {
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
           timeKey = `${weekStart.toDateString()}-${weekEnd.toDateString()}`;
-          timeTitle = `Week of ${weekStart.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric' 
-          })} - ${weekEnd.toLocaleDateString('en-US', { 
-            month: 'short', 
+          timeTitle = `Week of ${weekStart.toLocaleDateString('en-US', {
+            month: 'short',
             day: 'numeric',
-            year: 'numeric'
+          })} - ${weekEnd.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
           })}`;
           break;
+        }
         case 'month':
           timeKey = `${date.getFullYear()}-${date.getMonth()}`;
-          timeTitle = date.toLocaleDateString('en-US', { 
-            month: 'long', 
-            year: 'numeric' 
+          timeTitle = date.toLocaleDateString('en-US', {
+            month: 'long',
+            year: 'numeric',
           });
           break;
         case 'year':
@@ -619,7 +697,7 @@ export default function NotesScreen() {
     notesByTimePeriod.forEach((notesInPeriod, key) => {
       // Group notes by contact within this time period
       const notesByContact = new Map<string, CallNote[]>();
-      
+
       notesInPeriod.forEach(note => {
         const contactKey = note.contactName;
         if (!notesByContact.has(contactKey)) {
@@ -634,8 +712,8 @@ export default function NotesScreen() {
         contactGroups.push({
           id: `${key}-${contactName}`,
           title: contactName,
-          notes: contactNotes.sort((a, b) => 
-            new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
+          notes: contactNotes.sort(
+            (a, b) => new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
           ),
           type: 'contact-based',
           contactName,
@@ -644,8 +722,12 @@ export default function NotesScreen() {
 
       // Sort contact groups by most recent call
       contactGroups.sort((a, b) => {
-        const aLatest = Math.max(...a.notes.map((n: CallNote) => new Date(n.callStartTime).getTime()));
-        const bLatest = Math.max(...b.notes.map((n: CallNote) => new Date(n.callStartTime).getTime()));
+        const aLatest = Math.max(
+          ...a.notes.map((n: CallNote) => new Date(n.callStartTime).getTime())
+        );
+        const bLatest = Math.max(
+          ...b.notes.map((n: CallNote) => new Date(n.callStartTime).getTime())
+        );
         return bLatest - aLatest;
       });
 
@@ -653,8 +735,8 @@ export default function NotesScreen() {
       groups.push({
         id: key,
         title: title || key,
-        notes: notesInPeriod.sort((a, b) => 
-          new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
+        notes: notesInPeriod.sort(
+          (a, b) => new Date(b.callStartTime).getTime() - new Date(a.callStartTime).getTime()
         ),
         type: 'time-based',
         date: notesInPeriod[0].callStartTime,
@@ -704,14 +786,14 @@ export default function NotesScreen() {
 
   const handleFloatingButtonPress = () => {
     if (isAnimating) return;
-    
+
     setIsAnimating(true);
-    
+
     // Open modal immediately when animation starts
     setTimeout(() => {
       setShowAddContactModal(true);
     }, 30); // Very short delay to let the press animation start
-    
+
     // Start the animation sequence with radiating effect
     Animated.parallel([
       // Scale animation for press feedback
@@ -726,7 +808,7 @@ export default function NotesScreen() {
           tension: 120,
           friction: 6,
           useNativeDriver: true,
-        })
+        }),
       ]),
       // Smooth rotation animation
       Animated.spring(rotationValue, {
@@ -740,11 +822,11 @@ export default function NotesScreen() {
         toValue: 1,
         duration: 150,
         useNativeDriver: true,
-      })
+      }),
     ]).start(() => {
       // Animation complete - reset values
       setIsAnimating(false);
-      
+
       // Reset animation values after a tiny delay
       setTimeout(() => {
         animationValue.setValue(0);
@@ -756,136 +838,42 @@ export default function NotesScreen() {
 
   const getPriorityColor = (priority?: 'low' | 'medium' | 'high') => {
     switch (priority) {
-      case 'low': return '#34C759';
-      case 'medium': return '#FF9500';
-      case 'high': return '#FF3B30';
-      default: return '#999';
+      case 'low':
+        return '#34C759';
+      case 'medium':
+        return '#FF9500';
+      case 'high':
+        return '#FF3B30';
+      default:
+        return '#999';
     }
   };
 
   const getMatchTypeColor = (matchType: string) => {
     switch (matchType) {
-      case 'contact': return '#007AFF20';
-      case 'content': return '#34C75920';
-      case 'tag': return '#FF950020';
-      case 'category': return '#5856D620';
-      default: return '#F2F2F720';
+      case 'contact':
+        return '#007AFF20';
+      case 'content':
+        return '#34C75920';
+      case 'tag':
+        return '#FF950020';
+      case 'category':
+        return '#5856D620';
+      default:
+        return '#F2F2F720';
     }
   };
-
-  const renderNote = ({ item }: { item: CallNote }) => (
-    <Pressable 
-      style={[
-        styles.noteCard,
-        highlightedNoteId === item.id && styles.highlightedNoteCard
-      ]} 
-      onPress={() => handleViewNote(item)}
-    >
-      <View style={styles.noteHeader}>
-        <View style={styles.contactInfo}>
-          <View style={styles.avatar}>
-            <User size={16} color="#666" />
-          </View>
-          <View style={styles.contactDetails}>
-            <Text style={styles.contactName}>{item.contactName}</Text>
-            <View style={styles.timeContainer}>
-              <Clock size={12} color="#999" />
-              <Text style={styles.time}>{formatDate(item.createdAt)}</Text>
-              {item.updatedAt && (
-                <Text style={styles.updatedText}> • edited</Text>
-              )}
-            </View>
-          </View>
-        </View>
-        
-        <View style={styles.headerActions}>
-          <Pressable onPress={() => handleEditNote(item)} style={styles.editButton}>
-            <Edit3 size={16} color="#007AFF" />
-          </Pressable>
-        </View>
-      </View>
-      
-      {/* Priority and Category */}
-      {(item.priority || item.category) && (
-        <View style={styles.metaInfo}>
-          {item.priority && (
-            <View style={styles.priorityContainer}>
-              <Circle size={8} color={getPriorityColor(item.priority)} fill={getPriorityColor(item.priority)} />
-              <Text style={styles.priorityText}>{item.priority.charAt(0).toUpperCase() + item.priority.slice(1)} Priority</Text>
-            </View>
-          )}
-          {item.category && (
-            <View style={styles.categoryContainer}>
-              <Text style={styles.categoryText}>{item.category}</Text>
-            </View>
-          )}
-        </View>
-      )}
-      
-      {/* Tags */}
-      <View style={styles.tagsRow}>
-        <View style={styles.leftTags}>
-          {item.isAutoGenerated && (
-            <View style={styles.autoTag}>
-              <Text style={styles.autoTagText}>Auto</Text>
-            </View>
-          )}
-          <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-            <Tag size={10} color={getStatusColor(item.status)} />
-            <Text style={[styles.statusTagText, { color: getStatusColor(item.status) }]}>
-              {getStatusText(item.status, item.customStatus)}
-            </Text>
-          </View>
-        </View>
-        
-        {item.tags && item.tags.length > 0 && (
-          <View style={styles.customTags}>
-            {item.tags.slice(0, 3).map((tag, index) => (
-              <View key={index} style={styles.customTag}>
-                <Text style={styles.customTagText}>{tag}</Text>
-              </View>
-            ))}
-            {item.tags.length > 3 && (
-              <Text style={styles.moreTagsText}>+{item.tags.length - 3}</Text>
-            )}
-          </View>
-        )}
-      </View>
-      
-      <View style={styles.callDetails}>
-        <View style={styles.callDetailItem}>
-          {item.callDirection === 'inbound' ? (
-            <PhoneIncoming size={14} color="#34c759" />
-          ) : (
-            <PhoneOutgoing size={14} color="#007AFF" />
-          )}
-          <Text style={styles.callDetailText}>
-            {item.callDirection === 'inbound' ? 'Incoming' : 'Outgoing'} • {formatCallTime(item.callStartTime)} • {formatCallDuration(item.callDuration)}
-          </Text>
-        </View>
-      </View>
-      
-      <View style={styles.noteContent}>
-        <MessageCircle size={16} color={item.isAutoGenerated ? '#999' : '#007AFF'} />
-        <Text style={[styles.noteText, item.isAutoGenerated && styles.autoNoteText]}>
-          {item.note}
-        </Text>
-      </View>
-    </Pressable>
-  );
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <FileText size={64} color="#ccc" />
       <Text style={styles.emptyTitle}>No Call Notes Yet</Text>
-      <Text style={styles.emptyText}>
-        Notes from your calls will appear here
-      </Text>
+      <Text style={styles.emptyText}>Notes from your calls will appear here</Text>
     </View>
   );
 
-  const sortedNotes = [...filteredNotes].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  const sortedNotes = [...filteredNotes].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   const FilterChip = ({ filter }: { filter: NoteFilter }) => (
@@ -897,17 +885,21 @@ export default function NotesScreen() {
     </View>
   );
 
-  const FilterOption = ({ type, value, label, icon }: {
+  const FilterOption = ({
+    type,
+    value,
+    label,
+    icon,
+  }: {
     type: FilterType;
     value: string;
     label: string;
     icon: React.ReactNode;
   }) => (
-    <Pressable
-      style={styles.filterOption}
-      onPress={() => addFilter(type, value, label)}
-    >
-      <Text style={styles.filterOptionText}>{icon} {label}</Text>
+    <Pressable style={styles.filterOption} onPress={() => addFilter(type, value, label)}>
+      <Text style={styles.filterOptionText}>
+        {icon} {label}
+      </Text>
     </Pressable>
   );
 
@@ -923,10 +915,23 @@ export default function NotesScreen() {
     });
   };
 
-  const NoteGroup = ({ group }: { group: { id: string; title: string; notes: CallNote[]; type: 'time-based' | 'folder-based' | 'contact-based'; folderId?: string; date?: Date; contactName?: string; subGroups?: any[] } }) => {
+  const NoteGroup = ({
+    group,
+  }: {
+    group: {
+      id: string;
+      title: string;
+      notes: CallNote[];
+      type: 'time-based' | 'folder-based' | 'contact-based';
+      folderId?: string;
+      date?: Date;
+      contactName?: string;
+      subGroups?: any[];
+    };
+  }) => {
     const isExpanded = expandedGroups.has(group.id);
-    const sortedGroupNotes = [...group.notes].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    const sortedGroupNotes = [...group.notes].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
     // For time-based groups with subgroups (like day/week/month)
@@ -934,10 +939,7 @@ export default function NotesScreen() {
       return (
         <View style={styles.noteGroup}>
           <Pressable
-            style={({ pressed }) => [
-              styles.groupHeader,
-              pressed && { opacity: 0.7 }
-            ]}
+            style={({ pressed }) => [styles.groupHeader, pressed && { opacity: 0.7 }]}
             onPress={() => toggleGroup(group.id)}
           >
             <View style={styles.groupHeaderLeft}>
@@ -955,17 +957,14 @@ export default function NotesScreen() {
             <View style={styles.groupContent}>
               {group.subGroups.map(subGroup => {
                 const subGroupExpanded = expandedGroups.has(subGroup.id);
-                const subGroupNotes = [...subGroup.notes].sort((a, b) => 
-                  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                const subGroupNotes = [...subGroup.notes].sort(
+                  (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                 );
-                
+
                 return (
                   <View key={subGroup.id} style={styles.subGroup}>
                     <Pressable
-                      style={({ pressed }) => [
-                        styles.subGroupHeader,
-                        pressed && { opacity: 0.7 }
-                      ]}
+                      style={({ pressed }) => [styles.subGroupHeader, pressed && { opacity: 0.7 }]}
                       onPress={() => toggleGroup(subGroup.id)}
                     >
                       <View style={styles.subGroupHeaderLeft}>
@@ -981,7 +980,7 @@ export default function NotesScreen() {
                       </View>
                       <Text style={styles.subGroupCount}>{subGroup.notes.length}</Text>
                     </Pressable>
-                    
+
                     {subGroupExpanded && (
                       <View style={styles.subGroupContent}>
                         {subGroupNotes.map(item => (
@@ -990,7 +989,7 @@ export default function NotesScreen() {
                             style={({ pressed }) => [
                               styles.noteItem,
                               highlightedNoteId === item.id && styles.highlightedNoteItem,
-                              pressed && { opacity: 0.7 }
+                              pressed && { opacity: 0.7 },
                             ]}
                             onPress={() => handleViewNote(item)}
                           >
@@ -1011,7 +1010,8 @@ export default function NotesScreen() {
                                 )}
                                 <Clock size={12} color="#8E8E93" />
                                 <Text style={styles.callDurationText}>
-                                  {Math.floor(item.callDuration / 60)}:{(item.callDuration % 60).toString().padStart(2, '0')}
+                                  {Math.floor(item.callDuration / 60)}:
+                                  {(item.callDuration % 60).toString().padStart(2, '0')}
                                 </Text>
                               </View>
                             </View>
@@ -1023,14 +1023,28 @@ export default function NotesScreen() {
                             )}
 
                             <View style={styles.noteTagsRow}>
-                              <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-                                <Text style={[styles.statusTagText, { color: getStatusColor(item.status) }]}>
+                              <View
+                                style={[
+                                  styles.statusTag,
+                                  { backgroundColor: getStatusColor(item.status) + '20' },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.statusTagText,
+                                    { color: getStatusColor(item.status) },
+                                  ]}
+                                >
                                   {getStatusText(item.status, item.customStatus)}
                                 </Text>
                               </View>
                               {item.priority && (
                                 <View style={styles.priorityBadge}>
-                                  <Circle size={6} color={getPriorityColor(item.priority)} fill={getPriorityColor(item.priority)} />
+                                  <Circle
+                                    size={6}
+                                    color={getPriorityColor(item.priority)}
+                                    fill={getPriorityColor(item.priority)}
+                                  />
                                   <Text style={styles.priorityText}>{item.priority}</Text>
                                 </View>
                               )}
@@ -1052,10 +1066,7 @@ export default function NotesScreen() {
     return (
       <View style={styles.noteGroup}>
         <Pressable
-          style={({ pressed }) => [
-            styles.groupHeader,
-            pressed && { opacity: 0.7 }
-          ]}
+          style={({ pressed }) => [styles.groupHeader, pressed && { opacity: 0.7 }]}
           onPress={() => toggleGroup(group.id)}
         >
           <View style={styles.groupHeaderLeft}>
@@ -1080,7 +1091,7 @@ export default function NotesScreen() {
                 style={({ pressed }) => [
                   styles.noteItem,
                   highlightedNoteId === item.id && styles.highlightedNoteItem,
-                  pressed && { opacity: 0.7 }
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => handleViewNote(item)}
               >
@@ -1092,9 +1103,7 @@ export default function NotesScreen() {
                         minute: '2-digit',
                       })}
                     </Text>
-                    <Text style={styles.noteDate}>
-                      {formatDate(item.createdAt)}
-                    </Text>
+                    <Text style={styles.noteDate}>{formatDate(item.createdAt)}</Text>
                   </View>
                   <View style={styles.noteCallInfo}>
                     {item.callDirection === 'inbound' ? (
@@ -1104,7 +1113,8 @@ export default function NotesScreen() {
                     )}
                     <Clock size={12} color="#8E8E93" />
                     <Text style={styles.callDurationText}>
-                      {Math.floor(item.callDuration / 60)}:{(item.callDuration % 60).toString().padStart(2, '0')}
+                      {Math.floor(item.callDuration / 60)}:
+                      {(item.callDuration % 60).toString().padStart(2, '0')}
                     </Text>
                   </View>
                 </View>
@@ -1116,14 +1126,23 @@ export default function NotesScreen() {
                 )}
 
                 <View style={styles.noteTagsRow}>
-                  <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+                  <View
+                    style={[
+                      styles.statusTag,
+                      { backgroundColor: getStatusColor(item.status) + '20' },
+                    ]}
+                  >
                     <Text style={[styles.statusTagText, { color: getStatusColor(item.status) }]}>
                       {getStatusText(item.status, item.customStatus)}
                     </Text>
                   </View>
                   {item.priority && (
                     <View style={styles.priorityBadge}>
-                      <Circle size={6} color={getPriorityColor(item.priority)} fill={getPriorityColor(item.priority)} />
+                      <Circle
+                        size={6}
+                        color={getPriorityColor(item.priority)}
+                        fill={getPriorityColor(item.priority)}
+                      />
                       <Text style={styles.priorityText}>{item.priority}</Text>
                     </View>
                   )}
@@ -1138,15 +1157,14 @@ export default function NotesScreen() {
 
   // Summary statistics
   const totalCalls = notes.length;
-  const totalContacts = contacts.length;
   const inboundCalls = notes.filter(note => note.callDirection === 'inbound').length;
   const outboundCalls = notes.filter(note => note.callDirection === 'outbound').length;
   const notesWithContent = notes.filter(note => !note.isAutoGenerated).length;
-  const autoGeneratedNotes = notes.filter(note => note.isAutoGenerated).length;
 
-  const averageCallDuration = totalCalls > 0 
-    ? Math.round(notes.reduce((sum, note) => sum + note.callDuration, 0) / totalCalls)
-    : 0;
+  const averageCallDuration =
+    totalCalls > 0
+      ? Math.round(notes.reduce((sum, note) => sum + note.callDuration, 0) / totalCalls)
+      : 0;
 
   const formatDuration = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -1155,7 +1173,13 @@ export default function NotesScreen() {
     return `${minutes}m ${remainingSeconds}s`;
   };
 
-  const StatCard = ({ icon, title, value, subtitle, color = '#007AFF' }: {
+  const StatCard = ({
+    icon,
+    title,
+    value,
+    subtitle,
+    color = '#007AFF',
+  }: {
     icon: React.ReactNode;
     title: string;
     value: string | number;
@@ -1188,13 +1212,12 @@ export default function NotesScreen() {
     }
 
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.summaryScrollContent}>
-        <StatCard
-          icon={<BarChart3 />}
-          title="Total Calls"
-          value={totalCalls}
-          color="#007AFF"
-        />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.summaryScrollContent}
+      >
+        <StatCard icon={<BarChart3 />} title="Total Calls" value={totalCalls} color="#007AFF" />
         <StatCard
           icon={<Clock />}
           title="Avg Duration"
@@ -1228,8 +1251,8 @@ export default function NotesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Notes & Summary',
           headerRight: () => (
             <View style={styles.headerActions}>
@@ -1241,11 +1264,11 @@ export default function NotesScreen() {
               </Pressable>
             </View>
           ),
-        }} 
+        }}
       />
 
       {/* Search Bar with Apple-style animation */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.searchContainer,
           {
@@ -1253,16 +1276,16 @@ export default function NotesScreen() {
               inputRange: [0, 1],
               outputRange: [0, 70],
             }),
-          }
+          },
         ]}
       >
-        <Animated.View 
+        <Animated.View
           style={[
             styles.searchInputWrapper,
             {
               opacity: searchOpacity,
               transform: [{ translateY: searchTranslateY }],
-            }
+            },
           ]}
         >
           <View style={styles.searchInputContainer}>
@@ -1307,7 +1330,7 @@ export default function NotesScreen() {
       </Animated.View>
 
       {/* Filter Panel */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.filterContainer,
           {
@@ -1316,49 +1339,109 @@ export default function NotesScreen() {
               outputRange: [0, 200],
             }),
             opacity: filterAnimation,
-          }
+          },
         ]}
       >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
           <View style={styles.filterSection}>
             <Text style={styles.filterSectionTitle}>Status</Text>
-            <FilterOption type="status" value="follow-up" label="Follow-up" icon={<Tag size={14} color="#FF9500" />} />
-            <FilterOption type="status" value="waiting-reply" label="Waiting Reply" icon={<Tag size={14} color="#007AFF" />} />
-            <FilterOption type="status" value="closed" label="Closed" icon={<Tag size={14} color="#34C759" />} />
+            <FilterOption
+              type="status"
+              value="follow-up"
+              label="Follow-up"
+              icon={<Tag size={14} color="#FF9500" />}
+            />
+            <FilterOption
+              type="status"
+              value="waiting-reply"
+              label="Waiting Reply"
+              icon={<Tag size={14} color="#007AFF" />}
+            />
+            <FilterOption
+              type="status"
+              value="closed"
+              label="Closed"
+              icon={<Tag size={14} color="#34C759" />}
+            />
           </View>
-          
+
           <View style={styles.filterSection}>
             <Text style={styles.filterSectionTitle}>Priority</Text>
-            <FilterOption type="priority" value="high" label="High" icon={<Circle size={14} color="#FF3B30" />} />
-            <FilterOption type="priority" value="medium" label="Medium" icon={<Circle size={14} color="#FF9500" />} />
-            <FilterOption type="priority" value="low" label="Low" icon={<Circle size={14} color="#34C759" />} />
+            <FilterOption
+              type="priority"
+              value="high"
+              label="High"
+              icon={<Circle size={14} color="#FF3B30" />}
+            />
+            <FilterOption
+              type="priority"
+              value="medium"
+              label="Medium"
+              icon={<Circle size={14} color="#FF9500" />}
+            />
+            <FilterOption
+              type="priority"
+              value="low"
+              label="Low"
+              icon={<Circle size={14} color="#34C759" />}
+            />
           </View>
-          
+
           <View style={styles.filterSection}>
             <Text style={styles.filterSectionTitle}>Direction</Text>
-            <FilterOption type="direction" value="inbound" label="Inbound" icon={<PhoneIncoming size={14} color="#34C759" />} />
-            <FilterOption type="direction" value="outbound" label="Outbound" icon={<PhoneOutgoing size={14} color="#007AFF" />} />
+            <FilterOption
+              type="direction"
+              value="inbound"
+              label="Inbound"
+              icon={<PhoneIncoming size={14} color="#34C759" />}
+            />
+            <FilterOption
+              type="direction"
+              value="outbound"
+              label="Outbound"
+              icon={<PhoneOutgoing size={14} color="#007AFF" />}
+            />
           </View>
-          
+
           <View style={styles.filterSection}>
             <Text style={styles.filterSectionTitle}>Folders</Text>
-            <FilterOption type="folder" value="no-folder" label="No Folder" icon={<Folder size={14} color="#999" />} />
+            <FilterOption
+              type="folder"
+              value="no-folder"
+              label="No Folder"
+              icon={<Folder size={14} color="#999" />}
+            />
             {folders.map(folder => (
-              <FilterOption 
+              <FilterOption
                 key={folder.id}
-                type="folder" 
-                value={folder.id} 
-                label={folder.name} 
-                icon={<Folder size={14} color={folder.color} />} 
+                type="folder"
+                value={folder.id}
+                label={folder.name}
+                icon={<Folder size={14} color={folder.color} />}
               />
             ))}
           </View>
-          
+
           <View style={styles.filterSection}>
             <Text style={styles.filterSectionTitle}>Date</Text>
-            <FilterOption type="date" value="today" label="Today" icon={<Clock size={14} color="#007AFF" />} />
-            <FilterOption type="date" value="week" label="This Week" icon={<Clock size={14} color="#007AFF" />} />
-            <FilterOption type="date" value="month" label="This Month" icon={<Clock size={14} color="#007AFF" />} />
+            <FilterOption
+              type="date"
+              value="today"
+              label="Today"
+              icon={<Clock size={14} color="#007AFF" />}
+            />
+            <FilterOption
+              type="date"
+              value="week"
+              label="This Week"
+              icon={<Clock size={14} color="#007AFF" />}
+            />
+            <FilterOption
+              type="date"
+              value="month"
+              label="This Month"
+              icon={<Clock size={14} color="#007AFF" />}
+            />
           </View>
         </ScrollView>
       </Animated.View>
@@ -1366,7 +1449,11 @@ export default function NotesScreen() {
       {/* Active Filters */}
       {activeFilters.length > 0 && (
         <View style={styles.activeFiltersContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.activeFiltersScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.activeFiltersScroll}
+          >
             <View style={styles.activeFilters}>
               {activeFilters.map((filter, index) => (
                 <FilterChip key={`${filter.type}-${filter.value}-${index}`} filter={filter} />
@@ -1379,8 +1466,6 @@ export default function NotesScreen() {
         </View>
       )}
 
-
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Summary Section */}
         <View style={styles.summarySection}>
@@ -1388,25 +1473,22 @@ export default function NotesScreen() {
           {renderSummarySection()}
         </View>
 
-
-
         {/* Notes Section */}
         <View style={styles.notesSection}>
           {/* Group By Options above Call Notes title */}
           <View style={styles.notesFilterButtonContainer}>
-            <Pressable 
-              style={styles.groupByButton}
-              onPress={() => setShowGroupByModal(true)}
-            >
+            <Pressable style={styles.groupByButton} onPress={() => setShowGroupByModal(true)}>
               <Filter size={16} color="#007AFF" />
-              <Text style={styles.groupByButtonText}>Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</Text>
+              <Text style={styles.groupByButtonText}>
+                Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}
+              </Text>
               <ChevronDown size={16} color="#007AFF" />
             </Pressable>
           </View>
-          
+
           {/* Divider */}
           <View style={styles.divider} />
-          
+
           {/* Search Bar */}
           <View style={styles.groupByWrapper}>
             <View style={styles.groupSearchContainer}>
@@ -1417,7 +1499,7 @@ export default function NotesScreen() {
                   placeholder="Search contacts or keywords..."
                   placeholderTextColor="#8E8E93"
                   value={groupSearchQuery}
-                  onChangeText={(text) => {
+                  onChangeText={text => {
                     setGroupSearchQuery(text);
                     if (text.trim()) {
                       setSearchResultsExpanded(true);
@@ -1428,31 +1510,34 @@ export default function NotesScreen() {
                   returnKeyType="search"
                 />
                 {groupSearchQuery.length > 0 && (
-                  <Pressable onPress={() => {
-                    setGroupSearchQuery('');
-                    setSearchResultsExpanded(false);
-                  }}>
+                  <Pressable
+                    onPress={() => {
+                      setGroupSearchQuery('');
+                      setSearchResultsExpanded(false);
+                    }}
+                  >
                     <X size={16} color="#8E8E93" />
                   </Pressable>
                 )}
               </View>
-              
+
               {/* Search Results Dropdown */}
               {searchResultsExpanded && groupSearchQuery.trim() && (
                 <View style={styles.searchResultsDropdown}>
                   <View style={styles.searchResultsHeader}>
                     <Text style={styles.searchResultsTitle}>
-                      {getSearchResults().length} result{getSearchResults().length !== 1 ? 's' : ''} found
+                      {getSearchResults().length} result{getSearchResults().length !== 1 ? 's' : ''}{' '}
+                      found
                     </Text>
-                    <Pressable 
+                    <Pressable
                       onPress={() => setSearchResultsExpanded(false)}
                       style={styles.collapseButton}
                     >
                       <X size={16} color="#8E8E93" />
                     </Pressable>
                   </View>
-                  
-                  <ScrollView 
+
+                  <ScrollView
                     style={styles.searchResultsList}
                     showsVerticalScrollIndicator={false}
                     nestedScrollEnabled={true}
@@ -1462,7 +1547,7 @@ export default function NotesScreen() {
                         key={`${result.note.id}-${index}`}
                         style={({ pressed }) => [
                           styles.searchResultItem,
-                          pressed && { opacity: 0.7 }
+                          pressed && { opacity: 0.7 },
                         ]}
                         onPress={() => handleSearchResultPress(result.note.id)}
                       >
@@ -1474,20 +1559,32 @@ export default function NotesScreen() {
                               </View>
                               <Text style={styles.searchResultContactName}>
                                 {result.matchType === 'contact'
-                                  ? highlightText(result.matchText, result.highlightStart, result.highlightEnd)
-                                  : result.note.contactName
-                                }
+                                  ? highlightText(
+                                      result.matchText,
+                                      result.highlightStart,
+                                      result.highlightEnd
+                                    )
+                                  : result.note.contactName}
                               </Text>
                             </View>
                             <View style={styles.searchResultMeta}>
                               <Text style={styles.searchResultTime}>
                                 {formatDate(result.note.createdAt)}
                               </Text>
-                              <View style={[styles.matchTypeBadge, { backgroundColor: getMatchTypeColor(result.matchType) }]}>
+                              <View
+                                style={[
+                                  styles.matchTypeBadge,
+                                  { backgroundColor: getMatchTypeColor(result.matchType) },
+                                ]}
+                              >
                                 <Text style={styles.matchTypeText}>
-                                  {result.matchType === 'contact' ? 'Contact' :
-                                   result.matchType === 'content' ? 'Note' :
-                                   result.matchType === 'tag' ? 'Tag' : 'Category'}
+                                  {result.matchType === 'contact'
+                                    ? 'Contact'
+                                    : result.matchType === 'content'
+                                      ? 'Note'
+                                      : result.matchType === 'tag'
+                                        ? 'Tag'
+                                        : 'Category'}
                                 </Text>
                               </View>
                             </View>
@@ -1497,27 +1594,39 @@ export default function NotesScreen() {
                             {result.matchType === 'content' && (
                               <Text style={styles.searchResultMatchText}>
                                 {result.highlightStart > 0 && '...'}
-                                {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
+                                {highlightText(
+                                  result.matchText,
+                                  result.highlightStart,
+                                  result.highlightEnd
+                                )}
                                 {result.highlightEnd < result.matchText.length && '...'}
                               </Text>
                             )}
                             {result.matchType === 'tag' && (
                               <View style={styles.searchResultTag}>
                                 <Tag size={10} color="#007AFF" />
-                                {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
+                                {highlightText(
+                                  result.matchText,
+                                  result.highlightStart,
+                                  result.highlightEnd
+                                )}
                               </View>
                             )}
                             {result.matchType === 'category' && (
                               <View style={styles.searchResultCategory}>
                                 <Text style={styles.categoryLabel}>Category: </Text>
-                                {highlightText(result.matchText, result.highlightStart, result.highlightEnd)}
+                                {highlightText(
+                                  result.matchText,
+                                  result.highlightStart,
+                                  result.highlightEnd
+                                )}
                               </View>
                             )}
                           </View>
                         </View>
                       </Pressable>
                     ))}
-                    
+
                     {getSearchResults().length === 0 && (
                       <View style={styles.noResultsContainer}>
                         <Search size={24} color="#ccc" />
@@ -1529,28 +1638,23 @@ export default function NotesScreen() {
               )}
             </View>
           </View>
-          
+
           <Text style={styles.sectionTitle}>
             Call Notes ({filteredNotes.length})
-            {activeFilters.length > 0 && (
-              <Text style={styles.filteredText}> • Filtered</Text>
-            )}
+            {activeFilters.length > 0 && <Text style={styles.filteredText}> • Filtered</Text>}
           </Text>
           {filteredNotes.length === 0 ? (
             renderEmpty()
           ) : (
             <View style={styles.notesList}>
-              {groupedNotes.map((group) => (
-                <NoteGroup 
-                  key={group.id} 
-                  group={group} 
-                />
+              {groupedNotes.map(group => (
+                <NoteGroup key={group.id} group={group} />
               ))}
             </View>
           )}
         </View>
       </ScrollView>
-      
+
       <NoteViewModal
         visible={showViewModal}
         note={viewingNote}
@@ -1560,7 +1664,7 @@ export default function NotesScreen() {
         }}
         onEdit={handleEditFromView}
       />
-      
+
       <EditNoteModal
         visible={showEditModal}
         note={editingNote}
@@ -1571,11 +1675,8 @@ export default function NotesScreen() {
         onSave={handleSaveNote}
         onDelete={handleDeleteNote}
       />
-      
-      <FolderManagementModal
-        visible={showFolderModal}
-        onClose={() => setShowFolderModal(false)}
-      />
+
+      <FolderManagementModal visible={showFolderModal} onClose={() => setShowFolderModal(false)} />
 
       {/* Group By Modal */}
       <Modal
@@ -1584,30 +1685,31 @@ export default function NotesScreen() {
         transparent={true}
         onRequestClose={() => setShowGroupByModal(false)}
       >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowGroupByModal(false)}
-        >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowGroupByModal(false)}>
           <View style={styles.groupByModalContainer}>
             <Text style={styles.groupByModalTitle}>Group Notes By</Text>
-            {(['none', 'day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map((option) => (
+            {(['none', 'day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map(option => (
               <Pressable
                 key={option}
                 style={({ pressed }) => [
                   styles.groupByModalOption,
                   groupBy === option && styles.selectedGroupByOption,
-                  pressed && { opacity: 0.7 }
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
                   setGroupBy(option);
                   setShowGroupByModal(false);
                 }}
               >
-                <Text style={[
-                  styles.groupByModalOptionText,
-                  groupBy === option && styles.selectedGroupByOptionText
-                ]}>
-                  {option === 'none' ? 'No Grouping' : option.charAt(0).toUpperCase() + option.slice(1)}
+                <Text
+                  style={[
+                    styles.groupByModalOptionText,
+                    groupBy === option && styles.selectedGroupByOptionText,
+                  ]}
+                >
+                  {option === 'none'
+                    ? 'No Grouping'
+                    : option.charAt(0).toUpperCase() + option.slice(1)}
                 </Text>
                 {groupBy === option && <CheckCircle size={20} color="#007AFF" />}
               </Pressable>
@@ -1615,32 +1717,27 @@ export default function NotesScreen() {
           </View>
         </Pressable>
       </Modal>
-      
+
       <AddContactModal
         visible={showAddContactModal}
         onClose={() => setShowAddContactModal(false)}
-        onAdd={(contact) => {
+        onAdd={contact => {
           addContact(contact);
           setShowAddContactModal(false);
         }}
       />
-      
+
       {/* Animated Floating Add Button */}
       <Animated.View
         style={[
           styles.floatingButton,
           {
-            transform: [
-              { scale: scaleValue }
-            ]
-          }
+            transform: [{ scale: scaleValue }],
+          },
         ]}
       >
         <Pressable
-          style={({ pressed }) => [
-            styles.floatingButtonTouchable,
-            pressed && { opacity: 0.9 }
-          ]}
+          style={({ pressed }) => [styles.floatingButtonTouchable, pressed && { opacity: 0.9 }]}
           onPress={handleFloatingButtonPress}
           disabled={isAnimating}
         >
@@ -1652,11 +1749,11 @@ export default function NotesScreen() {
                   {
                     rotate: rotationValue.interpolate({
                       inputRange: [0, 1],
-                      outputRange: ['0deg', '180deg']
-                    })
-                  }
-                ]
-              }
+                      outputRange: ['0deg', '180deg'],
+                    }),
+                  },
+                ],
+              },
             ]}
           >
             {/* Plus Icon - fades out quickly */}
@@ -1666,17 +1763,17 @@ export default function NotesScreen() {
                 {
                   opacity: animationValue.interpolate({
                     inputRange: [0, 0.3, 1],
-                    outputRange: [1, 0, 0]
+                    outputRange: [1, 0, 0],
                   }),
                   transform: [
                     {
                       scale: animationValue.interpolate({
                         inputRange: [0, 0.4],
-                        outputRange: [1, 0.9]
-                      })
-                    }
-                  ]
-                }
+                        outputRange: [1, 0.9],
+                      }),
+                    },
+                  ],
+                },
               ]}
             >
               <Plus size={26} color="#fff" strokeWidth={2.5} />
@@ -1689,30 +1786,30 @@ export default function NotesScreen() {
                 {
                   opacity: animationValue.interpolate({
                     inputRange: [0, 0.2, 0.5, 1],
-                    outputRange: [0, 0, 1, 1]
+                    outputRange: [0, 0, 1, 1],
                   }),
                   transform: [
                     {
                       scale: animationValue.interpolate({
                         inputRange: [0, 0.3, 0.6, 1],
-                        outputRange: [0.8, 1.15, 1.05, 1]
-                      })
+                        outputRange: [0.8, 1.15, 1.05, 1],
+                      }),
                     },
                     {
                       rotate: animationValue.interpolate({
                         inputRange: [0, 1],
-                        outputRange: ['45deg', '0deg']
-                      })
-                    }
-                  ]
-                }
+                        outputRange: ['45deg', '0deg'],
+                      }),
+                    },
+                  ],
+                },
               ]}
             >
               <Phone size={24} color="#fff" strokeWidth={2} />
             </Animated.View>
           </Animated.View>
         </Pressable>
-        
+
         {/* Radiating ripple effects from corner with blue color fade */}
         <Animated.View
           pointerEvents="none"
@@ -1723,19 +1820,19 @@ export default function NotesScreen() {
                 {
                   scale: animationValue.interpolate({
                     inputRange: [0, 0.15, 0.4, 0.8, 1],
-                    outputRange: [1, 3.5, 7, 11, 14]
-                  })
-                }
+                    outputRange: [1, 3.5, 7, 11, 14],
+                  }),
+                },
               ],
               opacity: animationValue.interpolate({
                 inputRange: [0, 0.1, 0.3, 0.7, 1],
-                outputRange: [0, 0.8, 0.4, 0.1, 0]
+                outputRange: [0, 0.8, 0.4, 0.1, 0],
               }),
               backgroundColor: animationValue.interpolate({
                 inputRange: [0, 0.3, 0.7, 1],
-                outputRange: ['#007AFF', '#4A9EFF', '#80BFFF', '#B3D9FF']
-              })
-            }
+                outputRange: ['#007AFF', '#4A9EFF', '#80BFFF', '#B3D9FF'],
+              }),
+            },
           ]}
         />
         <Animated.View
@@ -1747,19 +1844,19 @@ export default function NotesScreen() {
                 {
                   scale: animationValue.interpolate({
                     inputRange: [0, 0.1, 0.35, 0.65, 1],
-                    outputRange: [1, 2.5, 5.5, 9, 13]
-                  })
-                }
+                    outputRange: [1, 2.5, 5.5, 9, 13],
+                  }),
+                },
               ],
               opacity: animationValue.interpolate({
                 inputRange: [0, 0.05, 0.25, 0.55, 1],
-                outputRange: [0, 0, 0.6, 0.2, 0]
+                outputRange: [0, 0, 0.6, 0.2, 0],
               }),
               backgroundColor: animationValue.interpolate({
                 inputRange: [0, 0.3, 0.7, 1],
-                outputRange: ['#007AFF', '#3388FF', '#66AAFF', '#99CCFF']
-              })
-            }
+                outputRange: ['#007AFF', '#3388FF', '#66AAFF', '#99CCFF'],
+              }),
+            },
           ]}
         />
         <Animated.View
@@ -1771,19 +1868,19 @@ export default function NotesScreen() {
                 {
                   scale: animationValue.interpolate({
                     inputRange: [0, 0.05, 0.3, 0.6, 1],
-                    outputRange: [1, 1.8, 4, 6.5, 9]
-                  })
-                }
+                    outputRange: [1, 1.8, 4, 6.5, 9],
+                  }),
+                },
               ],
               opacity: animationValue.interpolate({
                 inputRange: [0, 0.02, 0.2, 0.4, 1],
-                outputRange: [0, 0, 0.5, 0.15, 0]
+                outputRange: [0, 0, 0.5, 0.15, 0],
               }),
               backgroundColor: animationValue.interpolate({
                 inputRange: [0, 0.2, 0.6, 1],
-                outputRange: ['#007AFF', '#1A7AFF', '#5599FF', '#8FBBFF']
-              })
-            }
+                outputRange: ['#007AFF', '#1A7AFF', '#5599FF', '#8FBBFF'],
+              }),
+            },
           ]}
         />
       </Animated.View>

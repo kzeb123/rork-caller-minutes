@@ -1336,7 +1336,6 @@ export default function SettingsScreen() {
                           const maxActivity = Math.max(
                             ...analytics.weeklyActivity.map(d => d.total)
                           );
-                          const height = maxActivity > 0 ? (day.total / maxActivity) * 120 : 0;
                           return (
                             <View key={index} style={styles.chartColumn}>
                               <View style={styles.chartBars}>
@@ -1431,23 +1430,6 @@ export default function SettingsScreen() {
                       <Pressable
                         style={({ pressed }) => [styles.exportButton, pressed && { opacity: 0.7 }]}
                         onPress={() => {
-                          const summaryData = {
-                            generatedAt: new Date().toISOString(),
-                            period: 'Last 30 days',
-                            summary: {
-                              totalContacts: analytics.totalStats.contacts,
-                              totalNotes: analytics.totalStats.notes,
-                              totalOrders: analytics.totalStats.orders,
-                              totalReminders: analytics.totalStats.reminders,
-                              recentNotes: analytics.recentStats.notes,
-                              recentOrders: analytics.recentStats.orders,
-                              notesGrowth: analytics.trends.notesGrowth,
-                              ordersGrowth: analytics.trends.ordersGrowth,
-                            },
-                            topContacts: analytics.topContacts.slice(0, 3),
-                            topTags: analytics.topTags.slice(0, 3),
-                          };
-
                           const summaryText = `Call Notes Summary Report\n\nGenerated: ${new Date().toLocaleDateString()}\n\nOverview:\n• Total Contacts: ${analytics.totalStats.contacts}\n• Total Notes: ${analytics.totalStats.notes}\n• Total Orders: ${analytics.totalStats.orders}\n• Total Reminders: ${analytics.totalStats.reminders}\n\nRecent Activity (30 days):\n• Notes: ${analytics.recentStats.notes}\n• Orders: ${analytics.recentStats.orders}\n\nTop Contacts:\n${analytics.topContacts
                             .slice(0, 3)
                             .map(
