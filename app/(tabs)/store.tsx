@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Pressable,
   Alert,
   Modal,
   TextInput,
@@ -18,7 +17,6 @@ import {
   ShoppingBag,
   FileText,
   Plus,
-  Download,
   Package,
   DollarSign,
   User,
@@ -36,6 +34,7 @@ import {
 import { useContacts } from '@/hooks/contacts-store';
 import { OrderItem, Order, Product } from '@/types/contact';
 import ProductCatalogModal from '@/components/ProductCatalogModal';
+import Button from '@/components/Button';
 
 export default function StoreScreen() {
   const {
@@ -439,8 +438,8 @@ export default function StoreScreen() {
                 <FileText size={24} color="#FF6B35" />
                 <Text style={styles.catalogTitle}>Product Lists</Text>
               </View>
-              <Pressable
-                style={({ pressed }) => [styles.addCatalogButton, pressed && { opacity: 0.7 }]}
+              <Button
+                style={styles.addCatalogButton}
                 onPress={() => {
                   setEditingCatalog(null);
                   setSelectingProductsForOrder(false);
@@ -449,7 +448,7 @@ export default function StoreScreen() {
               >
                 <Upload size={16} color="#fff" />
                 <Text style={styles.addCatalogButtonText}>Upload PDF</Text>
-              </Pressable>
+              </Button>
             </View>
 
             {productCatalogs.length === 0 ? (
@@ -471,11 +470,8 @@ export default function StoreScreen() {
                       <Text style={styles.catalogCardTitle}>{catalog.name}</Text>
                       <Text style={styles.catalogSubtitle}>{catalog.products.length} products</Text>
                       <View style={styles.catalogActions}>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.catalogActionButton,
-                            pressed && { opacity: 0.7 },
-                          ]}
+                        <Button
+                          style={styles.catalogActionButton}
                           onPress={() => {
                             setEditingCatalog(catalog);
                             setSelectingProductsForOrder(false);
@@ -483,12 +479,9 @@ export default function StoreScreen() {
                           }}
                         >
                           <Edit3 size={14} color="#007AFF" />
-                        </Pressable>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.catalogActionButton,
-                            pressed && { opacity: 0.7 },
-                          ]}
+                        </Button>
+                        <Button
+                          style={styles.catalogActionButton}
                           onPress={() => {
                             Alert.alert(
                               'Delete Catalog',
@@ -505,7 +498,7 @@ export default function StoreScreen() {
                           }}
                         >
                           <Trash2 size={14} color="#FF3B30" />
-                        </Pressable>
+                        </Button>
                       </View>
                     </View>
                   ))}
@@ -525,8 +518,8 @@ export default function StoreScreen() {
         <View style={styles.section}>
           <View style={styles.ordersHeader}>
             <Text style={styles.sectionTitle}>Orders</Text>
-            <Pressable
-              style={({ pressed }) => [styles.createOrderButton, pressed && { opacity: 0.7 }]}
+            <Button
+              style={styles.createOrderButton}
               onPress={() => {
                 if (contacts.length === 0) {
                   Alert.alert('No Contacts', 'Add some contacts first to create orders.');
@@ -537,7 +530,7 @@ export default function StoreScreen() {
             >
               <Plus size={16} color="#fff" />
               <Text style={styles.createOrderButtonText}>New Order</Text>
-            </Pressable>
+            </Button>
           </View>
 
           {orders.length === 0 ? (
@@ -608,60 +601,40 @@ export default function StoreScreen() {
                       </View>
 
                       <View style={styles.orderActions}>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.actionButton,
-                            { backgroundColor: '#007AFF' },
-                            pressed && { opacity: 0.7 },
-                          ]}
+                        <Button
+                          style={[styles.actionButton, { backgroundColor: '#007AFF' }]}
                           onPress={() => handleEditOrder(order)}
                         >
                           <Edit3 size={14} color="#fff" />
                           <Text style={styles.actionButtonText}>Edit</Text>
-                        </Pressable>
+                        </Button>
 
                         {order.status === 'pending' && (
-                          <Pressable
-                            style={({ pressed }) => [
-                              styles.actionButton,
-                              { backgroundColor: '#FF9500' },
-                              pressed && { opacity: 0.7 },
-                            ]}
+                          <Button
+                            style={[styles.actionButton, { backgroundColor: '#FF9500' }]}
                             onPress={() => updateOrderStatus(order.id, 'confirmed')}
                           >
                             <Text style={styles.actionButtonText}>Confirm</Text>
-                          </Pressable>
+                          </Button>
                         )}
                         {order.status === 'confirmed' && (
-                          <Pressable
-                            style={({ pressed }) => [
-                              styles.actionButton,
-                              { backgroundColor: '#5856D6' },
-                              pressed && { opacity: 0.7 },
-                            ]}
+                          <Button
+                            style={[styles.actionButton, { backgroundColor: '#5856D6' }]}
                             onPress={() => updateOrderStatus(order.id, 'shipped')}
                           >
                             <Text style={styles.actionButtonText}>Ship</Text>
-                          </Pressable>
+                          </Button>
                         )}
                         {order.status === 'shipped' && (
-                          <Pressable
-                            style={({ pressed }) => [
-                              styles.actionButton,
-                              { backgroundColor: '#34C759' },
-                              pressed && { opacity: 0.7 },
-                            ]}
+                          <Button
+                            style={[styles.actionButton, { backgroundColor: '#34C759' }]}
                             onPress={() => updateOrderStatus(order.id, 'delivered')}
                           >
                             <Text style={styles.actionButtonText}>Deliver</Text>
-                          </Pressable>
+                          </Button>
                         )}
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.actionButton,
-                            { backgroundColor: '#FF3B30' },
-                            pressed && { opacity: 0.7 },
-                          ]}
+                        <Button
+                          style={[styles.actionButton, { backgroundColor: '#FF3B30' }]}
                           onPress={() => {
                             Alert.alert(
                               'Delete Order',
@@ -678,7 +651,7 @@ export default function StoreScreen() {
                           }}
                         >
                           <Trash2 size={14} color="#fff" />
-                        </Pressable>
+                        </Button>
                       </View>
                     </View>
                   </View>
@@ -698,15 +671,15 @@ export default function StoreScreen() {
             <Text style={styles.modalTitle}>
               {editingOrder ? 'Edit Order' : 'Create New Order'}
             </Text>
-            <Pressable
-              style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
+            <Button
+              style={styles.closeButton}
               onPress={() => {
                 setShowOrderModal(false);
                 resetOrderForm();
               }}
             >
               <X size={24} color="#000" />
-            </Pressable>
+            </Button>
           </View>
 
           <ScrollView
@@ -719,8 +692,8 @@ export default function StoreScreen() {
             <View style={styles.formSection}>
               <Text style={styles.formLabel}>Select Contact</Text>
               <View style={styles.contactSearchContainer}>
-                <Pressable
-                  style={({ pressed }) => [styles.contactSearchInput, pressed && { opacity: 0.7 }]}
+                <Button
+                  style={styles.contactSearchInput}
                   onPress={() => setShowContactDropdown(!showContactDropdown)}
                 >
                   <View style={styles.searchInputContent}>
@@ -740,14 +713,14 @@ export default function StoreScreen() {
                     />
                     <ChevronDown size={16} color="#666" />
                   </View>
-                </Pressable>
+                </Button>
 
                 {showContactDropdown && (
                   <View style={styles.contactDropdown}>
                     <ScrollView style={styles.contactDropdownScroll} nestedScrollEnabled>
                       {filteredContacts.length > 0 ? (
                         filteredContacts.map(contact => (
-                          <Pressable
+                          <Button
                             key={contact.id}
                             style={[
                               styles.contactDropdownItem,
@@ -779,7 +752,7 @@ export default function StoreScreen() {
                             {selectedContactId === contact.id && (
                               <CheckCircle size={16} color="#007AFF" />
                             )}
-                          </Pressable>
+                          </Button>
                         ))
                       ) : (
                         <View style={styles.noContactsFound}>
@@ -807,8 +780,8 @@ export default function StoreScreen() {
               <View style={styles.formLabelRow}>
                 <Text style={styles.formLabel}>Add Items</Text>
                 {productCatalogs.length > 0 && (
-                  <Pressable
-                    style={({ pressed }) => [styles.fromCatalogButton, pressed && { opacity: 0.7 }]}
+                  <Button
+                    style={styles.fromCatalogButton}
                     onPress={() => {
                       setSelectingProductsForOrder(true);
                       setShowProductCatalogModal(true);
@@ -816,7 +789,7 @@ export default function StoreScreen() {
                   >
                     <FileText size={14} color="#007AFF" />
                     <Text style={styles.fromCatalogButtonText}>From Catalog</Text>
-                  </Pressable>
+                  </Button>
                 )}
               </View>
 
@@ -837,7 +810,7 @@ export default function StoreScreen() {
                     <View style={styles.productSuggestionsDropdown}>
                       <ScrollView style={styles.productSuggestionsScroll} nestedScrollEnabled>
                         {productSuggestions.map(product => (
-                          <Pressable
+                          <Button
                             key={product.id}
                             style={styles.productSuggestionItem}
                             onPress={() => selectProductSuggestion(product)}
@@ -854,7 +827,7 @@ export default function StoreScreen() {
                               </Text>
                             </View>
                             <Package size={16} color="#666" />
-                          </Pressable>
+                          </Button>
                         ))}
                       </ScrollView>
                     </View>
@@ -883,13 +856,10 @@ export default function StoreScreen() {
                     keyboardType="number-pad"
                   />
                 </View>
-                <Pressable
-                  style={({ pressed }) => [styles.addItemButton, pressed && { opacity: 0.7 }]}
-                  onPress={addItemToOrder}
-                >
+                <Button style={styles.addItemButton} onPress={addItemToOrder}>
                   <Plus size={16} color="#fff" />
                   <Text style={styles.addItemButtonText}>Add Item</Text>
-                </Pressable>
+                </Button>
               </View>
 
               {orderItems.length > 0 && (
@@ -908,34 +878,25 @@ export default function StoreScreen() {
                         </Text>
                       </View>
                       <View style={styles.orderItemActions}>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.quantityButton,
-                            pressed && { opacity: 0.7 },
-                          ]}
+                        <Button
+                          style={styles.quantityButton}
                           onPress={() => updateItemQuantity(item.id, item.quantity - 1)}
                         >
                           <Minus size={16} color="#007AFF" />
-                        </Pressable>
+                        </Button>
                         <Text style={styles.quantityText}>{item.quantity}</Text>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.quantityButton,
-                            pressed && { opacity: 0.7 },
-                          ]}
+                        <Button
+                          style={styles.quantityButton}
                           onPress={() => updateItemQuantity(item.id, item.quantity + 1)}
                         >
                           <Plus size={16} color="#007AFF" />
-                        </Pressable>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.removeItemButton,
-                            pressed && { opacity: 0.7 },
-                          ]}
+                        </Button>
+                        <Button
+                          style={styles.removeItemButton}
                           onPress={() => removeItemFromOrder(item.id)}
                         >
                           <X size={16} color="#FF3B30" />
-                        </Pressable>
+                        </Button>
                       </View>
                     </View>
                   ))}
@@ -1018,23 +979,20 @@ export default function StoreScreen() {
           </ScrollView>
 
           <View style={styles.modalFooter}>
-            <Pressable
-              style={({ pressed }) => [styles.cancelButton, pressed && { opacity: 0.7 }]}
+            <Button
+              style={styles.cancelButton}
               onPress={() => {
                 setShowOrderModal(false);
                 resetOrderForm();
               }}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.createButton, pressed && { opacity: 0.7 }]}
-              onPress={createOrder}
-            >
+            </Button>
+            <Button style={styles.createButton} onPress={createOrder}>
               <Text style={styles.createButtonText}>
                 {editingOrder ? 'Update Order' : 'Create Order'}
               </Text>
-            </Pressable>
+            </Button>
           </View>
         </KeyboardAvoidingView>
       </Modal>

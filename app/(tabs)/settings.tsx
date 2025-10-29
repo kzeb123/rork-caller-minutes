@@ -11,9 +11,9 @@ import {
   KeyboardAvoidingView,
   Switch,
   Share,
-  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Button from '@/components/Button';
 import { Stack } from 'expo-router';
 import {
   Plus,
@@ -481,11 +481,10 @@ export default function SettingsScreen() {
     disabled?: boolean;
     destructive?: boolean;
   }) => (
-    <Pressable
-      style={({ pressed }) => [
+    <Button
+      style={[
         styles.settingItem,
         disabled && styles.settingItemDisabled,
-        pressed && { opacity: 0.7 },
       ]}
       onPress={onPress}
       disabled={disabled}
@@ -515,7 +514,7 @@ export default function SettingsScreen() {
           </Text>
         )}
       </View>
-    </Pressable>
+    </Button>
   );
 
   const InfoCard = ({ title, description }: { title: string; description: string }) => (
@@ -626,13 +625,13 @@ export default function SettingsScreen() {
             <Crown size={20} color="#FFD700" />
             <Text style={styles.sectionTitle}>Premium Features</Text>
             {!isPremium && (
-              <Pressable
-                style={({ pressed }) => [styles.upgradeButton, pressed && { opacity: 0.7 }]}
+              <Button
+                style={styles.upgradeButton}
                 onPress={() => setShowPremiumModal(true)}
               >
                 <Star size={16} color="#FFD700" />
                 <Text style={styles.upgradeButtonText}>Upgrade</Text>
-              </Pressable>
+              </Button>
             )}
           </View>
           <View style={[styles.settingsGroup, !isPremium && styles.settingsGroupDisabled]}>
@@ -769,15 +768,15 @@ export default function SettingsScreen() {
       <Modal visible={showTemplateModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.templateModalContainer} edges={['top', 'bottom']}>
           <View style={styles.templateHeader}>
-            <Pressable onPress={handleCloseTemplate}>
+            <Button onPress={handleCloseTemplate}>
               <X size={24} color="#007AFF" />
-            </Pressable>
+            </Button>
 
             <Text style={styles.templateTitle}>Template Settings</Text>
 
-            <Pressable onPress={handleSaveTemplate}>
+            <Button onPress={handleSaveTemplate}>
               <Save size={24} color="#007AFF" />
-            </Pressable>
+            </Button>
           </View>
 
           <ScrollView style={styles.templateContent} showsVerticalScrollIndicator={false}>
@@ -788,7 +787,7 @@ export default function SettingsScreen() {
 
             <View style={styles.templateSections}>
               {templateSections.map(section => (
-                <Pressable
+                <Button
                   key={section.id}
                   style={styles.templateSectionItem}
                   onPress={() => toggleSection(section.id)}
@@ -799,7 +798,7 @@ export default function SettingsScreen() {
                     </View>
                     <Text style={styles.templateSectionLabel}>{section.label}</Text>
                   </View>
-                </Pressable>
+                </Button>
               ))}
             </View>
 
@@ -812,9 +811,9 @@ export default function SettingsScreen() {
               {customPrompts.map((prompt, index) => (
                 <View key={index} style={styles.customPromptItem}>
                   <Text style={styles.customPromptText}>{prompt}</Text>
-                  <Pressable onPress={() => removeCustomPrompt(index)}>
+                  <Button onPress={() => removeCustomPrompt(index)}>
                     <X size={20} color="#FF3B30" />
-                  </Pressable>
+                  </Button>
                 </View>
               ))}
 
@@ -830,38 +829,34 @@ export default function SettingsScreen() {
                     onSubmitEditing={addCustomPrompt}
                   />
                   <View style={styles.addPromptButtons}>
-                    <Pressable
-                      style={({ pressed }) => [styles.addPromptButton, pressed && { opacity: 0.7 }]}
+                    <Button
+                      style={styles.addPromptButton}
                       onPress={() => {
                         setShowAddPrompt(false);
                         setNewPromptText('');
                       }}
                     >
                       <Text style={styles.addPromptButtonCancel}>Cancel</Text>
-                    </Pressable>
-                    <Pressable
-                      style={({ pressed }) => [
+                    </Button>
+                    <Button
+                      style={[
                         styles.addPromptButton,
                         styles.addPromptButtonPrimary,
-                        pressed && { opacity: 0.7 },
                       ]}
                       onPress={addCustomPrompt}
                     >
                       <Text style={styles.addPromptButtonAdd}>Add</Text>
-                    </Pressable>
+                    </Button>
                   </View>
                 </View>
               ) : (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.addCustomPromptButton,
-                    pressed && { opacity: 0.7 },
-                  ]}
+                <Button
+                  style={styles.addCustomPromptButton}
                   onPress={() => setShowAddPrompt(true)}
                 >
                   <Plus size={20} color="#007AFF" />
                   <Text style={styles.addCustomPromptText}>Add Custom Prompt</Text>
-                </Pressable>
+                </Button>
               )}
             </View>
 
@@ -888,12 +883,12 @@ export default function SettingsScreen() {
           </ScrollView>
 
           <View style={styles.templateFooter}>
-            <Pressable
-              style={({ pressed }) => [styles.templateSaveButton, pressed && { opacity: 0.7 }]}
+            <Button
+              style={styles.templateSaveButton}
               onPress={handleSaveTemplate}
             >
               <Text style={styles.templateSaveButtonText}>Save Template</Text>
-            </Pressable>
+            </Button>
           </View>
         </SafeAreaView>
       </Modal>
@@ -901,15 +896,15 @@ export default function SettingsScreen() {
       <Modal visible={showTagsModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.templateModalContainer} edges={['top', 'bottom']}>
           <View style={styles.templateHeader}>
-            <Pressable onPress={handleCloseTags}>
+            <Button onPress={handleCloseTags}>
               <X size={24} color="#007AFF" />
-            </Pressable>
+            </Button>
 
             <Text style={styles.templateTitle}>Manage Tags</Text>
 
-            <Pressable onPress={handleSaveTags}>
+            <Button onPress={handleSaveTags}>
               <Save size={24} color="#007AFF" />
-            </Pressable>
+            </Button>
           </View>
 
           <ScrollView style={styles.templateContent} showsVerticalScrollIndicator={false}>
@@ -922,9 +917,9 @@ export default function SettingsScreen() {
               {editableTags.map((tag, index) => (
                 <View key={index} style={styles.editableTag}>
                   <Text style={styles.editableTagText}>{tag}</Text>
-                  <Pressable onPress={() => removeTag(index)} style={styles.editableTagRemove}>
+                  <Button onPress={() => removeTag(index)} style={styles.editableTagRemove}>
                     <X size={16} color="#FF3B30" />
-                  </Pressable>
+                  </Button>
                 </View>
               ))}
 
@@ -948,13 +943,13 @@ export default function SettingsScreen() {
                   />
                 </View>
               ) : (
-                <Pressable
-                  style={({ pressed }) => [styles.addTagButton, pressed && { opacity: 0.7 }]}
+                <Button
+                  style={styles.addTagButton}
                   onPress={() => setShowAddTag(true)}
                 >
                   <Plus size={16} color="#007AFF" />
                   <Text style={styles.addTagButtonText}>Add Tag</Text>
-                </Pressable>
+                </Button>
               )}
             </View>
 
@@ -974,12 +969,12 @@ export default function SettingsScreen() {
           </ScrollView>
 
           <View style={styles.templateFooter}>
-            <Pressable
-              style={({ pressed }) => [styles.templateSaveButton, pressed && { opacity: 0.7 }]}
+            <Button
+              style={styles.templateSaveButton}
               onPress={handleSaveTags}
             >
               <Text style={styles.templateSaveButtonText}>Save Tags</Text>
-            </Pressable>
+            </Button>
           </View>
         </SafeAreaView>
       </Modal>
@@ -987,7 +982,7 @@ export default function SettingsScreen() {
       <Modal visible={showPasswordModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.templateModalContainer} edges={['top', 'bottom']}>
           <View style={styles.templateHeader}>
-            <Pressable
+            <Button
               onPress={() => {
                 setShowPasswordModal(false);
                 setPassword('');
@@ -995,7 +990,7 @@ export default function SettingsScreen() {
               }}
             >
               <X size={24} color="#007AFF" />
-            </Pressable>
+            </Button>
 
             <Text style={styles.templateTitle}>Set Password</Text>
 
@@ -1043,12 +1038,11 @@ export default function SettingsScreen() {
               <Text style={styles.passwordError}>Passwords do not match</Text>
             )}
 
-            <Pressable
-              style={({ pressed }) => [
+            <Button
+              style={[
                 styles.passwordSaveButton,
                 (!password || !confirmPassword || password !== confirmPassword) &&
                   styles.passwordSaveButtonDisabled,
-                pressed && { opacity: 0.7 },
               ]}
               onPress={() => {
                 if (password && confirmPassword && password === confirmPassword) {
@@ -1070,7 +1064,7 @@ export default function SettingsScreen() {
               >
                 Set Password
               </Text>
-            </Pressable>
+            </Button>
           </KeyboardAvoidingView>
         </SafeAreaView>
       </Modal>
@@ -1078,9 +1072,9 @@ export default function SettingsScreen() {
       <Modal visible={showPremiumModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.premiumModalContainer} edges={['top', 'bottom']}>
           <View style={styles.premiumModalHeader}>
-            <Pressable onPress={() => setShowPremiumModal(false)}>
+            <Button onPress={() => setShowPremiumModal(false)}>
               <X size={24} color="#007AFF" />
-            </Pressable>
+            </Button>
 
             <View style={styles.premiumTitleContainer}>
               <Crown size={24} color="#FFD700" />
@@ -1185,19 +1179,19 @@ export default function SettingsScreen() {
           </ScrollView>
 
           <View style={styles.premiumModalFooter}>
-            <Pressable
-              style={({ pressed }) => [styles.premiumUpgradeButton, pressed && { opacity: 0.7 }]}
+            <Button
+              style={styles.premiumUpgradeButton}
               onPress={handleUpgradeToPremium}
             >
               <Crown size={20} color="#fff" />
               <Text style={styles.premiumUpgradeButtonText}>Upgrade to Premium</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.premiumCancelButton, pressed && { opacity: 0.7 }]}
+            </Button>
+            <Button
+              style={styles.premiumCancelButton}
               onPress={() => setShowPremiumModal(false)}
             >
               <Text style={styles.premiumCancelButtonText}>Maybe Later</Text>
-            </Pressable>
+            </Button>
           </View>
         </SafeAreaView>
       </Modal>
@@ -1205,16 +1199,16 @@ export default function SettingsScreen() {
       <Modal visible={showReportsModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.reportsModalContainer} edges={['top', 'bottom']}>
           <View style={styles.reportsHeader}>
-            <Pressable onPress={() => setShowReportsModal(false)}>
+            <Button onPress={() => setShowReportsModal(false)}>
               <X size={24} color="#007AFF" />
-            </Pressable>
+            </Button>
 
             <View style={styles.reportsTitleContainer}>
               <BarChart3 size={24} color="#007AFF" />
               <Text style={styles.reportsModalTitle}>Analytics & Reports</Text>
             </View>
 
-            <Pressable
+            <Button
               onPress={() => {
                 const analytics = getAnalytics();
                 const reportData = {
@@ -1247,7 +1241,7 @@ export default function SettingsScreen() {
               }}
             >
               <Download size={24} color="#007AFF" />
-            </Pressable>
+            </Button>
           </View>
 
           <ScrollView style={styles.reportsContent} showsVerticalScrollIndicator={false}>
@@ -1427,8 +1421,8 @@ export default function SettingsScreen() {
                   <View style={styles.exportSection}>
                     <Text style={styles.reportsSectionTitle}>Export Options</Text>
                     <View style={styles.exportButtons}>
-                      <Pressable
-                        style={({ pressed }) => [styles.exportButton, pressed && { opacity: 0.7 }]}
+                      <Button
+                        style={styles.exportButton}
                         onPress={() => {
                           const summaryText = `Call Notes Summary Report\n\nGenerated: ${new Date().toLocaleDateString()}\n\nOverview:\n• Total Contacts: ${analytics.totalStats.contacts}\n• Total Notes: ${analytics.totalStats.notes}\n• Total Orders: ${analytics.totalStats.orders}\n• Total Reminders: ${analytics.totalStats.reminders}\n\nRecent Activity (30 days):\n• Notes: ${analytics.recentStats.notes}\n• Orders: ${analytics.recentStats.orders}\n\nTop Contacts:\n${analytics.topContacts
                             .slice(0, 3)
@@ -1461,10 +1455,10 @@ export default function SettingsScreen() {
                       >
                         <FileText size={20} color="#007AFF" />
                         <Text style={styles.exportButtonText}>Export Summary</Text>
-                      </Pressable>
+                      </Button>
 
-                      <Pressable
-                        style={({ pressed }) => [styles.exportButton, pressed && { opacity: 0.7 }]}
+                      <Button
+                        style={styles.exportButton}
                         onPress={() => {
                           const detailedData = {
                             generatedAt: new Date().toISOString(),
@@ -1518,7 +1512,7 @@ export default function SettingsScreen() {
                       >
                         <BarChart3 size={20} color="#007AFF" />
                         <Text style={styles.exportButtonText}>Export Detailed</Text>
-                      </Pressable>
+                      </Button>
                     </View>
                   </View>
                 </>

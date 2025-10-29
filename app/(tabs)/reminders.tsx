@@ -11,6 +11,7 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Button from '@/components/Button';
 import { Stack } from 'expo-router';
 import {
   Bell,
@@ -1010,12 +1011,11 @@ export default function RemindersScreen() {
           <View style={styles.groupByModalContainer}>
             <Text style={styles.groupByModalTitle}>Group Reminders By</Text>
             {(['none', 'day', 'week', 'month', 'year'] as GroupByOption[]).map(option => (
-              <Pressable
+              <Button
                 key={option}
-                style={({ pressed }) => [
+                style={[
                   styles.groupByOption,
                   groupBy === option && styles.selectedGroupByOption,
-                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
                   setGroupBy(option);
@@ -1033,7 +1033,7 @@ export default function RemindersScreen() {
                     : option.charAt(0).toUpperCase() + option.slice(1)}
                 </Text>
                 {groupBy === option && <CheckCircle size={20} color="#007AFF" />}
-              </Pressable>
+              </Button>
             ))}
           </View>
         </Pressable>

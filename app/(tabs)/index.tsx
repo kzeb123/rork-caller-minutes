@@ -1,12 +1,5 @@
 import React, { useMemo, useState, ComponentType } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SectionList,
-  TextInput,
-  Pressable,
-} from 'react-native';
+import { View, Text, StyleSheet, SectionList, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Users, Search, Calendar } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
@@ -14,6 +7,7 @@ import ContactCard from '@/components/ContactCard';
 import NoteModal from '@/components/NoteModal';
 import CallGroupManager from '@/components/CallGroupManager';
 import { GroupByOption } from '@/types/contact';
+import Button from '@/components/Button';
 
 type ViewMode = 'contacts' | 'calls';
 
@@ -84,13 +78,13 @@ export default function ContactsScreen() {
   }) => {
     const isActive = viewMode === mode;
     return (
-      <Pressable
-        style={({ pressed }) => [styles.tab, isActive && styles.activeTab, pressed && { opacity: 0.7 }]}
+      <Button
+        style={[styles.tab, isActive && styles.activeTab]}
         onPress={() => setViewMode(mode)}
       >
         <Icon size={18} color={isActive ? COLORS.primary : COLORS.secondary} />
         <Text style={[styles.tabText, isActive && styles.activeTabText]}>{label}</Text>
-      </Pressable>
+      </Button>
     );
   };
 
@@ -115,13 +109,13 @@ export default function ContactsScreen() {
       {sectionedContacts.length > 0 ? (
         <SectionList
           sections={sectionedContacts}
-          renderItem={({item}) => <ContactCard contact={item} />}
+          renderItem={({ item }) => <ContactCard contact={item} />}
           renderSectionHeader={({ section }: { section: { title: string } }) => {
             return (
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionHeaderText}>{section.title}</Text>
-            </View>
-            )
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>{section.title}</Text>
+              </View>
+            );
           }}
           keyExtractor={item => item.id}
           style={styles.list}

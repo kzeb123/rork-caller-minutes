@@ -1,15 +1,23 @@
-import React, { useState, useMemo, useCallback, useRef, ReactNode, ReactElement, cloneElement } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  ReactNode,
+  ReactElement,
+  cloneElement,
+} from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   ScrollView,
   TextInput,
   Animated,
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Button from '@/components/Button';
 import { Stack } from 'expo-router';
 import {
   FileText,
@@ -852,9 +860,9 @@ export default function NotesScreen() {
   const FilterChip = ({ filter }: { filter: NoteFilter }) => (
     <View style={styles.filterChip}>
       <Text style={styles.filterChipText}>{filter.label}</Text>
-      <Pressable onPress={() => removeFilter(filter)} style={styles.filterChipRemove}>
+      <Button onPress={() => removeFilter(filter)} style={styles.filterChipRemove}>
         <X size={12} color="#007AFF" />
-      </Pressable>
+      </Button>
     </View>
   );
 
@@ -869,11 +877,11 @@ export default function NotesScreen() {
     label: string;
     icon: ReactNode;
   }) => (
-    <Pressable style={styles.filterOption} onPress={() => addFilter(type, value, label)}>
+    <Button style={styles.filterOption} onPress={() => addFilter(type, value, label)}>
       <Text style={styles.filterOptionText}>
         {icon} {label}
       </Text>
-    </Pressable>
+    </Button>
   );
 
   const toggleGroup = (groupId: string) => {
@@ -911,8 +919,8 @@ export default function NotesScreen() {
     if (group.type === 'time-based' && group.subGroups) {
       return (
         <View style={styles.noteGroup}>
-          <Pressable
-            style={({ pressed }) => [styles.groupHeader, pressed && { opacity: 0.7 }]}
+          <Button
+            style={styles.groupHeader}
             onPress={() => toggleGroup(group.id)}
           >
             <View style={styles.groupHeaderLeft}>
@@ -924,7 +932,7 @@ export default function NotesScreen() {
               <Text style={styles.groupTitle}>{group.title}</Text>
             </View>
             <Text style={styles.groupCount}>{group.notes.length}</Text>
-          </Pressable>
+          </Button>
 
           {isExpanded && (
             <View style={styles.groupContent}>
@@ -936,8 +944,8 @@ export default function NotesScreen() {
 
                 return (
                   <View key={subGroup.id} style={styles.subGroup}>
-                    <Pressable
-                      style={({ pressed }) => [styles.subGroupHeader, pressed && { opacity: 0.7 }]}
+                    <Button
+                      style={styles.subGroupHeader}
                       onPress={() => toggleGroup(subGroup.id)}
                     >
                       <View style={styles.subGroupHeaderLeft}>
@@ -952,17 +960,16 @@ export default function NotesScreen() {
                         <Text style={styles.subGroupTitle}>{subGroup.title}</Text>
                       </View>
                       <Text style={styles.subGroupCount}>{subGroup.notes.length}</Text>
-                    </Pressable>
+                    </Button>
 
                     {subGroupExpanded && (
                       <View style={styles.subGroupContent}>
                         {subGroupNotes.map(item => (
-                          <Pressable
+                          <Button
                             key={item.id}
-                            style={({ pressed }) => [
+                            style={[
                               styles.noteItem,
                               highlightedNoteId === item.id && styles.highlightedNoteItem,
-                              pressed && { opacity: 0.7 },
                             ]}
                             onPress={() => handleViewNote(item)}
                           >
@@ -1022,7 +1029,7 @@ export default function NotesScreen() {
                                 </View>
                               )}
                             </View>
-                          </Pressable>
+                          </Button>
                         ))}
                       </View>
                     )}
@@ -1038,8 +1045,8 @@ export default function NotesScreen() {
     // For contact-based groups (default grouping)
     return (
       <View style={styles.noteGroup}>
-        <Pressable
-          style={({ pressed }) => [styles.groupHeader, pressed && { opacity: 0.7 }]}
+        <Button
+          style={styles.groupHeader}
           onPress={() => toggleGroup(group.id)}
         >
           <View style={styles.groupHeaderLeft}>
@@ -1054,17 +1061,16 @@ export default function NotesScreen() {
             <Text style={styles.groupTitle}>{group.title}</Text>
           </View>
           <Text style={styles.groupCount}>{group.notes.length}</Text>
-        </Pressable>
+        </Button>
 
         {isExpanded && (
           <View style={styles.groupContent}>
             {sortedGroupNotes.map(item => (
-              <Pressable
+              <Button
                 key={item.id}
-                style={({ pressed }) => [
+                style={[
                   styles.noteItem,
                   highlightedNoteId === item.id && styles.highlightedNoteItem,
-                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => handleViewNote(item)}
               >
@@ -1120,7 +1126,7 @@ export default function NotesScreen() {
                     </View>
                   )}
                 </View>
-              </Pressable>
+              </Button>
             ))}
           </View>
         )}
@@ -1229,12 +1235,12 @@ export default function NotesScreen() {
           title: 'Notes & Summary',
           headerRight: () => (
             <View style={styles.headerActions}>
-              <Pressable onPress={() => setShowFolderModal(true)} style={styles.headerButton}>
+              <Button onPress={() => setShowFolderModal(true)} style={styles.headerButton}>
                 <Settings size={20} color="#007AFF" />
-              </Pressable>
-              <Pressable onPress={toggleSearch} style={styles.headerButton}>
+              </Button>
+              <Button onPress={toggleSearch} style={styles.headerButton}>
                 <Search size={20} color="#007AFF" />
-              </Pressable>
+              </Button>
             </View>
           ),
         }}
@@ -1273,9 +1279,9 @@ export default function NotesScreen() {
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
-              <Pressable onPress={() => setSearchQuery('')}>
+              <Button onPress={() => setSearchQuery('')}>
                 <X size={18} color="#8E8E93" />
-              </Pressable>
+              </Button>
             )}
           </View>
           {searchQuery.length > 0 && (
@@ -1286,14 +1292,14 @@ export default function NotesScreen() {
               {searchQuery.length > 0 && (
                 <View style={styles.searchSuggestions}>
                   {getSearchSuggestions().map((suggestion, index) => (
-                    <Pressable
+                    <Button
                       key={index}
                       style={styles.searchSuggestion}
                       onPress={() => setSearchQuery(suggestion)}
                     >
                       <Search size={14} color="#8E8E93" />
                       <Text style={styles.searchSuggestionText}>{suggestion}</Text>
-                    </Pressable>
+                    </Button>
                   ))}
                 </View>
               )}
@@ -1431,9 +1437,9 @@ export default function NotesScreen() {
               {activeFilters.map((filter, index) => (
                 <FilterChip key={`${filter.type}-${filter.value}-${index}`} filter={filter} />
               ))}
-              <Pressable onPress={clearAllFilters} style={styles.clearFiltersButton}>
+              <Button onPress={clearAllFilters} style={styles.clearFiltersButton}>
                 <Text style={styles.clearFiltersText}>Clear All</Text>
-              </Pressable>
+              </Button>
             </View>
           </ScrollView>
         </View>
@@ -1450,13 +1456,13 @@ export default function NotesScreen() {
         <View style={styles.notesSection}>
           {/* Group By Options above Call Notes title */}
           <View style={styles.notesFilterButtonContainer}>
-            <Pressable style={styles.groupByButton} onPress={() => setShowGroupByModal(true)}>
+            <Button style={styles.groupByButton} onPress={() => setShowGroupByModal(true)}>
               <Filter size={16} color="#007AFF" />
               <Text style={styles.groupByButtonText}>
                 Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}
               </Text>
               <ChevronDown size={16} color="#007AFF" />
-            </Pressable>
+            </Button>
           </View>
 
           {/* Divider */}
@@ -1483,14 +1489,14 @@ export default function NotesScreen() {
                   returnKeyType="search"
                 />
                 {groupSearchQuery.length > 0 && (
-                  <Pressable
+                  <Button
                     onPress={() => {
                       setGroupSearchQuery('');
                       setSearchResultsExpanded(false);
                     }}
                   >
                     <X size={16} color="#8E8E93" />
-                  </Pressable>
+                  </Button>
                 )}
               </View>
 
@@ -1502,12 +1508,12 @@ export default function NotesScreen() {
                       {getSearchResults().length} result{getSearchResults().length !== 1 ? 's' : ''}{' '}
                       found
                     </Text>
-                    <Pressable
+                    <Button
                       onPress={() => setSearchResultsExpanded(false)}
                       style={styles.collapseButton}
                     >
                       <X size={16} color="#8E8E93" />
-                    </Pressable>
+                    </Button>
                   </View>
 
                   <ScrollView
@@ -1516,12 +1522,9 @@ export default function NotesScreen() {
                     nestedScrollEnabled={true}
                   >
                     {getSearchResults().map((result, index) => (
-                      <Pressable
+                      <Button
                         key={`${result.note.id}-${index}`}
-                        style={({ pressed }) => [
-                          styles.searchResultItem,
-                          pressed && { opacity: 0.7 },
-                        ]}
+                        style={styles.searchResultItem}
                         onPress={() => handleSearchResultPress(result.note.id)}
                       >
                         <View style={styles.searchResultContent}>
@@ -1597,7 +1600,7 @@ export default function NotesScreen() {
                             )}
                           </View>
                         </View>
-                      </Pressable>
+                      </Button>
                     ))}
 
                     {getSearchResults().length === 0 && (
@@ -1658,16 +1661,15 @@ export default function NotesScreen() {
         transparent={true}
         onRequestClose={() => setShowGroupByModal(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowGroupByModal(false)}>
+        <Button style={styles.modalOverlay} onPress={() => setShowGroupByModal(false)}>
           <View style={styles.groupByModalContainer}>
             <Text style={styles.groupByModalTitle}>Group Notes By</Text>
             {(['none', 'day', 'week', 'month', 'year', 'folder'] as GroupByOption[]).map(option => (
-              <Pressable
+              <Button
                 key={option}
-                style={({ pressed }) => [
+                style={[
                   styles.groupByModalOption,
                   groupBy === option && styles.selectedGroupByOption,
-                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => {
                   setGroupBy(option);
@@ -1685,10 +1687,10 @@ export default function NotesScreen() {
                     : option.charAt(0).toUpperCase() + option.slice(1)}
                 </Text>
                 {groupBy === option && <CheckCircle size={20} color="#007AFF" />}
-              </Pressable>
+              </Button>
             ))}
           </View>
-        </Pressable>
+        </Button>
       </Modal>
 
       <AddContactModal
@@ -1709,8 +1711,8 @@ export default function NotesScreen() {
           },
         ]}
       >
-        <Pressable
-          style={({ pressed }) => [styles.floatingButtonTouchable, pressed && { opacity: 0.9 }]}
+        <Button
+          style={styles.floatingButtonTouchable}
           onPress={handleFloatingButtonPress}
           disabled={isAnimating}
         >
@@ -1781,7 +1783,7 @@ export default function NotesScreen() {
               <Phone size={24} color="#fff" strokeWidth={2} />
             </Animated.View>
           </Animated.View>
-        </Pressable>
+        </Button>
 
         {/* Radiating ripple effects from corner with blue color fade */}
         <Animated.View
