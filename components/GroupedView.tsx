@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, ReactNode, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ChevronDown, ChevronRight, Calendar, Clock, Package, Bell } from 'lucide-react-native';
 import { Reminder, Order } from '@/types/contact';
@@ -16,7 +16,7 @@ interface GroupedItem {
 interface GroupedViewProps {
   items: (Reminder | Order)[];
   groupBy: GroupByOption;
-  renderItem: (item: Reminder | Order) => React.ReactNode;
+  renderItem: (item: Reminder | Order) => ReactNode;
   emptyMessage?: string;
   itemType: 'reminder' | 'order';
 }
@@ -28,7 +28,7 @@ export default function GroupedView({
   emptyMessage,
   itemType,
 }: GroupedViewProps) {
-  const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev => {

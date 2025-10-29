@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, ReactNode, ReactElement, cloneElement } from 'react';
 import {
   View,
   Text,
@@ -474,7 +474,7 @@ export default function SettingsScreen() {
     disabled = false,
     destructive = false,
   }: {
-    icon: React.ReactNode;
+    icon: ReactNode;
     title: string;
     subtitle?: string;
     onPress: () => void;
@@ -491,8 +491,8 @@ export default function SettingsScreen() {
       disabled={disabled}
     >
       <View style={[styles.iconContainer, destructive && styles.destructiveIconContainer]}>
-        {React.cloneElement(
-          icon as React.ReactElement,
+        {cloneElement(
+          icon as ReactElement,
           {
             color: disabled ? '#999' : destructive ? '#FF3B30' : '#007AFF',
             size: 20,

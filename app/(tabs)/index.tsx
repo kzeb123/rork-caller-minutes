@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, ComponentType } from 'react';
 import {
   View,
   Text,
@@ -79,7 +79,7 @@ export default function ContactsScreen() {
     label,
   }: {
     mode: ViewMode;
-    icon: React.ComponentType<{ size: number; color: string }>;
+    icon: ComponentType<{ size: number; color: string }>;
     label: string;
   }) => {
     const isActive = viewMode === mode;

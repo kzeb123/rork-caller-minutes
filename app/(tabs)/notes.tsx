@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, ReactNode, ReactElement, cloneElement } from 'react';
 import {
   View,
   Text,
@@ -867,7 +867,7 @@ export default function NotesScreen() {
     type: FilterType;
     value: string;
     label: string;
-    icon: React.ReactNode;
+    icon: ReactNode;
   }) => (
     <Pressable style={styles.filterOption} onPress={() => addFilter(type, value, label)}>
       <Text style={styles.filterOptionText}>
@@ -1153,7 +1153,7 @@ export default function NotesScreen() {
     subtitle,
     color = '#007AFF',
   }: {
-    icon: React.ReactNode;
+    icon: ReactNode;
     title: string;
     value: string | number;
     subtitle?: string;
@@ -1161,7 +1161,7 @@ export default function NotesScreen() {
   }) => (
     <View style={styles.statCard}>
       <View style={[styles.iconContainer, { backgroundColor: color + '15' }]}>
-        {React.cloneElement(icon as React.ReactElement, { color: color, size: 20 } as any)}
+        {cloneElement(icon as ReactElement, { color: color, size: 20 } as any)}
       </View>
       <View style={styles.statContent}>
         <Text style={styles.statValue}>{value}</Text>

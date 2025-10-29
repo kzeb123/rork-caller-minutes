@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, ReactNode, ReactElement, cloneElement } from 'react';
 import {
   View,
   Text,
@@ -380,7 +380,7 @@ export default function StoreScreen() {
     subtitle,
     color = '#007AFF',
   }: {
-    icon: React.ReactNode;
+    icon: ReactNode;
     title: string;
     value: string | number;
     subtitle?: string;
@@ -388,7 +388,7 @@ export default function StoreScreen() {
   }) => (
     <View style={styles.statCard}>
       <View style={[styles.iconContainer, { backgroundColor: color + '15' }]}>
-        {React.cloneElement(icon as React.ReactElement, { color: color, size: 24 } as any)}
+        {cloneElement(icon as ReactElement, { color: color, size: 24 } as any)}
       </View>
       <View style={styles.statContent}>
         <Text style={styles.statValue}>{value}</Text>

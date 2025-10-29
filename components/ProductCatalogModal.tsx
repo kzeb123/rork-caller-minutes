@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -38,7 +38,7 @@ export default function ProductCatalogModal({
   const [newProductSku, setNewProductSku] = useState<string>('');
 
   // Initialize state from editingCatalog when it changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (editingCatalog) {
       setCatalogName(editingCatalog.name || '');
       setProducts(editingCatalog.products || []);
