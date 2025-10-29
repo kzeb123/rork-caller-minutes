@@ -20,31 +20,27 @@ Open Terminal and run:
 
 After installation, follow the on-screen instructions to add Homebrew to your PATH.
 
-### 1.2 Install Node.js via NVM (Recommended)
+### 1.2 Install Bun (Fast Package Manager & Runtime)
 
-NVM allows you to manage multiple Node.js versions easily.
+This project uses Bun for fast package management and development.
 
 ```bash
-# Install NVM
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+# Install Bun via curl
+curl -fsSL https://bun.sh/install | bash
 
 # Restart your terminal or run:
 source ~/.zshrc
 
-# Install Node.js 18 (LTS)
-nvm install 18
-nvm use 18
-nvm alias default 18
-
 # Verify installation
-node --version  # Should show v18.x.x
-npm --version   # Should show 9.x.x or higher
+bun --version  # Should show v1.x.x
 ```
 
-**Alternative:** Install Node.js directly via Homebrew:
+**Alternative:** Install via Homebrew:
 ```bash
-brew install node@18
+brew install bun
 ```
+
+**Note:** Bun includes a Node.js-compatible runtime, so you don't need to install Node.js separately. However, some tools may still require Node.js, so you can optionally install it via NVM if needed.
 
 ### 1.3 Install Git (if not already installed)
 
@@ -91,15 +87,17 @@ cd rork-caller-minutes
 
 ### 2.2 Install Dependencies
 
-**Important:** This project requires the `--legacy-peer-deps` flag due to React 19 compatibility:
+This project uses **Bun** for fast dependency installation:
 
 ```bash
-npm install --legacy-peer-deps
+bun install
 ```
 
 This process will:
-- Install all Node.js dependencies
-- May take 3-5 minutes depending on your internet connection
+- Install all dependencies from npm registry (Bun uses the same packages as npm)
+- Take ~10 seconds (much faster than npm!)
+- Create `bun.lockb` lock file for deterministic installs
+- No need for `--legacy-peer-deps` - Bun handles peer dependencies automatically
 
 ---
 
@@ -166,22 +164,31 @@ The app automatically reloads when you save changes to your code. No need to reb
 
 ```bash
 # Start development server
-npm run start
+bun run start
 
 # Run on iOS simulator
-npm run ios
+bun run ios
 
 # Run on Android emulator
-npm run android
+bun run android
 
 # Run linter
-npm run lint
+bun run lint
+
+# Format code with Prettier
+bun run format
 
 # Clear cache and restart
-npx expo start --clear
+bunx expo start --clear
 
 # Show available commands
-npx expo --help
+bunx expo --help
+
+# Install a new package
+bun add <package-name>
+
+# Remove a package
+bun remove <package-name>
 ```
 
 ---

@@ -50,9 +50,10 @@ yarn-error.*
 lerna-debug.*
 
 # Lock files (only if using multiple package managers - keep the one you use!)
-# package-lock.json  # Keep this for npm
-yarn.lock            # Ignore if not using yarn
-pnpm-lock.yaml       # Ignore if not using pnpm
+package-lock.json    # Ignore - using Bun
+yarn.lock            # Ignore - using Bun
+pnpm-lock.yaml       # Ignore - using Bun
+# bun.lockb          # Keep this for Bun
 
 # macOS
 .DS_Store
