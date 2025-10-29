@@ -8,11 +8,11 @@ import {
   Alert,
   Modal,
   TextInput,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import {
   ShoppingBag,
@@ -399,7 +399,7 @@ export default function StoreScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Stack.Screen options={{ title: 'Store' }} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

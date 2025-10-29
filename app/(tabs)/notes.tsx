@@ -7,9 +7,9 @@ import {
   ScrollView,
   TextInput,
   Animated,
-  SafeAreaView,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import {
   FileText,
@@ -1223,7 +1223,7 @@ export default function NotesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Stack.Screen
         options={{
           title: 'Notes & Summary',

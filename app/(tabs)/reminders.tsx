@@ -7,10 +7,10 @@ import {
   Alert,
   TextInput,
   Modal,
-  SafeAreaView,
   Animated,
   Pressable,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import {
   Bell,
@@ -787,7 +787,7 @@ export default function RemindersScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Stack.Screen options={{ title: 'Reminders' }} />
 
       {callReminders.length === 0 && orderReminders.length === 0 ? (

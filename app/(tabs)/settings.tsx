@@ -9,11 +9,11 @@ import {
   Modal,
   TextInput,
   KeyboardAvoidingView,
-  SafeAreaView,
   Switch,
   Share,
   Pressable,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import {
   Plus,
@@ -529,7 +529,7 @@ export default function SettingsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Stack.Screen options={{ title: 'Settings' }} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -767,7 +767,7 @@ export default function SettingsScreen() {
       />
 
       <Modal visible={showTemplateModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.templateModalContainer}>
+        <SafeAreaView style={styles.templateModalContainer} edges={['top', 'bottom']}>
           <View style={styles.templateHeader}>
             <Pressable onPress={handleCloseTemplate}>
               <X size={24} color="#007AFF" />
@@ -899,7 +899,7 @@ export default function SettingsScreen() {
       </Modal>
 
       <Modal visible={showTagsModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.templateModalContainer}>
+        <SafeAreaView style={styles.templateModalContainer} edges={['top', 'bottom']}>
           <View style={styles.templateHeader}>
             <Pressable onPress={handleCloseTags}>
               <X size={24} color="#007AFF" />
@@ -985,7 +985,7 @@ export default function SettingsScreen() {
       </Modal>
 
       <Modal visible={showPasswordModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.templateModalContainer}>
+        <SafeAreaView style={styles.templateModalContainer} edges={['top', 'bottom']}>
           <View style={styles.templateHeader}>
             <Pressable
               onPress={() => {
@@ -1076,7 +1076,7 @@ export default function SettingsScreen() {
       </Modal>
 
       <Modal visible={showPremiumModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.premiumModalContainer}>
+        <SafeAreaView style={styles.premiumModalContainer} edges={['top', 'bottom']}>
           <View style={styles.premiumModalHeader}>
             <Pressable onPress={() => setShowPremiumModal(false)}>
               <X size={24} color="#007AFF" />
@@ -1203,7 +1203,7 @@ export default function SettingsScreen() {
       </Modal>
 
       <Modal visible={showReportsModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.reportsModalContainer}>
+        <SafeAreaView style={styles.reportsModalContainer} edges={['top', 'bottom']}>
           <View style={styles.reportsHeader}>
             <Pressable onPress={() => setShowReportsModal(false)}>
               <X size={24} color="#007AFF" />

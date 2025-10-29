@@ -5,9 +5,9 @@ import {
   StyleSheet,
   SectionList,
   TextInput,
-  SafeAreaView,
   Pressable,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Users, Search, Calendar } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import ContactCard from '@/components/ContactCard';
@@ -142,7 +142,7 @@ export default function ContactsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.tabContainer}>
         <TabButton mode="contacts" icon={Users} label="Contacts" />
         <TabButton mode="calls" icon={Calendar} label="Call History" />
