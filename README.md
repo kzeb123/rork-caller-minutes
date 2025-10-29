@@ -36,6 +36,7 @@ bun --version  # Should show v1.x.x
 ```
 
 **Alternative:** Install via Homebrew:
+
 ```bash
 brew install bun
 ```
@@ -94,6 +95,7 @@ bun install
 ```
 
 This process will:
+
 - Install all dependencies from npm registry (Bun uses the same packages as npm)
 - Take ~10 seconds (much faster than npm!)
 - Create `bun.lockb` lock file for deterministic installs
@@ -110,6 +112,7 @@ npx expo run:ios
 ```
 
 **What happens:**
+
 1. First run will take 10-15 minutes as it:
    - Creates the native iOS project
    - Installs CocoaPods dependencies
@@ -128,6 +131,7 @@ npx expo start --tunnel
 ```
 
 Then:
+
 1. Install **Expo Go** from the iOS App Store
 2. Scan the QR code that appears in your terminal
 3. The app will load on your device
@@ -198,6 +202,7 @@ bun remove <package-name>
 ### Issue: `Cannot find module 'ajv/dist/compile/codegen'`
 
 **Solution:**
+
 ```bash
 rm -rf node_modules package-lock.json
 npm install --legacy-peer-deps
@@ -206,6 +211,7 @@ npm install --legacy-peer-deps
 ### Issue: `Command not found: npm`
 
 **Solution:** Your shell isn't loading NVM. Add this to `~/.zshrc`:
+
 ```bash
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -216,6 +222,7 @@ Then reload: `source ~/.zshrc`
 ### Issue: iOS build fails with CocoaPods errors
 
 **Solution:**
+
 ```bash
 cd ios
 pod install
@@ -226,6 +233,7 @@ npm run ios
 ### Issue: Xcode license not accepted
 
 **Solution:**
+
 ```bash
 sudo xcodebuild -license accept
 ```
@@ -233,6 +241,7 @@ sudo xcodebuild -license accept
 ### Issue: Simulator doesn't launch
 
 **Solution:**
+
 ```bash
 # Open Simulator manually
 open -a Simulator
@@ -244,6 +253,7 @@ npm run ios
 ### Issue: Port already in use
 
 **Solution:**
+
 ```bash
 # Kill the process on port 8081
 lsof -ti:8081 | xargs kill -9
@@ -255,6 +265,7 @@ npm run start
 ### Issue: Build stuck or very slow
 
 **Solution:**
+
 ```bash
 # Clear all caches
 rm -rf node_modules
@@ -267,6 +278,7 @@ npm install --legacy-peer-deps
 ### Issue: M1/M2 Mac compatibility issues
 
 **Solution:**
+
 ```bash
 # Ensure you're using the correct architecture
 arch -x86_64 pod install  # If needed for compatibility
@@ -312,6 +324,7 @@ rork-caller-minutes/
 ## Required Permissions
 
 ### iOS (configured in app.json):
+
 - Contacts access
 - Photo library access
 - Camera access
@@ -319,6 +332,7 @@ rork-caller-minutes/
 - Microphone access
 
 ### Android:
+
 - Vibration
 - Read/Write contacts
 - Camera
@@ -361,6 +375,7 @@ eas build --platform android
 
 **iOS:**
 Requires:
+
 - Apple Developer Account ($99/year)
 - Provisioning profiles and certificates
 - Xcode
@@ -370,6 +385,7 @@ npx expo run:ios --configuration Release
 ```
 
 **Android:**
+
 ```bash
 npx expo run:android --variant release
 ```
