@@ -9,7 +9,6 @@ import {
   Modal,
   TextInput,
   KeyboardAvoidingView,
-  Switch,
   Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,6 +36,10 @@ import {
 } from 'lucide-react-native';
 import { useContacts } from '@/hooks/contacts-store';
 import AddContactModal from '@/components/AddContactModal';
+import ModalHeader from '@/components/ModalHeader';
+import ToggleItem from '@/components/ToggleItem';
+import SectionHeader from '@/components/SectionHeader';
+import { COLORS, SPACING, SHADOW, BORDER_RADIUS } from '@/constants/theme';
 
 interface TemplateSection {
   id: string;
@@ -592,31 +595,19 @@ export default function SettingsScreen() {
           </View>
 
           <View style={[styles.settingsGroup, { marginTop: 12 }]}>
-            <View style={styles.toggleItem}>
-              <View style={styles.toggleLeft}>
-                <Text style={styles.toggleTitle}>Show Call Duration</Text>
-                <Text style={styles.toggleSubtitle}>Display duration in call notes</Text>
-              </View>
-              <Switch
-                value={noteSettings?.showDuration ?? true}
-                onValueChange={value => updateNoteSettings({ showDuration: value })}
-                trackColor={{ false: '#767577', true: '#007AFF' }}
-                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
-              />
-            </View>
+            <ToggleItem
+              title="Show Call Duration"
+              subtitle="Display duration in call notes"
+              value={noteSettings?.showDuration ?? true}
+              onValueChange={value => updateNoteSettings({ showDuration: value })}
+            />
 
-            <View style={styles.toggleItem}>
-              <View style={styles.toggleLeft}>
-                <Text style={styles.toggleTitle}>Show Call Direction</Text>
-                <Text style={styles.toggleSubtitle}>Display incoming/outgoing status</Text>
-              </View>
-              <Switch
-                value={noteSettings?.showDirection ?? true}
-                onValueChange={value => updateNoteSettings({ showDirection: value })}
-                trackColor={{ false: '#767577', true: '#007AFF' }}
-                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
-              />
-            </View>
+            <ToggleItem
+              title="Show Call Direction"
+              subtitle="Display incoming/outgoing status"
+              value={noteSettings?.showDirection ?? true}
+              onValueChange={value => updateNoteSettings({ showDirection: value })}
+            />
           </View>
         </View>
 
@@ -654,85 +645,62 @@ export default function SettingsScreen() {
               subtitle="View detailed analytics and generate reports"
               onPress={handleViewReports}
             />
-            <View style={styles.toggleItem}>
-              <View style={styles.toggleLeft}>
-                <Text style={styles.toggleTitle}>Password Protected Notes</Text>
-                <Text style={styles.toggleSubtitle}>Require password to view notes</Text>
-              </View>
-              <Switch
-                value={noteSettings?.passwordProtected ?? false}
-                onValueChange={value => {
-                  if (!isPremium) {
-                    setShowPremiumModal(true);
-                    return;
-                  }
-                  if (value) {
-                    setShowPasswordModal(true);
-                  } else {
-                    Alert.alert(
-                      'Remove Password Protection',
-                      'Are you sure you want to remove password protection from your notes?',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Remove',
-                          style: 'destructive',
-                          onPress: () => {
-                            updateNoteSettings({ passwordProtected: false, password: undefined });
-                          },
+            <ToggleItem
+              title="Password Protected Notes"
+              subtitle="Require password to view notes"
+              value={noteSettings?.passwordProtected ?? false}
+              onValueChange={value => {
+                if (!isPremium) {
+                  setShowPremiumModal(true);
+                  return;
+                }
+                if (value) {
+                  setShowPasswordModal(true);
+                } else {
+                  Alert.alert(
+                    'Remove Password Protection',
+                    'Are you sure you want to remove password protection from your notes?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Remove',
+                        style: 'destructive',
+                        onPress: () => {
+                          updateNoteSettings({ passwordProtected: false, password: undefined });
                         },
-                      ]
-                    );
-                  }
-                }}
-                trackColor={{ false: '#767577', true: '#007AFF' }}
-                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
-                disabled={!isPremium}
-              />
-            </View>
-            <View style={styles.toggleItem}>
-              <View style={styles.toggleLeft}>
-                <Text style={styles.toggleTitle}>Enable Shopify/Website Tab</Text>
-                <Text style={styles.toggleSubtitle}>
-                  Add a premium tab for Shopify store or website integration
-                </Text>
-              </View>
-              <Switch
-                value={premiumSettings?.showShopifyTab ?? false}
-                onValueChange={value => {
-                  if (!isPremium) {
-                    setShowPremiumModal(true);
-                    return;
-                  }
-                  updatePremiumSettings({ showShopifyTab: value });
-                }}
-                trackColor={{ false: '#767577', true: '#007AFF' }}
-                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
-                disabled={!isPremium}
-              />
-            </View>
-            <View style={styles.toggleItem}>
-              <View style={styles.toggleLeft}>
-                <Text style={styles.toggleTitle}>Enable Plan a Run Tab</Text>
-                <Text style={styles.toggleSubtitle}>
-                  Add a premium tab for planning contact visit routes with drag-and-drop
-                  functionality
-                </Text>
-              </View>
-              <Switch
-                value={premiumSettings?.showPlanRunTab ?? false}
-                onValueChange={value => {
-                  if (!isPremium) {
-                    setShowPremiumModal(true);
-                    return;
-                  }
-                  updatePremiumSettings({ showPlanRunTab: value });
-                }}
-                trackColor={{ false: '#767577', true: '#007AFF' }}
-                thumbColor={Platform.OS === 'android' ? '#f4f3f4' : undefined}
-                disabled={!isPremium}
-              />
-            </View>
+                      },
+                    ]
+                  );
+                }
+              }}
+              disabled={!isPremium}
+            />
+            <ToggleItem
+              title="Enable Shopify/Website Tab"
+              subtitle="Add a premium tab for Shopify store or website integration"
+              value={premiumSettings?.showShopifyTab ?? false}
+              onValueChange={value => {
+                if (!isPremium) {
+                  setShowPremiumModal(true);
+                  return;
+                }
+                updatePremiumSettings({ showShopifyTab: value });
+              }}
+              disabled={!isPremium}
+            />
+            <ToggleItem
+              title="Enable Plan a Run Tab"
+              subtitle="Add a premium tab for planning contact visit routes with drag-and-drop functionality"
+              value={premiumSettings?.showPlanRunTab ?? false}
+              onValueChange={value => {
+                if (!isPremium) {
+                  setShowPremiumModal(true);
+                  return;
+                }
+                updatePremiumSettings({ showPlanRunTab: value });
+              }}
+              disabled={!isPremium}
+            />
           </View>
           {!isPremium && (
             <View style={styles.premiumOverlay}>
@@ -767,23 +735,19 @@ export default function SettingsScreen() {
 
       <Modal visible={showTemplateModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.templateModalContainer} edges={['top', 'bottom']}>
-          <View style={styles.templateHeader}>
-            <Button onPress={handleCloseTemplate}>
-              <X size={24} color="#007AFF" />
-            </Button>
-
-            <Text style={styles.templateTitle}>Template Settings</Text>
-
-            <Button onPress={handleSaveTemplate}>
-              <Save size={24} color="#007AFF" />
-            </Button>
-          </View>
+          <ModalHeader
+            title="Template Settings"
+            onClose={handleCloseTemplate}
+            onAction={handleSaveTemplate}
+            leftIcon={<X size={24} color={COLORS.PRIMARY} />}
+            rightIcon={<Save size={24} color={COLORS.PRIMARY} />}
+          />
 
           <ScrollView style={styles.templateContent} showsVerticalScrollIndicator={false}>
-            <Text style={styles.templateSectionTitle}>Default Sections</Text>
-            <Text style={styles.templateDescription}>
-              Select which sections to include in your call notes
-            </Text>
+            <SectionHeader
+              title="Default Sections"
+              description="Select which sections to include in your call notes"
+            />
 
             <View style={styles.templateSections}>
               {templateSections.map(section => (
@@ -803,10 +767,10 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.customPromptsSection}>
-              <Text style={styles.templateSectionTitle}>Custom Prompts</Text>
-              <Text style={styles.templateDescription}>
-                Add your own custom prompts to the template
-              </Text>
+              <SectionHeader
+                title="Custom Prompts"
+                description="Add your own custom prompts to the template"
+              />
 
               {customPrompts.map((prompt, index) => (
                 <View key={index} style={styles.customPromptItem}>
@@ -895,23 +859,19 @@ export default function SettingsScreen() {
 
       <Modal visible={showTagsModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.templateModalContainer} edges={['top', 'bottom']}>
-          <View style={styles.templateHeader}>
-            <Button onPress={handleCloseTags}>
-              <X size={24} color="#007AFF" />
-            </Button>
-
-            <Text style={styles.templateTitle}>Manage Tags</Text>
-
-            <Button onPress={handleSaveTags}>
-              <Save size={24} color="#007AFF" />
-            </Button>
-          </View>
+          <ModalHeader
+            title="Manage Tags"
+            onClose={handleCloseTags}
+            onAction={handleSaveTags}
+            leftIcon={<X size={24} color={COLORS.PRIMARY} />}
+            rightIcon={<Save size={24} color={COLORS.PRIMARY} />}
+          />
 
           <ScrollView style={styles.templateContent} showsVerticalScrollIndicator={false}>
-            <Text style={styles.templateSectionTitle}>Preset Tags</Text>
-            <Text style={styles.templateDescription}>
-              These tags will be available as quick options when adding call notes
-            </Text>
+            <SectionHeader
+              title="Preset Tags"
+              description="These tags will be available as quick options when adding call notes"
+            />
 
             <View style={styles.tagsGrid}>
               {editableTags.map((tag, index) => (
@@ -1525,41 +1485,76 @@ export default function SettingsScreen() {
   );
 }
 
+const commonStyles = {
+  card: {
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    borderRadius: BORDER_RADIUS.MD,
+    ...SHADOW.SMALL,
+  },
+  cardWithPadding: {
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    padding: SPACING.LG,
+    borderRadius: BORDER_RADIUS.MD,
+  },
+  divider: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BORDER_LIGHT,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: BORDER_RADIUS.MD,
+    paddingVertical: SPACING.LG,
+    alignItems: 'center' as const,
+  },
+  primaryButtonText: {
+    color: COLORS.WHITE,
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  dashedBorder: {
+    borderWidth: 1,
+    borderColor: COLORS.PRIMARY,
+    borderStyle: 'dashed' as const,
+  },
+  rowCenter: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  pill: {
+    borderRadius: BORDER_RADIUS.ROUND,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+  },
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   scrollContent: {
-    paddingVertical: 16,
-    paddingBottom: 20,
+    paddingVertical: SPACING.LG,
+    paddingBottom: SPACING.XL,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: SPACING.XXL,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 16,
-    marginHorizontal: 16,
+    color: COLORS.TEXT_PRIMARY,
+    marginBottom: SPACING.LG,
+    marginHorizontal: SPACING.LG,
   },
   settingsGroup: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...commonStyles.card,
   },
   settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    ...commonStyles.rowCenter,
+    padding: SPACING.LG,
+    ...commonStyles.divider,
   },
   settingItemDisabled: {
     opacity: 0.5,
@@ -1571,7 +1566,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f8ff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: SPACING.MD,
   },
   destructiveIconContainer: {
     backgroundColor: '#fff0f0',
@@ -1582,69 +1577,61 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 2,
   },
   settingTitleDisabled: {
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   destructiveTitle: {
-    color: '#FF3B30',
+    color: COLORS.DESTRUCTIVE,
   },
   settingSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 18,
   },
   settingSubtitleDisabled: {
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   infoCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...commonStyles.cardWithPadding,
+    marginBottom: SPACING.MD,
+    ...SHADOW.SMALL,
   },
   infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    ...commonStyles.rowCenter,
+    marginBottom: SPACING.SM,
+    gap: SPACING.SM,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   infoDescription: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 20,
   },
   templateModalContainer: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   templateHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
+    paddingHorizontal: SPACING.XL,
+    paddingVertical: SPACING.LG,
+    backgroundColor: COLORS.WHITE,
     borderBottomWidth: 1,
     borderBottomColor: '#e1e5e9',
   },
   templateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   templateContent: {
     flex: 1,
@@ -1652,36 +1639,33 @@ const styles = StyleSheet.create({
   templateSectionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000',
-    marginTop: 24,
-    marginBottom: 8,
-    marginHorizontal: 20,
+    color: COLORS.TEXT_PRIMARY,
+    marginTop: SPACING.XXL,
+    marginBottom: SPACING.SM,
+    marginHorizontal: SPACING.XL,
   },
   templateDescription: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-    marginHorizontal: 20,
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: SPACING.LG,
+    marginHorizontal: SPACING.XL,
     lineHeight: 20,
   },
   templateSections: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 12,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    borderRadius: BORDER_RADIUS.MD,
     overflow: 'hidden',
   },
   templateSectionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     justifyContent: 'space-between',
     paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingHorizontal: SPACING.LG,
+    ...commonStyles.divider,
   },
   templateSectionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     flex: 1,
   },
   checkbox: {
@@ -1690,141 +1674,124 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
     borderColor: '#d1d5db',
-    marginRight: 12,
+    marginRight: SPACING.MD,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
+    borderColor: COLORS.PRIMARY,
   },
   templateSectionLabel: {
     fontSize: 16,
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   customPromptsSection: {
-    marginTop: 8,
+    marginTop: SPACING.SM,
   },
   customPromptItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 8,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    marginBottom: SPACING.SM,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.MD,
   },
   customPromptText: {
     fontSize: 16,
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     flex: 1,
   },
   addCustomPromptButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
+    ...commonStyles.rowCenter,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
     padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderStyle: 'dashed' as const,
+    borderRadius: BORDER_RADIUS.MD,
+    ...commonStyles.dashedBorder,
   },
   addCustomPromptText: {
     fontSize: 16,
-    color: '#007AFF',
-    marginLeft: 8,
+    color: COLORS.PRIMARY,
+    marginLeft: SPACING.SM,
   },
   addPromptContainer: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
     padding: 14,
-    borderRadius: 12,
-    marginBottom: 8,
+    borderRadius: BORDER_RADIUS.MD,
+    marginBottom: SPACING.SM,
   },
   addPromptInput: {
     fontSize: 16,
-    color: '#000',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e5e9',
-    paddingBottom: 8,
-    marginBottom: 12,
+    color: COLORS.TEXT_PRIMARY,
+    ...commonStyles.divider,
+    paddingBottom: SPACING.SM,
+    marginBottom: SPACING.MD,
   },
   addPromptButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
+    gap: SPACING.MD,
   },
   addPromptButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: SPACING.LG,
+    paddingVertical: SPACING.SM,
+    borderRadius: BORDER_RADIUS.SM,
   },
   addPromptButtonPrimary: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
   addPromptButtonCancel: {
     fontSize: 15,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   addPromptButtonAdd: {
+    ...commonStyles.primaryButtonText,
     fontSize: 15,
-    color: '#fff',
-    fontWeight: '600',
   },
   templatePreviewSection: {
-    marginTop: 8,
-    marginBottom: 20,
+    marginTop: SPACING.SM,
+    marginBottom: SPACING.XL,
   },
   templatePreview: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    padding: 16,
-    borderRadius: 12,
+    ...commonStyles.cardWithPadding,
   },
   templatePreviewText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 20,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   templateFooter: {
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    backgroundColor: '#f8f9fa',
+    padding: SPACING.XL,
+    paddingBottom: Platform.OS === 'ios' ? 40 : SPACING.XL,
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     borderTopWidth: 1,
     borderTopColor: '#e1e5e9',
   },
   templateSaveButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
+    ...commonStyles.primaryButton,
   },
   templateSaveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...commonStyles.primaryButtonText,
   },
   tagsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginHorizontal: 16,
-    marginBottom: 24,
+    gap: SPACING.SM,
+    marginHorizontal: SPACING.LG,
+    marginBottom: SPACING.XXL,
   },
   editableTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    ...commonStyles.rowCenter,
+    ...commonStyles.pill,
+    backgroundColor: COLORS.PRIMARY,
     gap: 6,
   },
   editableTagText: {
-    color: '#fff',
+    color: COLORS.WHITE,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -1832,28 +1799,23 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   addTagButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
+    ...commonStyles.pill,
     backgroundColor: '#f0f4f8',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
     gap: 6,
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderStyle: 'dashed',
+    ...commonStyles.dashedBorder,
   },
   addTagButtonText: {
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
     fontSize: 14,
     fontWeight: '500',
   },
   addTagInputContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.ROUND,
     borderWidth: 1,
-    borderColor: '#007AFF',
-    paddingHorizontal: 12,
+    borderColor: COLORS.PRIMARY,
+    paddingHorizontal: SPACING.MD,
     paddingVertical: 4,
   },
   addTagInput: {
@@ -1863,122 +1825,90 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   tagPreviewSection: {
-    marginTop: 8,
-    marginBottom: 20,
+    marginTop: SPACING.SM,
+    marginBottom: SPACING.XL,
   },
   tagPreview: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    padding: 16,
-    borderRadius: 12,
+    gap: SPACING.SM,
+    ...commonStyles.cardWithPadding,
   },
   previewTag: {
-    backgroundColor: '#007AFF',
-    borderRadius: 16,
-    paddingHorizontal: 12,
+    ...commonStyles.pill,
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: SPACING.LG,
     paddingVertical: 6,
   },
   previewTagText: {
-    color: '#fff',
+    color: COLORS.WHITE,
     fontSize: 14,
     fontWeight: '500',
   },
-  toggleItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  toggleLeft: {
-    flex: 1,
-    marginRight: 12,
-  },
-  toggleTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 2,
-  },
-  toggleSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
   passwordContent: {
     flex: 1,
-    padding: 20,
+    padding: SPACING.XL,
   },
   passwordDescription: {
     fontSize: 15,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: SPACING.XXXL,
   },
   passwordInputContainer: {
-    marginBottom: 20,
+    marginBottom: SPACING.XL,
   },
   passwordLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: SPACING.SM,
   },
   passwordInput: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.MD,
+    padding: SPACING.LG,
     fontSize: 16,
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     borderWidth: 1,
     borderColor: '#e1e5e9',
   },
   passwordError: {
-    color: '#FF3B30',
+    color: COLORS.DESTRUCTIVE,
     fontSize: 14,
-    marginTop: -12,
-    marginBottom: 20,
+    marginTop: -SPACING.MD,
+    marginBottom: SPACING.XL,
   },
   passwordSaveButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 32,
+    ...commonStyles.primaryButton,
+    marginTop: SPACING.XXXL,
   },
   passwordSaveButtonDisabled: {
     backgroundColor: '#ccc',
   },
   passwordSaveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...commonStyles.primaryButtonText,
   },
   passwordSaveButtonTextDisabled: {
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   premiumSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    marginHorizontal: 16,
-    gap: 8,
+    ...commonStyles.rowCenter,
+    marginBottom: SPACING.LG,
+    marginHorizontal: SPACING.LG,
+    gap: SPACING.SM,
   },
   upgradeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 12,
+    ...commonStyles.rowCenter,
+    backgroundColor: COLORS.GOLD,
+    paddingHorizontal: SPACING.MD,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: SPACING.LG,
     marginLeft: 'auto',
     gap: 4,
   },
   upgradeButtonText: {
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -1988,11 +1918,11 @@ const styles = StyleSheet.create({
   premiumOverlay: {
     position: 'absolute',
     top: 0,
-    left: 16,
-    right: 16,
+    left: SPACING.LG,
+    right: SPACING.LG,
     bottom: 0,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.MD,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 4,
@@ -2000,72 +1930,71 @@ const styles = StyleSheet.create({
   premiumOverlayText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFD700',
+    color: COLORS.GOLD,
   },
   premiumOverlaySubtext: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
   },
   premiumModalContainer: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   premiumModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
+    paddingHorizontal: SPACING.XL,
+    paddingVertical: SPACING.LG,
+    backgroundColor: COLORS.WHITE,
     borderBottomWidth: 1,
     borderBottomColor: '#e1e5e9',
   },
   premiumTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    ...commonStyles.rowCenter,
+    gap: SPACING.SM,
   },
   premiumModalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   premiumModalContent: {
     flex: 1,
   },
   premiumHero: {
     alignItems: 'center',
-    padding: 32,
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 16,
-    gap: 12,
+    padding: SPACING.XXXL,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    marginTop: SPACING.LG,
+    borderRadius: SPACING.LG,
+    gap: SPACING.MD,
   },
   premiumHeroTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   premiumHeroSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 22,
   },
   premiumFeatures: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 16,
-    padding: 20,
-    gap: 20,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    marginTop: SPACING.LG,
+    borderRadius: SPACING.LG,
+    padding: SPACING.XL,
+    gap: SPACING.XL,
   },
   premiumFeature: {
-    flexDirection: 'row',
+    ...commonStyles.rowCenter,
     alignItems: 'flex-start',
-    gap: 16,
+    gap: SPACING.LG,
   },
   premiumFeatureContent: {
     flex: 1,
@@ -2073,27 +2002,27 @@ const styles = StyleSheet.create({
   premiumFeatureTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 4,
   },
   premiumFeatureDescription: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 20,
   },
   premiumStats: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 20,
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    marginTop: SPACING.LG,
+    marginBottom: SPACING.XL,
+    borderRadius: SPACING.LG,
+    padding: SPACING.XL,
   },
   premiumStatsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 16,
+    color: COLORS.TEXT_PRIMARY,
+    marginBottom: SPACING.LG,
     textAlign: 'center',
   },
   premiumStatsGrid: {
@@ -2107,67 +2036,65 @@ const styles = StyleSheet.create({
   premiumStatNumber: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   premiumStatLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   premiumModalFooter: {
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    backgroundColor: '#f8f9fa',
+    padding: SPACING.XL,
+    paddingBottom: Platform.OS === 'ios' ? 40 : SPACING.XL,
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     borderTopWidth: 1,
     borderTopColor: '#e1e5e9',
-    gap: 12,
+    gap: SPACING.MD,
   },
   premiumUpgradeButton: {
-    backgroundColor: '#FFD700',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    flexDirection: 'row',
+    ...commonStyles.rowCenter,
+    backgroundColor: COLORS.GOLD,
+    borderRadius: BORDER_RADIUS.MD,
+    paddingVertical: SPACING.LG,
     justifyContent: 'center',
-    gap: 8,
+    gap: SPACING.SM,
   },
   premiumUpgradeButtonText: {
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     fontSize: 16,
     fontWeight: '700',
   },
   premiumCancelButton: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: SPACING.MD,
   },
   premiumCancelButtonText: {
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontSize: 16,
     fontWeight: '500',
   },
   reportsModalContainer: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   reportsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
+    paddingHorizontal: SPACING.XL,
+    paddingVertical: SPACING.LG,
+    backgroundColor: COLORS.WHITE,
     borderBottomWidth: 1,
     borderBottomColor: '#e1e5e9',
   },
   reportsTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    ...commonStyles.rowCenter,
+    gap: SPACING.SM,
   },
   reportsModalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   reportsContent: {
     flex: 1,
@@ -2175,73 +2102,64 @@ const styles = StyleSheet.create({
   reportsSectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 16,
-    marginHorizontal: 20,
+    color: COLORS.TEXT_PRIMARY,
+    marginBottom: SPACING.LG,
+    marginHorizontal: SPACING.XL,
   },
   overviewSection: {
-    marginTop: 20,
-    marginBottom: 24,
+    marginTop: SPACING.XL,
+    marginBottom: SPACING.XXL,
   },
   overviewGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginHorizontal: 16,
+    gap: SPACING.MD,
+    marginHorizontal: SPACING.LG,
   },
   overviewCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: SPACING.LG,
+    padding: SPACING.XL,
     alignItems: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: SPACING.SM,
+    ...SHADOW.MEDIUM,
   },
   overviewNumber: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   overviewLabel: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
     fontWeight: '500',
   },
   trendsSection: {
-    marginBottom: 24,
+    marginBottom: SPACING.XXL,
   },
   trendsGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginHorizontal: 16,
+    gap: SPACING.MD,
+    marginHorizontal: SPACING.LG,
   },
   trendCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: SPACING.LG,
+    padding: SPACING.LG,
+    ...SHADOW.MEDIUM,
   },
   trendHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    ...commonStyles.rowCenter,
+    gap: SPACING.SM,
+    marginBottom: SPACING.SM,
   },
   trendTitle: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   trendValue: {
@@ -2251,28 +2169,24 @@ const styles = StyleSheet.create({
   },
   trendSubtitle: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   chartSection: {
-    marginBottom: 24,
+    marginBottom: SPACING.XXL,
   },
   chartContainer: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    borderRadius: SPACING.LG,
+    padding: SPACING.XL,
+    ...SHADOW.MEDIUM,
   },
   chartGrid: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     height: 140,
-    marginBottom: 16,
+    marginBottom: SPACING.LG,
   },
   chartColumn: {
     alignItems: 'center',
@@ -2282,7 +2196,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     height: 120,
-    marginBottom: 8,
+    marginBottom: SPACING.SM,
   },
   chartBar: {
     width: 8,
@@ -2290,29 +2204,28 @@ const styles = StyleSheet.create({
     marginHorizontal: 1,
   },
   chartBarNotes: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
   chartBarOrders: {
-    backgroundColor: '#FF9500',
+    backgroundColor: COLORS.WARNING,
   },
   chartLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
     marginBottom: 2,
   },
   chartValue: {
     fontSize: 10,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   chartLegend: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
+    gap: SPACING.XL,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     gap: 6,
   },
   legendColor: {
@@ -2322,41 +2235,35 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   topContactsSection: {
-    marginBottom: 24,
+    marginBottom: SPACING.XXL,
   },
   topContactsList: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    borderRadius: SPACING.LG,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SHADOW.MEDIUM,
   },
   topContactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    ...commonStyles.rowCenter,
+    padding: SPACING.LG,
+    ...commonStyles.divider,
   },
   topContactRank: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#007AFF',
+    borderRadius: SPACING.LG,
+    backgroundColor: COLORS.PRIMARY,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: SPACING.MD,
   },
   topContactRankText: {
-    color: '#fff',
+    color: COLORS.WHITE,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -2366,50 +2273,44 @@ const styles = StyleSheet.create({
   topContactName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 2,
   },
   topContactStats: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   topContactTotal: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   topTagsSection: {
-    marginBottom: 24,
+    marginBottom: SPACING.XXL,
   },
   topTagsList: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
+    backgroundColor: COLORS.WHITE,
+    marginHorizontal: SPACING.LG,
+    borderRadius: SPACING.LG,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SHADOW.MEDIUM,
   },
   topTagItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    ...commonStyles.rowCenter,
+    padding: SPACING.LG,
+    ...commonStyles.divider,
   },
   topTagRank: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#34C759',
+    borderRadius: SPACING.LG,
+    backgroundColor: COLORS.SUCCESS,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: SPACING.MD,
   },
   topTagRankText: {
-    color: '#fff',
+    color: COLORS.WHITE,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -2419,48 +2320,43 @@ const styles = StyleSheet.create({
   topTagName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   topTagCount: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#34C759',
+    color: COLORS.SUCCESS,
   },
   exportSection: {
-    marginBottom: 32,
+    marginBottom: SPACING.XXXL,
   },
   exportButtons: {
     flexDirection: 'row',
-    gap: 12,
-    marginHorizontal: 16,
+    gap: SPACING.MD,
+    marginHorizontal: SPACING.LG,
   },
   exportButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.MD,
+    padding: SPACING.LG,
+    gap: SPACING.SM,
     borderWidth: 1,
-    borderColor: '#007AFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderColor: COLORS.PRIMARY,
+    ...SHADOW.MEDIUM,
   },
   exportButtonText: {
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
     fontSize: 14,
     fontWeight: '600',
   },
   emptyState: {
     textAlign: 'center',
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
     fontSize: 14,
     fontStyle: 'italic',
-    padding: 20,
+    padding: SPACING.XL,
   },
 });
