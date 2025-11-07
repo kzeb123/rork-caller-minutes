@@ -80,7 +80,7 @@ export default function CustomSplashScreen() {
               },
             ]}
           >
-            R
+            RR
           </Animated.Text>
         </View>
       </SafeAreaView>
