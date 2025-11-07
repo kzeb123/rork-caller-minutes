@@ -106,5 +106,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF', // White color
     textAlign: 'center',
+    letterSpacing: -20, // Negative spacing to make the R's overlap
   },
 });
