@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'visible',
   },
   logo: {
     fontSize: 120,
@@ -107,5 +108,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF', // White color
     textAlign: 'center',
     letterSpacing: -20, // Negative spacing to make the R's overlap
+    marginRight: 20, // Add margin to ensure the text isn't cut off
   },
 });
