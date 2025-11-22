@@ -55,12 +55,12 @@ export default function SettingsScreen() {
     orders,
     reminders,
     addContact,
-    importContacts,
+    importContactsAsync,
     isImporting,
     clearAllData,
     noteTemplate,
     updateNoteTemplate,
-    addFakeContacts,
+    addFakeContactsAsync,
     isAddingFakeContacts,
     presetTags,
     updatePresetTags,
@@ -109,7 +109,7 @@ export default function SettingsScreen() {
   const [newPromptText, setNewPromptText] = useState('');
   const [showAddPrompt, setShowAddPrompt] = useState(false);
 
-  const handleImportContacts = async () => {
+  const handleImportContacts = () => {
     if (Platform.OS === 'web') {
       Alert.alert(
         'Not Available',
@@ -119,61 +119,51 @@ export default function SettingsScreen() {
       return;
     }
 
-    try {
-      const result = await new Promise<{ imported: number; total: number }>((resolve, reject) => {
-        importContacts(undefined, {
-          onSuccess: resolve,
-          onError: reject,
-        });
-      });
-
-      if (result.imported > 0) {
+    importContactsAsync()
+      .then((result) => {
+        if (result.imported > 0) {
+          Alert.alert(
+            'Import Successful',
+            `Successfully imported ${result.imported} new contacts. You now have ${result.total} total contacts.`,
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert('No New Contacts', 'All your device contacts are already in the app.', [
+            { text: 'OK' },
+          ]);
+        }
+      })
+      .catch((error: any) => {
         Alert.alert(
-          'Import Successful',
-          `Successfully imported ${result.imported} new contacts. You now have ${result.total} total contacts.`,
+          'Import Failed',
+          error.message || 'Failed to import contacts. Please try again.',
           [{ text: 'OK' }]
         );
-      } else {
-        Alert.alert('No New Contacts', 'All your device contacts are already in the app.', [
-          { text: 'OK' },
-        ]);
-      }
-    } catch (error: any) {
-      Alert.alert(
-        'Import Failed',
-        error.message || 'Failed to import contacts. Please try again.',
-        [{ text: 'OK' }]
-      );
-    }
+      });
   };
 
-  const handleAddFakeContacts = async () => {
-    try {
-      const result = await new Promise<{ added: number; total: number }>((resolve, reject) => {
-        addFakeContacts(undefined, {
-          onSuccess: resolve,
-          onError: reject,
-        });
-      });
-
-      if (result.added > 0) {
+  const handleAddFakeContacts = () => {
+    addFakeContactsAsync()
+      .then((result) => {
+        if (result.added > 0) {
+          Alert.alert(
+            'Fake Contacts Added',
+            `Successfully added ${result.added} fake contacts for testing. You now have ${result.total} total contacts.`,
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert('No New Contacts', 'All fake contacts are already in the app.', [
+            { text: 'OK' },
+          ]);
+        }
+      })
+      .catch((error: any) => {
         Alert.alert(
-          'Fake Contacts Added',
-          `Successfully added ${result.added} fake contacts for testing. You now have ${result.total} total contacts.`,
+          'Failed to Add Contacts',
+          error.message || 'Failed to add fake contacts. Please try again.',
           [{ text: 'OK' }]
         );
-      } else {
-        Alert.alert('No New Contacts', 'All fake contacts are already in the app.', [
-          { text: 'OK' },
-        ]);
-      }
-    } catch (error: any) {
-      Alert.alert(
-        'Failed to Add Contacts',
-        error.message || 'Failed to add fake contacts. Please try again.',
-        [{ text: 'OK' }]
-      );
-    }
+      });
   };
 
   const handleClearAllData = () => {
@@ -282,62 +272,61 @@ export default function SettingsScreen() {
     }
 
     setIsExporting(true);
-    try {
-      const exportData = {
-        contacts,
-        notes,
-        orders,
-        reminders,
-        exportDate: new Date().toISOString(),
-        version: '1.0',
-      };
 
-      const jsonString = JSON.stringify(exportData, null, 2);
-      const fileName = `call-notes-export-${new Date().toISOString().split('T')[0]}.json`;
+    const exportData = {
+      contacts,
+      notes,
+      orders,
+      reminders,
+      exportDate: new Date().toISOString(),
+      version: '1.0',
+    };
 
-      if (Platform.OS === 'web') {
-        // Web export
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        Alert.alert('Export Complete', 'Your data has been downloaded successfully.');
-      } else {
-        // Mobile share
-        await Share.share({
-          message: jsonString,
-          title: 'Call Notes Export',
-        });
-      }
-    } catch (error) {
-      Alert.alert('Export Failed', 'Failed to export data. Please try again.');
-    } finally {
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const fileName = `call-notes-export-${new Date().toISOString().split('T')[0]}.json`;
+
+    if (Platform.OS === 'web') {
+      // Web export - synchronous, doesn't need promise handling
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      Alert.alert('Export Complete', 'Your data has been downloaded successfully.');
       setIsExporting(false);
+    } else {
+      // Mobile share - async
+      Share.share({
+        message: jsonString,
+        title: 'Call Notes Export',
+      })
+        .then(() => {
+          setIsExporting(false);
+        })
+        .catch(() => {
+          Alert.alert('Export Failed', 'Failed to export data. Please try again.');
+          setIsExporting(false);
+        });
     }
   };
 
-  const handleSaveLogs = async () => {
+  const handleSaveLogs = () => {
     if (!isPremium) {
       setShowPremiumModal(true);
       return;
     }
 
-    try {
-      // In a real app, this would save to cloud storage
-      // For now, we'll just show a success message
-      Alert.alert(
-        'Logs Saved',
-        'Your call logs have been saved to secure cloud storage. You can access them anytime from any device.',
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      Alert.alert('Save Failed', 'Failed to save logs. Please try again.');
-    }
+    // In a real app, this would save to cloud storage
+    // For now, we'll just show a success message
+    Alert.alert(
+      'Logs Saved',
+      'Your call logs have been saved to secure cloud storage. You can access them anytime from any device.',
+      [{ text: 'OK' }]
+    );
   };
 
   const handleUpgradeToPremium = () => {
@@ -530,6 +519,154 @@ export default function SettingsScreen() {
     </View>
   );
 
+  const contactSettings = [
+    {
+      icon: <Plus />,
+      title: 'Add Contact Manually',
+      subtitle: 'Create a new contact entry',
+      onPress: () => setShowAddModal(true),
+    },
+    {
+      icon: <Download />,
+      title: isImporting ? 'Importing...' : 'Import from Device',
+      subtitle:
+        Platform.OS === 'web'
+          ? 'Not available on web'
+          : `Sync contacts from your device (${contacts.length} contacts)`,
+      onPress: handleImportContacts,
+      disabled: isImporting || Platform.OS === 'web',
+    },
+    {
+      icon: <Users />,
+      title: isAddingFakeContacts ? 'Adding...' : 'Add Fake Contacts',
+      subtitle: 'Add sample contacts for testing the app',
+      onPress: handleAddFakeContacts,
+      disabled: isAddingFakeContacts,
+    },
+  ];
+
+  const infoCards = [
+    {
+      title: 'How it works',
+      description: 'This app helps you manage contacts and take call notes. All data is stored locally on your device.',
+    },
+    {
+      title: 'Contact Management',
+      description: 'The app helps you organize contacts and manage call-related notes and reminders.',
+    },
+  ];
+
+  const callNotesSettings = [
+    {
+      icon: <Edit3 />,
+      title: 'Edit Note Template',
+      subtitle: 'Customize the default structure for call notes',
+      onPress: handleEditTemplate,
+    },
+    {
+      icon: <Tag />,
+      title: 'Manage Tags',
+      subtitle: `Customize preset tags for call notes (${presetTags.length} tags)`,
+      onPress: handleEditTags,
+    },
+  ];
+
+  const noteDisplaySettings = [
+    {
+      title: 'Show Call Duration',
+      subtitle: 'Display duration in call notes',
+      value: noteSettings?.showDuration ?? true,
+      onValueChange: (value: boolean) => updateNoteSettings({ showDuration: value }),
+    },
+    {
+      title: 'Show Call Direction',
+      subtitle: 'Display incoming/outgoing status',
+      value: noteSettings?.showDirection ?? true,
+      onValueChange: (value: boolean) => updateNoteSettings({ showDirection: value }),
+    },
+  ];
+
+  const premiumActionSettings = [
+    {
+      icon: <Archive />,
+      title: isExporting ? 'Exporting...' : 'Export All Data',
+      subtitle: `Export contacts, notes, orders & reminders (${contacts.length + notes.length + orders.length + reminders.length} items)`,
+      onPress: handleExportLogs,
+      disabled: isExporting,
+    },
+    {
+      icon: <FileText />,
+      title: 'Save Logs to Cloud',
+      subtitle: 'Backup your data to secure cloud storage',
+      onPress: handleSaveLogs,
+    },
+    {
+      icon: <BarChart3 />,
+      title: 'Analytics & Reports',
+      subtitle: 'View detailed analytics and generate reports',
+      onPress: handleViewReports,
+    },
+  ];
+
+  const premiumToggleSettings = [
+    {
+      title: 'Password Protected Notes',
+      subtitle: 'Require password to view notes',
+      value: noteSettings?.passwordProtected ?? false,
+      onValueChange: (value: boolean) => {
+        if (!isPremium) {
+          setShowPremiumModal(true);
+          return;
+        }
+        if (value) {
+          setShowPasswordModal(true);
+        } else {
+          Alert.alert(
+            'Remove Password Protection',
+            'Are you sure you want to remove password protection from your notes?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Remove',
+                style: 'destructive',
+                onPress: () => {
+                  updateNoteSettings({ passwordProtected: false, password: undefined });
+                },
+              },
+            ]
+          );
+        }
+      },
+      disabled: !isPremium,
+    },
+    {
+      title: 'Enable Shopify/Website Tab',
+      subtitle: 'Add a premium tab for Shopify store or website integration',
+      value: premiumSettings?.showShopifyTab ?? false,
+      onValueChange: (value: boolean) => {
+        if (!isPremium) {
+          setShowPremiumModal(true);
+          return;
+        }
+        updatePremiumSettings({ showShopifyTab: value });
+      },
+      disabled: !isPremium,
+    },
+    {
+      title: 'Enable Plan a Run Tab',
+      subtitle: 'Add a premium tab for planning contact visit routes with drag-and-drop functionality',
+      value: premiumSettings?.showPlanRunTab ?? false,
+      onValueChange: (value: boolean) => {
+        if (!isPremium) {
+          setShowPremiumModal(true);
+          return;
+        }
+        updatePremiumSettings({ showPlanRunTab: value });
+      },
+      disabled: !isPremium,
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen options={{ title: 'Settings' }} />
@@ -538,76 +675,47 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contacts</Text>
           <View style={styles.settingsGroup}>
-            <SettingItem
-              icon={<Plus />}
-              title="Add Contact Manually"
-              subtitle="Create a new contact entry"
-              onPress={() => setShowAddModal(true)}
-            />
-            <SettingItem
-              icon={<Download />}
-              title={isImporting ? 'Importing...' : 'Import from Device'}
-              subtitle={
-                Platform.OS === 'web'
-                  ? 'Not available on web'
-                  : `Sync contacts from your device (${contacts.length} contacts)`
-              }
-              onPress={handleImportContacts}
-              disabled={isImporting || Platform.OS === 'web'}
-            />
-            <SettingItem
-              icon={<Users />}
-              title={isAddingFakeContacts ? 'Adding...' : 'Add Fake Contacts'}
-              subtitle="Add sample contacts for testing the app"
-              onPress={handleAddFakeContacts}
-              disabled={isAddingFakeContacts}
-            />
+            {contactSettings.map((setting, index) => (
+              <SettingItem
+                key={index}
+                icon={setting.icon}
+                title={setting.title}
+                subtitle={setting.subtitle}
+                onPress={setting.onPress}
+                disabled={setting.disabled}
+              />
+            ))}
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
-          <InfoCard
-            title="How it works"
-            description="This app helps you manage contacts and take call notes. All data is stored locally on your device."
-          />
-          <InfoCard
-            title="Contact Management"
-            description="The app helps you organize contacts and manage call-related notes and reminders."
-          />
+          {infoCards.map((card, index) => (
+            <InfoCard key={index} title={card.title} description={card.description} />
+          ))}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Call Notes</Text>
           <View style={styles.settingsGroup}>
-            <SettingItem
-              icon={<Edit3 />}
-              title="Edit Note Template"
-              subtitle="Customize the default structure for call notes"
-              onPress={handleEditTemplate}
-            />
-            <SettingItem
-              icon={<Tag />}
-              title="Manage Tags"
-              subtitle={`Customize preset tags for call notes (${presetTags.length} tags)`}
-              onPress={handleEditTags}
-            />
-          </View>
-
-          <View style={[styles.settingsGroup, { marginTop: 12 }]}>
-            <ToggleItem
-              title="Show Call Duration"
-              subtitle="Display duration in call notes"
-              value={noteSettings?.showDuration ?? true}
-              onValueChange={value => updateNoteSettings({ showDuration: value })}
-            />
-
-            <ToggleItem
-              title="Show Call Direction"
-              subtitle="Display incoming/outgoing status"
-              value={noteSettings?.showDirection ?? true}
-              onValueChange={value => updateNoteSettings({ showDirection: value })}
-            />
+            {callNotesSettings.map((setting, index) => (
+              <SettingItem
+                key={index}
+                icon={setting.icon}
+                title={setting.title}
+                subtitle={setting.subtitle}
+                onPress={setting.onPress}
+              />
+            ))}
+            {noteDisplaySettings.map((setting, index) => (
+              <ToggleItem
+                key={index}
+                title={setting.title}
+                subtitle={setting.subtitle}
+                value={setting.value}
+                onValueChange={setting.onValueChange}
+              />
+            ))}
           </View>
         </View>
 
@@ -626,81 +734,26 @@ export default function SettingsScreen() {
             )}
           </View>
           <View style={[styles.settingsGroup, !isPremium && styles.settingsGroupDisabled]}>
-            <SettingItem
-              icon={<Archive />}
-              title={isExporting ? 'Exporting...' : 'Export All Data'}
-              subtitle={`Export contacts, notes, orders & reminders (${contacts.length + notes.length + orders.length + reminders.length} items)`}
-              onPress={handleExportLogs}
-              disabled={isExporting}
-            />
-            <SettingItem
-              icon={<FileText />}
-              title="Save Logs to Cloud"
-              subtitle="Backup your data to secure cloud storage"
-              onPress={handleSaveLogs}
-            />
-            <SettingItem
-              icon={<BarChart3 />}
-              title="Analytics & Reports"
-              subtitle="View detailed analytics and generate reports"
-              onPress={handleViewReports}
-            />
-            <ToggleItem
-              title="Password Protected Notes"
-              subtitle="Require password to view notes"
-              value={noteSettings?.passwordProtected ?? false}
-              onValueChange={value => {
-                if (!isPremium) {
-                  setShowPremiumModal(true);
-                  return;
-                }
-                if (value) {
-                  setShowPasswordModal(true);
-                } else {
-                  Alert.alert(
-                    'Remove Password Protection',
-                    'Are you sure you want to remove password protection from your notes?',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Remove',
-                        style: 'destructive',
-                        onPress: () => {
-                          updateNoteSettings({ passwordProtected: false, password: undefined });
-                        },
-                      },
-                    ]
-                  );
-                }
-              }}
-              disabled={!isPremium}
-            />
-            <ToggleItem
-              title="Enable Shopify/Website Tab"
-              subtitle="Add a premium tab for Shopify store or website integration"
-              value={premiumSettings?.showShopifyTab ?? false}
-              onValueChange={value => {
-                if (!isPremium) {
-                  setShowPremiumModal(true);
-                  return;
-                }
-                updatePremiumSettings({ showShopifyTab: value });
-              }}
-              disabled={!isPremium}
-            />
-            <ToggleItem
-              title="Enable Plan a Run Tab"
-              subtitle="Add a premium tab for planning contact visit routes with drag-and-drop functionality"
-              value={premiumSettings?.showPlanRunTab ?? false}
-              onValueChange={value => {
-                if (!isPremium) {
-                  setShowPremiumModal(true);
-                  return;
-                }
-                updatePremiumSettings({ showPlanRunTab: value });
-              }}
-              disabled={!isPremium}
-            />
+            {premiumActionSettings.map((setting, index) => (
+              <SettingItem
+                key={index}
+                icon={setting.icon}
+                title={setting.title}
+                subtitle={setting.subtitle}
+                onPress={setting.onPress}
+                disabled={setting.disabled}
+              />
+            ))}
+            {premiumToggleSettings.map((setting, index) => (
+              <ToggleItem
+                key={index}
+                title={setting.title}
+                subtitle={setting.subtitle}
+                value={setting.value}
+                onValueChange={setting.onValueChange}
+                disabled={setting.disabled}
+              />
+            ))}
           </View>
           {!isPremium && (
             <View style={styles.premiumOverlay}>

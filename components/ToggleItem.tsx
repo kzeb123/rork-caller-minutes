@@ -39,6 +39,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: SPACING.MD,
+    paddingLeft: SPACING.LG,
+    paddingRight: SPACING.XXL,
   },
   containerDisabled: {
     opacity: 0.5,
