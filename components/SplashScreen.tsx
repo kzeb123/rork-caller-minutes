@@ -76,7 +76,7 @@ export default function CustomSplashScreen() {
               },
             ]}
           >
-            R
+            RR
           </Animated.Text>
         </View>
       </SafeAreaView>
@@ -102,5 +102,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF', // White color
     textAlign: 'center',
+    letterSpacing: -10,
+    paddingRight: 20,
   },
 });
