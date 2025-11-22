@@ -34,6 +34,9 @@ import {
 import { useContacts } from '@/hooks/contacts-store';
 import { Reminder } from '@/types/contact';
 import GroupedView, { GroupByOption } from '@/components/GroupedView';
+import ModalHeader from '@/components/ModalHeader';
+import SectionHeader from '@/components/SectionHeader';
+import { COLORS, SPACING, SHADOW, BORDER_RADIUS } from '@/constants/theme';
 
 export default function RemindersScreen() {
   const { reminders, contacts, orders, addReminder, updateReminder, deleteReminder, updateOrder } =
@@ -277,27 +280,27 @@ export default function RemindersScreen() {
         ) : (
           <>
             <View style={styles.contactSearchContainer}>
-              <Search size={16} color="#8E8E93" />
+              <Search size={16} color={COLORS.TEXT_QUATERNARY} />
               <TextInput
                 style={styles.contactSearchInput}
                 placeholder="Search contacts..."
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={COLORS.TEXT_QUATERNARY}
                 value={contactSearch}
                 onChangeText={setContactSearch}
               />
               {contactSearch.length > 0 && (
                 <Pressable onPress={() => setContactSearch('')}>
-                  <X size={16} color="#8E8E93" />
+                  <X size={16} color={COLORS.TEXT_QUATERNARY} />
                 </Pressable>
               )}
             </View>
 
             {selectedContact && (
               <View style={styles.selectedContactCard}>
-                <User size={16} color="#007AFF" />
+                <User size={16} color={COLORS.PRIMARY} />
                 <Text style={styles.selectedContactName}>{selectedContact.name}</Text>
                 <Pressable onPress={() => onSelect('')}>
-                  <X size={16} color="#666" />
+                  <X size={16} color={COLORS.TEXT_SECONDARY} />
                 </Pressable>
               </View>
             )}
@@ -339,7 +342,7 @@ export default function RemindersScreen() {
                     </Text>
                     <Text style={styles.contactItemPhone}>{contact.phoneNumber}</Text>
                   </View>
-                  {selectedId === contact.id && <CheckCircle size={20} color="#007AFF" />}
+                  {selectedId === contact.id && <CheckCircle size={20} color={COLORS.PRIMARY} />}
                 </Pressable>
               ))}
             </ScrollView>
@@ -400,15 +403,13 @@ export default function RemindersScreen() {
       onRequestClose={() => setShowAddModal(false)}
     >
       <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <Pressable onPress={() => setShowAddModal(false)}>
-            <X size={24} color="#666" />
-          </Pressable>
-          <Text style={styles.modalTitle}>Add Reminder</Text>
-          <Pressable onPress={handleAddReminder}>
-            <Text style={styles.saveButton}>Save</Text>
-          </Pressable>
-        </View>
+        <ModalHeader
+          title="Add Reminder"
+          onClose={() => setShowAddModal(false)}
+          onAction={handleAddReminder}
+          leftIcon={<X size={24} color={COLORS.TEXT_SECONDARY} />}
+          rightIcon={<Text style={styles.saveButton}>Save</Text>}
+        />
 
         <ScrollView style={styles.modalContent}>
           <View style={styles.inputGroup}>
@@ -441,7 +442,7 @@ export default function RemindersScreen() {
             />
             {parseTimeFromDescription(newReminderDescription) && (
               <View style={styles.timeDetected}>
-                <Clock size={14} color="#007AFF" />
+                <Clock size={14} color={COLORS.PRIMARY} />
                 <Text style={styles.timeDetectedText}>
                   Time detected:{' '}
                   {parseTimeFromDescription(newReminderDescription)?.toLocaleTimeString([], {
@@ -487,7 +488,7 @@ export default function RemindersScreen() {
                   isOrderReminder && styles.orderCompletionIcon,
                 ]}
               >
-                <IconComponent size={24} color="#fff" />
+                <IconComponent size={24} color={COLORS.WHITE} />
               </View>
               <Text style={styles.completionModalTitle}>{modalTitle}</Text>
               <Text style={styles.completionModalSubtitle}>
@@ -512,43 +513,27 @@ export default function RemindersScreen() {
               )}
 
               <View style={styles.completionActions}>
-                <Pressable
-                  style={[
-                    styles.completionActionButton,
-                    isOrderReminder ? styles.deliveredButton : styles.archiveButton,
-                  ]}
+                <CompletionActionButton
+                  icon={isOrderReminder ? Package : Archive}
+                  label={isOrderReminder ? 'Mark Delivered' : 'Archive'}
+                  subtext={isOrderReminder ? 'Order completed' : 'Save to archive'}
+                  style={isOrderReminder ? styles.deliveredButton : styles.archiveButton}
                   onPress={handleArchiveReminder}
-                >
-                  {isOrderReminder ? (
-                    <Package size={20} color="#fff" />
-                  ) : (
-                    <Archive size={20} color="#fff" />
-                  )}
-                  <Text style={styles.completionActionText}>
-                    {isOrderReminder ? 'Mark Delivered' : 'Archive'}
-                  </Text>
-                  <Text style={styles.completionActionSubtext}>
-                    {isOrderReminder ? 'Order completed' : 'Save to archive'}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  style={[styles.completionActionButton, styles.deleteButton]}
+                />
+                <CompletionActionButton
+                  icon={Trash2}
+                  label="Delete"
+                  subtext="Remove reminder"
+                  style={styles.deleteButton}
                   onPress={handleDeleteCompletedReminder}
-                >
-                  <Trash2 size={20} color="#fff" />
-                  <Text style={styles.completionActionText}>Delete</Text>
-                  <Text style={styles.completionActionSubtext}>Remove reminder</Text>
-                </Pressable>
-
-                <Pressable
-                  style={[styles.completionActionButton, styles.keepButton]}
+                />
+                <CompletionActionButton
+                  icon={CheckCircle}
+                  label="Keep"
+                  subtext="Mark as completed"
+                  style={styles.keepButton}
                   onPress={handleKeepReminder}
-                >
-                  <CheckCircle size={20} color="#fff" />
-                  <Text style={styles.completionActionText}>Keep</Text>
-                  <Text style={styles.completionActionSubtext}>Mark as completed</Text>
-                </Pressable>
+                />
               </View>
             </View>
           </View>
@@ -557,9 +542,65 @@ export default function RemindersScreen() {
     );
   };
 
+  // Helper component for stat cards
+  const StatCard = ({ icon: Icon, count, label, color, iconColor }: {
+    icon: any;
+    count: number;
+    label: string;
+    color?: string;
+    iconColor: string;
+  }) => (
+    <View style={styles.statCard}>
+      <View style={[styles.iconContainer, { backgroundColor: iconColor + '15' }]}>
+        <Icon size={20} color={iconColor} />
+      </View>
+      <View style={styles.statContent}>
+        <Text style={[styles.statNumber, color && { color }]}>{count}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
+    </View>
+  );
+
+  // Helper component for tab buttons
+  const TabButton = ({ tab, icon: Icon, label, count, onPress }: {
+    tab: 'all' | 'calls' | 'orders';
+    icon?: any;
+    label: string;
+    count: number;
+    onPress: () => void;
+  }) => {
+    const isActive = activeTab === tab;
+    return (
+      <Pressable style={[styles.tab, isActive && styles.activeTab]} onPress={onPress}>
+        {Icon && <Icon size={16} color={isActive ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY} />}
+        <Text style={[styles.tabText, isActive && styles.activeTabText]}>{label}</Text>
+        <View style={[styles.tabBadge, isActive && styles.activeTabBadge]}>
+          <Text style={[styles.tabBadgeText, isActive && styles.activeTabBadgeText]}>
+            {count}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  };
+
+  // Helper component for completion action buttons
+  const CompletionActionButton = ({ icon: Icon, label, subtext, style, onPress }: {
+    icon: any;
+    label: string;
+    subtext: string;
+    style: any;
+    onPress: () => void;
+  }) => (
+    <Pressable style={[styles.completionActionButton, style]} onPress={onPress}>
+      <Icon size={20} color={COLORS.WHITE} />
+      <Text style={styles.completionActionText}>{label}</Text>
+      <Text style={styles.completionActionSubtext}>{subtext}</Text>
+    </Pressable>
+  );
+
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Bell size={64} color="#ccc" />
+      <Bell size={64} color={COLORS.ICON_GRAY} />
       <Text style={styles.emptyTitle}>No Reminders Yet</Text>
       <Text style={styles.emptyText}>
         Create reminders to follow up with your contacts after calls
@@ -574,7 +615,7 @@ export default function RemindersScreen() {
           setShowAddModal(true);
         }}
       >
-        <Plus size={20} color="#fff" />
+        <Plus size={20} color={COLORS.WHITE} />
         <Text style={styles.emptyActionButtonText}>Create First Reminder</Text>
       </Pressable>
     </View>
@@ -671,15 +712,15 @@ export default function RemindersScreen() {
       >
         <Pressable style={styles.reminderCheckbox} onPress={() => handleReminderToggle(reminder)}>
           {reminder.isCompleted ? (
-            <CheckCircle size={24} color="#34C759" />
+            <CheckCircle size={24} color={COLORS.SUCCESS} />
           ) : (
-            <Circle size={24} color={isOverdue ? '#FF3B30' : isOrder ? '#FF9500' : '#8E8E93'} />
+            <Circle size={24} color={isOverdue ? COLORS.DESTRUCTIVE : isOrder ? COLORS.WARNING : COLORS.TEXT_QUATERNARY} />
           )}
         </Pressable>
 
         <View style={styles.reminderContent}>
           <View style={styles.reminderHeader}>
-            {isOrder ? <Package size={14} color="#FF9500" /> : <Phone size={14} color="#007AFF" />}
+            {isOrder ? <Package size={14} color={COLORS.WARNING} /> : <Phone size={14} color={COLORS.PRIMARY} />}
             <Text
               style={[styles.reminderTitle, reminder.isCompleted && styles.completedReminderTitle]}
             >
@@ -689,7 +730,7 @@ export default function RemindersScreen() {
 
           <View style={styles.reminderMeta}>
             <View style={styles.reminderMetaItem}>
-              <User size={14} color="#8E8E93" />
+              <User size={14} color={COLORS.TEXT_QUATERNARY} />
               <Text style={styles.reminderMetaText}>
                 {contact ? contact.name : reminder.contactName}
                 {contact && contact.phoneNumber && (
@@ -699,7 +740,7 @@ export default function RemindersScreen() {
             </View>
 
             <View style={styles.reminderMetaItem}>
-              <Calendar size={14} color={isOverdue ? '#FF3B30' : isToday ? '#FF9500' : '#8E8E93'} />
+              <Calendar size={14} color={isOverdue ? COLORS.DESTRUCTIVE : isToday ? COLORS.WARNING : COLORS.TEXT_QUATERNARY} />
               <Text
                 style={[
                   styles.reminderMetaText,
@@ -718,7 +759,7 @@ export default function RemindersScreen() {
 
             {isOverdue && !reminder.isCompleted && (
               <View style={styles.reminderMetaItem}>
-                <AlertCircle size={14} color="#FF3B30" />
+                <AlertCircle size={14} color={COLORS.DESTRUCTIVE} />
                 <Text style={styles.overdueText}>Overdue</Text>
               </View>
             )}
@@ -780,7 +821,7 @@ export default function RemindersScreen() {
               }
             }}
           >
-            <Trash2 size={18} color="#FF3B30" />
+            <Trash2 size={18} color={COLORS.DESTRUCTIVE} />
           </Pressable>
         </View>
       </View>
@@ -788,7 +829,7 @@ export default function RemindersScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen options={{ title: 'Reminders' }} />
 
       {callReminders.length === 0 && orderReminders.length === 0 ? (
@@ -806,114 +847,72 @@ export default function RemindersScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.statsGrid}
             >
-              <View style={styles.statCard}>
-                <View style={[styles.iconContainer, { backgroundColor: '#007AFF15' }]}>
-                  <Bell size={20} color="#007AFF" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={styles.statNumber}>{pendingReminders.length}</Text>
-                  <Text style={styles.statLabel}>Pending</Text>
-                </View>
-              </View>
-              <View style={styles.statCard}>
-                <View style={[styles.iconContainer, { backgroundColor: '#FF3B3015' }]}>
-                  <AlertCircle size={20} color="#FF3B30" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={[styles.statNumber, { color: '#FF3B30' }]}>
-                    {overdueReminders.length}
-                  </Text>
-                  <Text style={styles.statLabel}>Overdue</Text>
-                </View>
-              </View>
-              <View style={styles.statCard}>
-                <View style={[styles.iconContainer, { backgroundColor: '#FF950015' }]}>
-                  <Clock size={20} color="#FF9500" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={[styles.statNumber, { color: '#FF9500' }]}>
-                    {todayReminders.length}
-                  </Text>
-                  <Text style={styles.statLabel}>Today</Text>
-                </View>
-              </View>
-              <View style={styles.statCard}>
-                <View style={[styles.iconContainer, { backgroundColor: '#34C75915' }]}>
-                  <CheckCircle size={20} color="#34C759" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={[styles.statNumber, { color: '#34C759' }]}>
-                    {completedReminders.length}
-                  </Text>
-                  <Text style={styles.statLabel}>Done</Text>
-                </View>
-              </View>
+              <StatCard
+                icon={Bell}
+                count={pendingReminders.length}
+                label="Pending"
+                iconColor={COLORS.PRIMARY}
+              />
+              <StatCard
+                icon={AlertCircle}
+                count={overdueReminders.length}
+                label="Overdue"
+                color={COLORS.DESTRUCTIVE}
+                iconColor={COLORS.DESTRUCTIVE}
+              />
+              <StatCard
+                icon={Clock}
+                count={todayReminders.length}
+                label="Today"
+                color={COLORS.WARNING}
+                iconColor={COLORS.WARNING}
+              />
+              <StatCard
+                icon={CheckCircle}
+                count={completedReminders.length}
+                label="Done"
+                color={COLORS.SUCCESS}
+                iconColor={COLORS.SUCCESS}
+              />
             </ScrollView>
           </View>
 
           {/* Tab Selector */}
           <View style={styles.tabContainer}>
-            <Pressable
-              style={[styles.tab, activeTab === 'all' && styles.activeTab]}
+            <TabButton
+              tab="all"
+              label="All"
+              count={callReminders.length + orderReminders.length}
               onPress={() => setActiveTab('all')}
-            >
-              <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>All</Text>
-              <View style={[styles.tabBadge, activeTab === 'all' && styles.activeTabBadge]}>
-                <Text
-                  style={[styles.tabBadgeText, activeTab === 'all' && styles.activeTabBadgeText]}
-                >
-                  {callReminders.length + orderReminders.length}
-                </Text>
-              </View>
-            </Pressable>
-
-            <Pressable
-              style={[styles.tab, activeTab === 'calls' && styles.activeTab]}
+            />
+            <TabButton
+              tab="calls"
+              icon={Phone}
+              label="Calls"
+              count={callReminders.length}
               onPress={() => setActiveTab('calls')}
-            >
-              <Phone size={16} color={activeTab === 'calls' ? '#007AFF' : '#666'} />
-              <Text style={[styles.tabText, activeTab === 'calls' && styles.activeTabText]}>
-                Calls
-              </Text>
-              <View style={[styles.tabBadge, activeTab === 'calls' && styles.activeTabBadge]}>
-                <Text
-                  style={[styles.tabBadgeText, activeTab === 'calls' && styles.activeTabBadgeText]}
-                >
-                  {callReminders.length}
-                </Text>
-              </View>
-            </Pressable>
-
-            <Pressable
-              style={[styles.tab, activeTab === 'orders' && styles.activeTab]}
+            />
+            <TabButton
+              tab="orders"
+              icon={Package}
+              label="Orders"
+              count={orderReminders.length}
               onPress={() => setActiveTab('orders')}
-            >
-              <Package size={16} color={activeTab === 'orders' ? '#007AFF' : '#666'} />
-              <Text style={[styles.tabText, activeTab === 'orders' && styles.activeTabText]}>
-                Orders
-              </Text>
-              <View style={[styles.tabBadge, activeTab === 'orders' && styles.activeTabBadge]}>
-                <Text
-                  style={[styles.tabBadgeText, activeTab === 'orders' && styles.activeTabBadgeText]}
-                >
-                  {orderReminders.length}
-                </Text>
-              </View>
-            </Pressable>
+            />
           </View>
 
           {/* Group By Selector */}
           <View style={styles.groupBySection}>
             <Pressable style={styles.groupByButton} onPress={() => setShowGroupByModal(true)}>
-              <Filter size={16} color="#007AFF" />
+              <Filter size={16} color={COLORS.PRIMARY} />
               <Text style={styles.groupByButtonText}>
                 Group by: {groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}
               </Text>
-              <ChevronDown size={16} color="#007AFF" />
+              <ChevronDown size={16} color={COLORS.PRIMARY} />
             </Pressable>
             {activeTab === 'calls' && (
               <Pressable style={styles.addButton} onPress={() => setShowAddModal(true)}>
-                <Plus size={16} color="#fff" />
+                <Plus size={16} color={COLORS.WHITE} />
                 <Text style={styles.addButtonText}>Add</Text>
               </Pressable>
             )}
@@ -927,7 +926,7 @@ export default function RemindersScreen() {
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
                     <View style={styles.sectionTitleContainer}>
-                      <Phone size={18} color="#007AFF" />
+                      <Phone size={18} color={COLORS.PRIMARY} />
                       <Text style={styles.sectionTitle}>Call Reminders</Text>
                       <View style={styles.sectionBadge}>
                         <Text style={styles.sectionBadgeText}>{callStats.pending}</Text>
@@ -949,10 +948,10 @@ export default function RemindersScreen() {
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
                     <View style={styles.sectionTitleContainer}>
-                      <Package size={18} color="#FF9500" />
+                      <Package size={18} color={COLORS.WARNING} />
                       <Text style={styles.sectionTitle}>Order Reminders</Text>
-                      <View style={[styles.sectionBadge, { backgroundColor: '#FF950020' }]}>
-                        <Text style={[styles.sectionBadgeText, { color: '#FF9500' }]}>
+                      <View style={[styles.sectionBadge, { backgroundColor: COLORS.WARNING + '20' }]}>
+                        <Text style={[styles.sectionBadgeText, { color: COLORS.WARNING }]}>
                           {orderStats.pending}
                         </Text>
                       </View>
@@ -987,7 +986,7 @@ export default function RemindersScreen() {
 
           <View style={styles.infoSection}>
             <View style={styles.infoCard}>
-              <Bell size={20} color="#007AFF" />
+              <Bell size={20} color={COLORS.PRIMARY} />
               <Text style={styles.infoText}>
                 Manage reminders for both calls and orders. Never miss important follow-ups or
                 deliveries.
@@ -1032,7 +1031,7 @@ export default function RemindersScreen() {
                     ? 'No Grouping'
                     : option.charAt(0).toUpperCase() + option.slice(1)}
                 </Text>
-                {groupBy === option && <CheckCircle size={20} color="#007AFF" />}
+                {groupBy === option && <CheckCircle size={20} color={COLORS.PRIMARY} />}
               </Button>
             ))}
           </View>
@@ -1042,117 +1041,125 @@ export default function RemindersScreen() {
   );
 }
 
+// Common style patterns
+const commonStyles = {
+  card: {
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.MD,
+    ...SHADOW.SMALL,
+  },
+  cardWithPadding: {
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.MD,
+    padding: SPACING.LG,
+  },
+  rowCenter: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  iconCircle: {
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    borderRadius: BORDER_RADIUS.ROUND,
+  },
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   scrollContent: {
-    paddingVertical: 12,
-    paddingBottom: 20,
+    paddingVertical: SPACING.MD,
+    paddingBottom: SPACING.XL,
   },
   statsSection: {
-    paddingVertical: 20,
-    backgroundColor: '#fff',
-    marginTop: 8,
+    paddingVertical: SPACING.XL,
+    backgroundColor: COLORS.WHITE,
+    marginTop: SPACING.SM,
   },
   statsGrid: {
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingHorizontal: SPACING.LG,
+    gap: SPACING.MD,
   },
   statCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.card,
+    padding: SPACING.MD,
+    ...commonStyles.rowCenter,
     minWidth: 140,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   statNumber: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginBottom: 1,
   },
   iconContainer: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...commonStyles.iconCircle,
     marginRight: 10,
   },
   statContent: {
     flex: 1,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: SPACING.XL,
   },
   sectionHeader: {
-    flexDirection: 'row',
+    ...commonStyles.rowCenter,
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    marginBottom: SPACING.MD,
+    paddingHorizontal: SPACING.LG,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    color: COLORS.TEXT_PRIMARY,
+    marginBottom: SPACING.MD,
+    paddingHorizontal: SPACING.LG,
   },
   addButton: {
-    backgroundColor: '#007AFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: COLORS.PRIMARY,
+    ...commonStyles.rowCenter,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    borderRadius: BORDER_RADIUS.SM,
     gap: 4,
   },
   addButtonText: {
-    color: '#fff',
+    color: COLORS.WHITE,
     fontSize: 14,
     fontWeight: '500',
   },
   remindersList: {
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingHorizontal: SPACING.LG,
+    gap: SPACING.MD,
   },
   reminderCard: {
-    flexDirection: 'row',
+    ...commonStyles.rowCenter,
     alignItems: 'flex-start',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    padding: SPACING.LG,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.MD,
     borderWidth: 1,
-    borderColor: '#e9ecef',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderColor: COLORS.BORDER_LIGHT,
+    gap: SPACING.MD,
+    ...SHADOW.SMALL,
   },
   completedReminderCard: {
     opacity: 0.6,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: COLORS.BACKGROUND_GRAY,
   },
   overdueReminderCard: {
-    borderColor: '#FF3B30',
-    backgroundColor: '#FF3B30' + '08',
+    borderColor: COLORS.DESTRUCTIVE,
+    backgroundColor: COLORS.DESTRUCTIVE + '08',
   },
   reminderCheckbox: {
     marginTop: 2,
@@ -1163,213 +1170,199 @@ const styles = StyleSheet.create({
   reminderTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 6,
   },
   completedReminderTitle: {
     textDecorationLine: 'line-through',
-    color: '#8E8E93',
+    color: COLORS.TEXT_QUATERNARY,
   },
   reminderMeta: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: SPACING.MD,
     marginBottom: 6,
   },
   reminderMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     gap: 4,
   },
   reminderMetaText: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: COLORS.TEXT_QUATERNARY,
   },
   overdueText: {
-    color: '#FF3B30',
+    color: COLORS.DESTRUCTIVE,
     fontWeight: '500',
   },
   todayText: {
-    color: '#FF9500',
+    color: COLORS.WARNING,
     fontWeight: '500',
   },
   reminderDescription: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 18,
   },
   completedReminderDescription: {
-    color: '#8E8E93',
+    color: COLORS.TEXT_QUATERNARY,
   },
   reminderActions: {
     flexDirection: 'column',
-    gap: 8,
+    gap: SPACING.SM,
   },
   actionButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f8f9fa',
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...commonStyles.iconCircle,
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
   },
   infoSection: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    marginTop: 8,
+    paddingHorizontal: SPACING.LG,
+    marginBottom: SPACING.MD,
+    marginTop: SPACING.SM,
   },
   infoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
+    ...commonStyles.card,
+    padding: SPACING.LG,
+    ...commonStyles.rowCenter,
     alignItems: 'flex-start',
-    gap: 12,
+    gap: SPACING.MD,
     borderLeftWidth: 3,
-    borderLeftColor: '#007AFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderLeftColor: COLORS.PRIMARY,
   },
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     lineHeight: 20,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: SPACING.XXXL,
     paddingVertical: 40,
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000',
-    marginTop: 16,
-    marginBottom: 8,
+    color: COLORS.TEXT_PRIMARY,
+    marginTop: SPACING.LG,
+    marginBottom: SPACING.SM,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: SPACING.XXL,
   },
   emptyActionButton: {
-    backgroundColor: '#007AFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
+    backgroundColor: COLORS.PRIMARY,
+    ...commonStyles.rowCenter,
+    paddingHorizontal: SPACING.XL,
+    paddingVertical: SPACING.MD,
+    borderRadius: BORDER_RADIUS.MD,
+    gap: SPACING.SM,
   },
   emptyActionButtonText: {
-    color: '#fff',
+    color: COLORS.WHITE,
     fontSize: 16,
     fontWeight: '500',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.WHITE,
   },
   modalHeader: {
-    flexDirection: 'row',
+    ...commonStyles.rowCenter,
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
+    padding: SPACING.LG,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: COLORS.BORDER_LIGHT,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   saveButton: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   modalContent: {
     flex: 1,
-    padding: 16,
+    padding: SPACING.LG,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: SPACING.XL,
   },
   inputLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#000',
-    marginBottom: 8,
+    color: COLORS.TEXT_PRIMARY,
+    marginBottom: SPACING.SM,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderRadius: 8,
-    padding: 12,
+    borderColor: COLORS.BORDER_LIGHT,
+    borderRadius: BORDER_RADIUS.SM,
+    padding: SPACING.MD,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.WHITE,
   },
   textArea: {
     height: 80,
     textAlignVertical: 'top',
   },
   contactPicker: {
-    marginBottom: 20,
+    marginBottom: SPACING.XL,
   },
   contactSearchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-    gap: 8,
+    ...commonStyles.rowCenter,
+    backgroundColor: COLORS.BACKGROUND,
+    borderRadius: SPACING.MD,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.MD,
+    marginBottom: SPACING.MD,
+    gap: SPACING.SM,
   },
   contactSearchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
   },
   selectedContactCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF15',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-    gap: 8,
+    ...commonStyles.rowCenter,
+    backgroundColor: COLORS.PRIMARY + '15',
+    borderRadius: SPACING.MD,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.MD,
+    marginBottom: SPACING.MD,
+    gap: SPACING.SM,
     borderWidth: 1,
-    borderColor: '#007AFF30',
+    borderColor: COLORS.PRIMARY + '30',
   },
   selectedContactName: {
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   contactScrollView: {
     maxHeight: 200,
   },
   contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    ...commonStyles.rowCenter,
+    paddingVertical: SPACING.MD,
+    paddingHorizontal: SPACING.MD,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    borderBottomColor: COLORS.BACKGROUND,
   },
   selectedContactItem: {
-    backgroundColor: '#F0F8FF',
+    backgroundColor: COLORS.PRIMARY + '08',
   },
   contactItemContent: {
     flex: 1,
@@ -1377,98 +1370,97 @@ const styles = StyleSheet.create({
   contactItemName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#000',
+    color: COLORS.TEXT_PRIMARY,
     marginBottom: 2,
   },
   selectedContactItemName: {
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   contactItemPhone: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: COLORS.TEXT_TERTIARY,
   },
   contactChip: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
+    borderColor: COLORS.BORDER_LIGHT,
+    borderRadius: SPACING.XL,
+    paddingHorizontal: SPACING.LG,
+    paddingVertical: SPACING.SM,
+    marginRight: SPACING.SM,
   },
   selectedContactChip: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
+    borderColor: COLORS.PRIMARY,
   },
   contactChipText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   selectedContactChipText: {
-    color: '#fff',
+    color: COLORS.WHITE,
   },
   datePicker: {
-    marginBottom: 20,
+    marginBottom: SPACING.XL,
   },
   dateScrollView: {
     maxHeight: 50,
-    marginBottom: 8,
+    marginBottom: SPACING.SM,
   },
   dateChip: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
     borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
+    borderColor: COLORS.BORDER_LIGHT,
+    borderRadius: SPACING.XL,
+    paddingHorizontal: SPACING.LG,
+    paddingVertical: SPACING.SM,
+    marginRight: SPACING.SM,
   },
   selectedDateChip: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
+    borderColor: COLORS.PRIMARY,
   },
   dateChipText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontWeight: '500',
   },
   selectedDateChipText: {
-    color: '#fff',
+    color: COLORS.WHITE,
   },
   selectedDateText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     fontStyle: 'italic',
   },
   noContactsContainer: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
+    borderRadius: BORDER_RADIUS.SM,
+    padding: SPACING.LG,
     alignItems: 'center',
   },
   noContactsText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
   },
   phoneText: {
     fontSize: 11,
-    color: '#999',
+    color: COLORS.TEXT_TERTIARY,
   },
   timeDetected: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    paddingHorizontal: 8,
+    ...commonStyles.rowCenter,
+    marginTop: SPACING.SM,
+    paddingHorizontal: SPACING.SM,
     paddingVertical: 6,
-    backgroundColor: '#007AFF10',
-    borderRadius: 8,
+    backgroundColor: COLORS.PRIMARY + '10',
+    borderRadius: BORDER_RADIUS.SM,
     gap: 6,
   },
   timeDetectedText: {
     fontSize: 13,
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
     fontWeight: '500',
   },
   completionModalOverlay: {
@@ -1476,35 +1468,31 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.XL,
   },
   completionModalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.LG,
+    padding: SPACING.XXL,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    ...SHADOW.LARGE,
   },
   completionModalHeader: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: SPACING.XXL,
   },
   completionModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
-    marginTop: 12,
-    marginBottom: 8,
+    color: COLORS.TEXT_PRIMARY,
+    marginTop: SPACING.MD,
+    marginBottom: SPACING.SM,
     textAlign: 'center',
   },
   completionModalSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -1513,220 +1501,207 @@ const styles = StyleSheet.create({
   },
   completedReminderInfo: {
     alignItems: 'center',
-    marginBottom: 24,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
+    marginBottom: SPACING.XXL,
+    paddingVertical: SPACING.LG,
+    paddingHorizontal: SPACING.XL,
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
+    borderRadius: BORDER_RADIUS.MD,
     width: '100%',
   },
   completedReminderContact: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
     marginTop: 4,
   },
   completionActions: {
     width: '100%',
-    gap: 12,
+    gap: SPACING.MD,
   },
   completionActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    gap: 12,
+    paddingVertical: SPACING.LG,
+    paddingHorizontal: SPACING.XL,
+    borderRadius: BORDER_RADIUS.MD,
+    gap: SPACING.MD,
   },
   archiveButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY,
   },
   deleteButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: COLORS.DESTRUCTIVE,
   },
   keepButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: COLORS.SUCCESS,
   },
   completionActionText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.WHITE,
   },
   completionActionSubtext: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
-    marginLeft: 8,
+    marginLeft: SPACING.SM,
   },
   tabContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    gap: 8,
+    ...commonStyles.rowCenter,
+    paddingHorizontal: SPACING.LG,
+    marginBottom: SPACING.MD,
+    gap: SPACING.SM,
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    paddingVertical: SPACING.MD,
+    paddingHorizontal: SPACING.MD,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: SPACING.MD,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: COLORS.BORDER_LIGHT,
     gap: 6,
   },
   activeTab: {
-    backgroundColor: '#007AFF10',
-    borderColor: '#007AFF',
+    backgroundColor: COLORS.PRIMARY + '10',
+    borderColor: COLORS.PRIMARY,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   activeTabText: {
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   tabBadge: {
-    backgroundColor: '#66666620',
+    backgroundColor: COLORS.TEXT_SECONDARY + '20',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: SPACING.MD,
     minWidth: 20,
     alignItems: 'center',
   },
   activeTabBadge: {
-    backgroundColor: '#007AFF20',
+    backgroundColor: COLORS.PRIMARY + '20',
   },
   tabBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.TEXT_SECONDARY,
   },
   activeTabBadgeText: {
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    ...commonStyles.rowCenter,
+    gap: SPACING.SM,
     flex: 1,
   },
   sectionBadge: {
-    backgroundColor: '#007AFF20',
-    paddingHorizontal: 8,
+    backgroundColor: COLORS.PRIMARY + '20',
+    paddingHorizontal: SPACING.SM,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: SPACING.MD,
     minWidth: 24,
     alignItems: 'center',
   },
   sectionBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   orderReminderCard: {
-    borderColor: '#FF9500',
-    backgroundColor: '#FF950008',
+    borderColor: COLORS.WARNING,
+    backgroundColor: COLORS.WARNING + '08',
   },
   reminderHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     gap: 6,
     marginBottom: 2,
   },
   orderCompletionModal: {
     borderTopWidth: 3,
-    borderTopColor: '#FF9500',
+    borderTopColor: COLORS.WARNING,
   },
   completionIconWrapper: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...commonStyles.iconCircle,
+    backgroundColor: COLORS.PRIMARY,
   },
   orderCompletionIcon: {
-    backgroundColor: '#FF9500',
+    backgroundColor: COLORS.WARNING,
   },
   orderItemsCount: {
     fontSize: 13,
-    color: '#FF9500',
+    color: COLORS.WARNING,
     fontWeight: '500',
     marginTop: 2,
   },
   deliveredButton: {
-    backgroundColor: '#FF9500',
+    backgroundColor: COLORS.WARNING,
   },
   groupBySection: {
-    flexDirection: 'row',
+    ...commonStyles.rowCenter,
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingHorizontal: SPACING.LG,
+    marginBottom: SPACING.MD,
   },
   groupByButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...commonStyles.rowCenter,
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.SM,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: COLORS.BORDER_LIGHT,
   },
   groupByButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.XL,
   },
   groupByModalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.WHITE,
+    borderRadius: BORDER_RADIUS.LG,
+    padding: SPACING.XL,
     width: '90%',
     maxWidth: 350,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    ...SHADOW.LARGE,
   },
   groupByModalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 16,
+    color: COLORS.TEXT_PRIMARY,
+    marginBottom: SPACING.LG,
     textAlign: 'center',
   },
   groupByOption: {
-    flexDirection: 'row',
+    ...commonStyles.rowCenter,
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.LG,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.BORDER_LIGHT,
   },
   selectedGroupByOption: {
-    backgroundColor: '#007AFF10',
+    backgroundColor: COLORS.PRIMARY + '10',
   },
   groupByOptionText: {
     fontSize: 16,
-    color: '#333',
+    color: COLORS.TEXT_SECONDARY,
   },
   selectedGroupByOptionText: {
-    color: '#007AFF',
+    color: COLORS.PRIMARY,
     fontWeight: '600',
   },
 });

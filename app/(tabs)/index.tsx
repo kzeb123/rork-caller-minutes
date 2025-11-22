@@ -136,7 +136,7 @@ export default function ContactsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.tabContainer}>
         <TabButton mode="contacts" icon={Users} label="Contacts" />
         <TabButton mode="calls" icon={Calendar} label="Call History" />

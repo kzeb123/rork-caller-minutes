@@ -1229,7 +1229,7 @@ export default function NotesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen
         options={{
           title: 'Notes & Summary',
@@ -1869,7 +1869,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   scrollContent: {
-    paddingBottom: 100,
+    // paddingBottom: 100,
   },
   summarySection: {
     paddingTop: 20,
