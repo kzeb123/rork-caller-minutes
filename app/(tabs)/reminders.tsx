@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -54,39 +54,29 @@ export default function RemindersScreen() {
   const [showCallReminders, setShowCallReminders] = useState<boolean>(true);
   const [showOrderReminders, setShowOrderReminders] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'all' | 'calls' | 'orders'>('all');
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Parse time from description
   const parseTimeFromDescription = (description: string): Date | null => {
     if (!description) return null;
 
-    // Match various time formats
-    const timePatterns = [
-      /\b(\d{1,2})\s*[:.]\s*(\d{2})\s*(am|pm)?\b/i, // 12:30, 12.30, 12:30pm
-      /\b(\d{1,2})\s*(am|pm)\b/i, // 3pm, 10am
-      /\bat\s+(\d{1,2})\s*[:.]?\s*(\d{0,2})\s*(am|pm)?\b/i, // at 3, at 3:30pm
-    ];
+    // Match time formats: "3pm", "3:30pm", "at 3:30", "14:30"
+    const match = description.match(/\b(?:at\s+)?(\d{1,2})\s*[:.]?\s*(\d{2})?\s*(am|pm)?\b/i);
+    if (!match) return null;
 
-    for (const pattern of timePatterns) {
-      const match = description.match(pattern);
-      if (match) {
-        let hours = parseInt(match[1]);
-        const minutes = match[2] ? parseInt(match[2]) : 0;
-        const meridiem = match[3] || match[match.length - 1];
+    let hours = parseInt(match[1]);
+    const minutes = match[2] ? parseInt(match[2]) : 0;
+    const meridiem = match[3];
 
-        if (meridiem) {
-          const isPM = meridiem.toLowerCase() === 'pm';
-          if (isPM && hours < 12) hours += 12;
-          if (!isPM && hours === 12) hours = 0;
-        }
-
-        const date = new Date(selectedDate);
-        date.setHours(hours, minutes, 0, 0);
-        return date;
-      }
+    if (meridiem) {
+      const isPM = meridiem.toLowerCase() === 'pm';
+      if (isPM && hours < 12) hours += 12;
+      if (!isPM && hours === 12) hours = 0;
     }
 
-    return null;
+    const date = new Date(selectedDate);
+    date.setHours(hours, minutes, 0, 0);
+    return date;
   };
 
   const handleAddReminder = () => {
@@ -126,31 +116,26 @@ export default function RemindersScreen() {
       isCompleted: false,
     });
 
-    try {
-      addReminder({
-        contactId: contact.id,
-        contactName: contact.name,
-        title: newReminderTitle.trim(),
-        description: newReminderDescription.trim(),
-        dueDate: finalDate,
-        isCompleted: false,
-      });
+    addReminder({
+      contactId: contact.id,
+      contactName: contact.name,
+      title: newReminderTitle.trim(),
+      description: newReminderDescription.trim(),
+      dueDate: finalDate,
+      isCompleted: false,
+    });
 
-      console.log('Reminder added successfully');
+    console.log('Reminder added successfully');
 
-      // Reset form
-      setNewReminderTitle('');
-      setNewReminderDescription('');
-      setSelectedContactId('');
-      setSelectedDate(new Date());
-      setContactSearch('');
-      setShowAddModal(false);
+    // Reset form
+    setNewReminderTitle('');
+    setNewReminderDescription('');
+    setSelectedContactId('');
+    setSelectedDate(new Date());
+    setContactSearch('');
+    setShowAddModal(false);
 
-      Alert.alert('Success', 'Reminder created successfully!');
-    } catch (error) {
-      console.error('Error adding reminder:', error);
-      Alert.alert('Error', 'Failed to create reminder. Please try again.');
-    }
+    Alert.alert('Success', 'Reminder created successfully!');
   };
 
   const handleReminderToggle = (reminder: any) => {
@@ -395,77 +380,35 @@ export default function RemindersScreen() {
     );
   };
 
-  const AddReminderModal = () => (
-    <Modal
-      visible={showAddModal}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => setShowAddModal(false)}
-    >
-      <View style={styles.modalContainer}>
-        <ModalHeader
-          title="Add Reminder"
-          onClose={() => setShowAddModal(false)}
-          onAction={handleAddReminder}
-          leftIcon={<X size={24} color={COLORS.TEXT_SECONDARY} />}
-          rightIcon={<Text style={styles.saveButton}>Save</Text>}
-        />
-
-        <ScrollView style={styles.modalContent}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Title *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={newReminderTitle}
-              onChangeText={setNewReminderTitle}
-              placeholder="Enter reminder title"
-              multiline={false}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Description</Text>
-            <TextInput
-              style={[styles.textInput, styles.textArea]}
-              value={newReminderDescription}
-              onChangeText={text => {
-                setNewReminderDescription(text);
-                // Auto-detect time in description
-                const detectedTime = parseTimeFromDescription(text);
-                if (detectedTime) {
-                  setSelectedDate(detectedTime);
-                }
-              }}
-              placeholder="Enter description (e.g., 'Call at 3pm' or 'Meeting at 14:30')"
-              multiline={true}
-              numberOfLines={3}
-            />
-            {parseTimeFromDescription(newReminderDescription) && (
-              <View style={styles.timeDetected}>
-                <Clock size={14} color={COLORS.PRIMARY} />
-                <Text style={styles.timeDetectedText}>
-                  Time detected:{' '}
-                  {parseTimeFromDescription(newReminderDescription)?.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <ContactPicker selectedId={selectedContactId} onSelect={setSelectedContactId} />
-          <DatePicker date={selectedDate} onDateChange={setSelectedDate} />
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-
   const CompletionModal = () => {
     const isOrderReminder = completedReminder && (completedReminder as any).isOrder;
     const modalTitle = isOrderReminder ? 'Order Reminder Completed!' : 'Call Reminder Completed!';
     const modalIcon = isOrderReminder ? Package : Phone;
     const IconComponent = modalIcon;
+
+    const completionActions = [
+      {
+        icon: isOrderReminder ? Package : Archive,
+        label: isOrderReminder ? 'Mark Delivered' : 'Archive',
+        subtext: isOrderReminder ? 'Order completed' : 'Save to archive',
+        style: isOrderReminder ? styles.deliveredButton : styles.archiveButton,
+        onPress: handleArchiveReminder,
+      },
+      {
+        icon: Trash2,
+        label: 'Delete',
+        subtext: 'Remove reminder',
+        style: styles.deleteButton,
+        onPress: handleDeleteCompletedReminder,
+      },
+      {
+        icon: CheckCircle,
+        label: 'Keep',
+        subtext: 'Mark as completed',
+        style: styles.keepButton,
+        onPress: handleKeepReminder,
+      },
+    ];
 
     return (
       <Modal
@@ -513,27 +456,16 @@ export default function RemindersScreen() {
               )}
 
               <View style={styles.completionActions}>
-                <CompletionActionButton
-                  icon={isOrderReminder ? Package : Archive}
-                  label={isOrderReminder ? 'Mark Delivered' : 'Archive'}
-                  subtext={isOrderReminder ? 'Order completed' : 'Save to archive'}
-                  style={isOrderReminder ? styles.deliveredButton : styles.archiveButton}
-                  onPress={handleArchiveReminder}
-                />
-                <CompletionActionButton
-                  icon={Trash2}
-                  label="Delete"
-                  subtext="Remove reminder"
-                  style={styles.deleteButton}
-                  onPress={handleDeleteCompletedReminder}
-                />
-                <CompletionActionButton
-                  icon={CheckCircle}
-                  label="Keep"
-                  subtext="Mark as completed"
-                  style={styles.keepButton}
-                  onPress={handleKeepReminder}
-                />
+                {completionActions.map((action) => (
+                  <CompletionActionButton
+                    key={action.label}
+                    icon={action.icon}
+                    label={action.label}
+                    subtext={action.subtext}
+                    style={action.style}
+                    onPress={action.onPress}
+                  />
+                ))}
               </View>
             </View>
           </View>
@@ -543,19 +475,18 @@ export default function RemindersScreen() {
   };
 
   // Helper component for stat cards
-  const StatCard = ({ icon: Icon, count, label, color, iconColor }: {
+  const StatCard = ({ icon: Icon, count, label, color = COLORS.TEXT_PRIMARY }: {
     icon: any;
     count: number;
     label: string;
     color?: string;
-    iconColor: string;
   }) => (
     <View style={styles.statCard}>
-      <View style={[styles.iconContainer, { backgroundColor: iconColor + '15' }]}>
-        <Icon size={20} color={iconColor} />
+      <View style={[styles.iconContainer, { backgroundColor: color + '15' }]}>
+        <Icon size={20} color={color} />
       </View>
       <View style={styles.statContent}>
-        <Text style={[styles.statNumber, color && { color }]}>{count}</Text>
+        <Text style={[styles.statNumber, { color }]}>{count}</Text>
         <Text style={styles.statLabel}>{label}</Text>
       </View>
     </View>
@@ -675,6 +606,12 @@ export default function RemindersScreen() {
     r => new Date(r.dueDate).toDateString() === new Date().toDateString()
   );
 
+  const tabs = [
+    { tab: 'all' as const, label: 'All', count: callReminders.length + orderReminders.length },
+    { tab: 'calls' as const, icon: Phone, label: 'Calls', count: callReminders.length },
+    { tab: 'orders' as const, icon: Package, label: 'Orders', count: orderReminders.length },
+  ];
+
   // Stats for each type
   const callStats = {
     pending: callReminders.filter(r => !r.isCompleted).length,
@@ -700,6 +637,20 @@ export default function RemindersScreen() {
     const contact = contacts.find(c => c.id === reminder.contactId);
     const isOrder = reminder.isOrder;
 
+    // Helper to get circle color based on reminder state
+    const getCircleColor = () => {
+      if (isOverdue) return COLORS.DESTRUCTIVE;
+      if (isOrder) return COLORS.WARNING;
+      return COLORS.TEXT_QUATERNARY;
+    };
+
+    // Helper to get calendar icon color
+    const getCalendarColor = () => {
+      if (isOverdue) return COLORS.DESTRUCTIVE;
+      if (isToday) return COLORS.WARNING;
+      return COLORS.TEXT_QUATERNARY;
+    };
+
     return (
       <View
         key={reminder.id}
@@ -714,7 +665,7 @@ export default function RemindersScreen() {
           {reminder.isCompleted ? (
             <CheckCircle size={24} color={COLORS.SUCCESS} />
           ) : (
-            <Circle size={24} color={isOverdue ? COLORS.DESTRUCTIVE : isOrder ? COLORS.WARNING : COLORS.TEXT_QUATERNARY} />
+            <Circle size={24} color={getCircleColor()} />
           )}
         </Pressable>
 
@@ -740,7 +691,7 @@ export default function RemindersScreen() {
             </View>
 
             <View style={styles.reminderMetaItem}>
-              <Calendar size={14} color={isOverdue ? COLORS.DESTRUCTIVE : isToday ? COLORS.WARNING : COLORS.TEXT_QUATERNARY} />
+              <Calendar size={14} color={getCalendarColor()} />
               <Text
                 style={[
                   styles.reminderMetaText,
@@ -847,58 +798,35 @@ export default function RemindersScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.statsGrid}
             >
-              <StatCard
-                icon={Bell}
-                count={pendingReminders.length}
-                label="Pending"
-                iconColor={COLORS.PRIMARY}
-              />
-              <StatCard
-                icon={AlertCircle}
-                count={overdueReminders.length}
-                label="Overdue"
-                color={COLORS.DESTRUCTIVE}
-                iconColor={COLORS.DESTRUCTIVE}
-              />
-              <StatCard
-                icon={Clock}
-                count={todayReminders.length}
-                label="Today"
-                color={COLORS.WARNING}
-                iconColor={COLORS.WARNING}
-              />
-              <StatCard
-                icon={CheckCircle}
-                count={completedReminders.length}
-                label="Done"
-                color={COLORS.SUCCESS}
-                iconColor={COLORS.SUCCESS}
-              />
+              {[
+                { icon: Bell, count: pendingReminders.length, label: 'Pending', color: COLORS.PRIMARY },
+                { icon: AlertCircle, count: overdueReminders.length, label: 'Overdue', color: COLORS.DESTRUCTIVE },
+                { icon: Clock, count: todayReminders.length, label: 'Today', color: COLORS.WARNING },
+                { icon: CheckCircle, count: completedReminders.length, label: 'Done', color: COLORS.SUCCESS },
+              ].map((stat) => (
+                <StatCard
+                  key={stat.label}
+                  icon={stat.icon}
+                  count={stat.count}
+                  label={stat.label}
+                  color={stat.color}
+                />
+              ))}
             </ScrollView>
           </View>
 
           {/* Tab Selector */}
           <View style={styles.tabContainer}>
-            <TabButton
-              tab="all"
-              label="All"
-              count={callReminders.length + orderReminders.length}
-              onPress={() => setActiveTab('all')}
-            />
-            <TabButton
-              tab="calls"
-              icon={Phone}
-              label="Calls"
-              count={callReminders.length}
-              onPress={() => setActiveTab('calls')}
-            />
-            <TabButton
-              tab="orders"
-              icon={Package}
-              label="Orders"
-              count={orderReminders.length}
-              onPress={() => setActiveTab('orders')}
-            />
+            {tabs.map((tabConfig) => (
+              <TabButton
+                key={tabConfig.tab}
+                tab={tabConfig.tab}
+                icon={tabConfig.icon}
+                label={tabConfig.label}
+                count={tabConfig.count}
+                onPress={() => setActiveTab(tabConfig.tab)}
+              />
+            ))}
           </View>
 
           {/* Group By Selector */}
@@ -950,8 +878,8 @@ export default function RemindersScreen() {
                     <View style={styles.sectionTitleContainer}>
                       <Package size={18} color={COLORS.WARNING} />
                       <Text style={styles.sectionTitle}>Order Reminders</Text>
-                      <View style={[styles.sectionBadge, { backgroundColor: COLORS.WARNING + '20' }]}>
-                        <Text style={[styles.sectionBadgeText, { color: COLORS.WARNING }]}>
+                      <View style={[styles.sectionBadge, styles.orderSectionBadge]}>
+                        <Text style={[styles.sectionBadgeText, styles.orderSectionBadgeText]}>
                           {orderStats.pending}
                         </Text>
                       </View>
@@ -996,7 +924,71 @@ export default function RemindersScreen() {
         </ScrollView>
       )}
 
-      <AddReminderModal />
+      {/* Add Reminder Modal */}
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <ModalHeader
+            title="Add Reminder"
+            onClose={() => setShowAddModal(false)}
+            onAction={handleAddReminder}
+            leftIcon={<X size={24} color={COLORS.TEXT_SECONDARY} />}
+            rightIcon={<Text style={styles.saveButton}>Save</Text>}
+          />
+
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Title *</Text>
+              <TextInput
+                style={styles.textInput}
+                value={newReminderTitle}
+                onChangeText={setNewReminderTitle}
+                placeholder="Enter reminder title"
+                multiline={false}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                style={[styles.textInput, styles.textArea]}
+                value={newReminderDescription}
+                onChangeText={text => {
+                  setNewReminderDescription(text);
+                  // Auto-detect time in description
+                  const detectedTime = parseTimeFromDescription(text);
+                  if (detectedTime) {
+                    setSelectedDate(detectedTime);
+                  }
+                }}
+                placeholder="Enter description (e.g., 'Call at 3pm' or 'Meeting at 14:30')"
+                multiline={true}
+                numberOfLines={3}
+              />
+              {parseTimeFromDescription(newReminderDescription) && (
+                <View style={styles.timeDetected}>
+                  <Clock size={14} color={COLORS.PRIMARY} />
+                  <Text style={styles.timeDetectedText}>
+                    Time detected:{' '}
+                    {parseTimeFromDescription(newReminderDescription)?.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <ContactPicker selectedId={selectedContactId} onSelect={setSelectedContactId} />
+            <DatePicker date={selectedDate} onDateChange={setSelectedDate} />
+          </ScrollView>
+        </View>
+      </Modal>
+
       <CompletionModal />
 
       {/* Group By Modal */}
@@ -1610,6 +1602,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.PRIMARY,
+  },
+  orderSectionBadge: {
+    backgroundColor: COLORS.WARNING + '20',
+  },
+  orderSectionBadgeText: {
+    color: COLORS.WARNING,
   },
   orderReminderCard: {
     borderColor: COLORS.WARNING,
