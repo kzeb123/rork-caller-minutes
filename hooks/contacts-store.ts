@@ -17,6 +17,7 @@ import {
   ProductCatalog,
   NoteSettings,
 } from '@/types/contact';
+import { parseTimeFromDescription } from '@/utils/timeParser';
 
 const CONTACTS_KEY = 'call_notes_contacts';
 const NOTES_KEY = 'call_notes_notes';
@@ -935,85 +936,33 @@ export const [ContactsProvider, useContacts] = createContextHook(() => {
   // Date/time detection utility function - simplified to only detect times
   const detectDateTimeInText = useCallback((text: string): DetectedDateTime[] => {
     const detections: DetectedDateTime[] = [];
-    const now = new Date();
 
     // Skip the header line that contains "Call with [CONTACT_NAME] - [DATE]"
-    // Split text into lines and process only lines after the header
     const lines = text.split('\n');
     let textToProcess = text;
 
     // If the first line matches the call header pattern, exclude it from detection
     if (lines.length > 0 && lines[0].match(/^Call with .* - /)) {
-      // Process all lines except the first one
       textToProcess = lines.slice(1).join('\n');
     }
 
-    // Only look for time patterns in 12/24 hour format
-    const patterns = [
-      // 24-hour format (e.g., 14:30, 09:00)
-      { regex: /\b([01]?\d|2[0-3]):([0-5]\d)\b/g, type: 'time' as const, is24Hour: true },
-      // 12-hour format with am/pm (e.g., 2:30pm, 9:00 AM)
-      {
-        regex: /\b(1[0-2]|0?[1-9]):([0-5]\d)\s*(am|pm|AM|PM)\b/g,
-        type: 'time' as const,
-        is24Hour: false,
-      },
-      // 12-hour format without colon (e.g., 2pm, 9 AM)
-      { regex: /\b(1[0-2]|0?[1-9])\s*(am|pm|AM|PM)\b/g, type: 'time' as const, is24Hour: false },
-    ];
+    // Match all time patterns using global regex
+    const timeRegex = /\b(?:at\s+)?(\d{1,2})\s*[:.]?\s*(\d{2})?\s*(am|pm)?\b/gi;
+    let match;
 
-    patterns.forEach(pattern => {
-      let match;
-      while ((match = pattern.regex.exec(textToProcess)) !== null) {
-        const matchText = match[0];
-        const suggestedDate = new Date(now);
+    while ((match = timeRegex.exec(textToProcess)) !== null) {
+      const matchText = match[0];
+      const suggestedDate = parseTimeFromDescription(matchText, new Date(), true);
 
-        try {
-          // Parse time
-          let hours = parseInt(match[1]);
-          let minutes = 0;
-
-          if (match[2] && match[2].match(/\d+/)) {
-            minutes = parseInt(match[2]);
-          }
-
-          // Handle 12-hour format with AM/PM
-          if (!pattern.is24Hour && match[3]) {
-            const ampm = match[3].toLowerCase();
-            if (ampm === 'pm' && hours !== 12) {
-              hours += 12;
-            } else if (ampm === 'am' && hours === 12) {
-              hours = 0;
-            }
-          } else if (!pattern.is24Hour && match[2] && !match[2].match(/\d+/)) {
-            // Handle format like "2pm" where match[2] is am/pm
-            const ampm = match[2].toLowerCase();
-            if (ampm === 'pm' && hours !== 12) {
-              hours += 12;
-            } else if (ampm === 'am' && hours === 12) {
-              hours = 0;
-            }
-          }
-
-          // Set the time for today initially
-          suggestedDate.setHours(hours, minutes, 0, 0);
-
-          // If the time has already passed today, set it for tomorrow
-          if (suggestedDate.getTime() <= now.getTime()) {
-            suggestedDate.setDate(suggestedDate.getDate() + 1);
-          }
-
-          detections.push({
-            originalText: matchText,
-            suggestedDate,
-            type: 'time',
-            confidence: 0.9,
-          });
-        } catch (error) {
-          console.log('Error parsing time:', error);
-        }
+      if (suggestedDate) {
+        detections.push({
+          originalText: matchText,
+          suggestedDate,
+          type: 'time',
+          confidence: 0.9,
+        });
       }
-    });
+    }
 
     // Remove duplicate times (same hour and minute)
     const uniqueDetections = detections.filter((detection, index, self) => {

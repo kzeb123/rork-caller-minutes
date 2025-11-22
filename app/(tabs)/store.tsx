@@ -35,6 +35,7 @@ import { useContacts } from '@/hooks/contacts-store';
 import { OrderItem, Order, Product } from '@/types/contact';
 import ProductCatalogModal from '@/components/ProductCatalogModal';
 import Button from '@/components/Button';
+import { parseTimeFromDescription } from '@/utils/timeParser';
 
 export default function StoreScreen() {
   const {
@@ -69,6 +70,13 @@ export default function StoreScreen() {
   const pendingOrders = orders.filter(order => order.status === 'pending').length;
   const completedOrders = orders.filter(order => order.status === 'delivered').length;
   const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+  const stats = [
+    { icon: <ShoppingBag />, title: 'Total Orders', value: totalOrders, color: '#007AFF' },
+    { icon: <Clock />, title: 'Pending', value: pendingOrders, color: '#FF9500' },
+    { icon: <CheckCircle />, title: 'Completed', value: completedOrders, color: '#34C759' },
+    { icon: <DollarSign />, title: 'Revenue', value: `$${totalRevenue.toFixed(2)}`, color: '#5856D6' },
+  ];
 
   const resetOrderForm = () => {
     setSelectedContactId('');
@@ -245,40 +253,15 @@ export default function StoreScreen() {
     let showReminderPopup = false;
 
     if (orderNotes && !reminderDate) {
-      const timePatterns = [
-        /\b(\d{1,2})\s*[:.]\s*(\d{2})\s*(am|pm)?\b/i,
-        /\b(\d{1,2})\s*(am|pm)\b/i,
-        /\bat\s+(\d{1,2})\s*[:.]?\s*(\d{0,2})\s*(am|pm)?\b/i,
-        /\b(1[0-2]|0?[1-9]):([0-5]\d)\s*(am|pm|AM|PM)\b/i,
-        /\b([01]?\d|2[0-3]):([0-5]\d)\b/i,
-      ];
-
-      for (const pattern of timePatterns) {
-        const match = orderNotes.match(pattern);
-        if (match) {
-          let hours = parseInt(match[1]);
-          const minutes = match[2] ? parseInt(match[2]) : 0;
-          const meridiem = match[3] || match[match.length - 1];
-
-          if (meridiem) {
-            const isPM = meridiem.toLowerCase() === 'pm';
-            if (isPM && hours < 12) hours += 12;
-            if (!isPM && hours === 12) hours = 0;
-          }
-
-          const date = new Date();
-          date.setHours(hours, minutes, 0, 0);
-
-          // If the time has already passed today, set it for tomorrow
-          if (date.getTime() <= new Date().getTime()) {
-            date.setDate(date.getDate() + 1);
-          }
-
-          reminderDate = date;
-          reminderTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-          showReminderPopup = true;
-          break;
-        }
+      const detectedTime = parseTimeFromDescription(orderNotes, new Date(), true);
+      if (detectedTime) {
+        reminderDate = detectedTime;
+        reminderTime = detectedTime.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        showReminderPopup = true;
       }
     }
 
@@ -405,28 +388,15 @@ export default function StoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Store Overview</Text>
           <View style={styles.statsGrid}>
-            <StatCard
-              icon={<ShoppingBag />}
-              title="Total Orders"
-              value={totalOrders}
-              color="#007AFF"
-            />
-            <StatCard icon={<Clock />} title="Pending" value={pendingOrders} color="#FF9500" />
-          </View>
-
-          <View style={styles.statsGrid}>
-            <StatCard
-              icon={<CheckCircle />}
-              title="Completed"
-              value={completedOrders}
-              color="#34C759"
-            />
-            <StatCard
-              icon={<DollarSign />}
-              title="Revenue"
-              value={`$${totalRevenue.toFixed(2)}`}
-              color="#5856D6"
-            />
+            {stats.map((stat, index) => (
+              <StatCard
+                key={index}
+                icon={stat.icon}
+                title={stat.title}
+                value={stat.value}
+                color={stat.color}
+              />
+            ))}
           </View>
         </View>
 
@@ -928,39 +898,7 @@ export default function StoreScreen() {
               />
               {orderNotes &&
                 (() => {
-                  const timePatterns = [
-                    /\b(\d{1,2})\s*[:.]\s*(\d{2})\s*(am|pm)?\b/i,
-                    /\b(\d{1,2})\s*(am|pm)\b/i,
-                    /\bat\s+(\d{1,2})\s*[:.]?\s*(\d{0,2})\s*(am|pm)?\b/i,
-                    /\b(1[0-2]|0?[1-9]):([0-5]\d)\s*(am|pm|AM|PM)\b/i,
-                    /\b([01]?\d|2[0-3]):([0-5]\d)\b/i,
-                  ];
-
-                  let detectedTime = null;
-                  for (const pattern of timePatterns) {
-                    const match = orderNotes.match(pattern);
-                    if (match) {
-                      let hours = parseInt(match[1]);
-                      const minutes = match[2] ? parseInt(match[2]) : 0;
-                      const meridiem = match[3] || match[match.length - 1];
-
-                      if (meridiem) {
-                        const isPM = meridiem.toLowerCase() === 'pm';
-                        if (isPM && hours < 12) hours += 12;
-                        if (!isPM && hours === 12) hours = 0;
-                      }
-
-                      const date = new Date();
-                      date.setHours(hours, minutes, 0, 0);
-
-                      if (date.getTime() <= new Date().getTime()) {
-                        date.setDate(date.getDate() + 1);
-                      }
-
-                      detectedTime = date;
-                      break;
-                    }
-                  }
+                  const detectedTime = parseTimeFromDescription(orderNotes, new Date(), true);
 
                   return detectedTime ? (
                     <View style={styles.timeDetected}>
@@ -1032,12 +970,14 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
     gap: 12,
     marginBottom: 8,
   },
   statCard: {
-    flex: 1,
+    flexBasis: '48%',
+    minWidth: 160,
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,

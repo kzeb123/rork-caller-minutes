@@ -37,6 +37,7 @@ import GroupedView, { GroupByOption } from '@/components/GroupedView';
 import ModalHeader from '@/components/ModalHeader';
 import SectionHeader from '@/components/SectionHeader';
 import { COLORS, SPACING, SHADOW, BORDER_RADIUS } from '@/constants/theme';
+import { parseTimeFromDescription } from '@/utils/timeParser';
 
 export default function RemindersScreen() {
   const { reminders, contacts, orders, addReminder, updateReminder, deleteReminder, updateOrder } =
@@ -55,29 +56,6 @@ export default function RemindersScreen() {
   const [showOrderReminders, setShowOrderReminders] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'all' | 'calls' | 'orders'>('all');
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Parse time from description
-  const parseTimeFromDescription = (description: string): Date | null => {
-    if (!description) return null;
-
-    // Match time formats: "3pm", "3:30pm", "at 3:30", "14:30"
-    const match = description.match(/\b(?:at\s+)?(\d{1,2})\s*[:.]?\s*(\d{2})?\s*(am|pm)?\b/i);
-    if (!match) return null;
-
-    let hours = parseInt(match[1]);
-    const minutes = match[2] ? parseInt(match[2]) : 0;
-    const meridiem = match[3];
-
-    if (meridiem) {
-      const isPM = meridiem.toLowerCase() === 'pm';
-      if (isPM && hours < 12) hours += 12;
-      if (!isPM && hours === 12) hours = 0;
-    }
-
-    const date = new Date(selectedDate);
-    date.setHours(hours, minutes, 0, 0);
-    return date;
-  };
 
   const handleAddReminder = () => {
     console.log('handleAddReminder called');
@@ -104,7 +82,7 @@ export default function RemindersScreen() {
     }
 
     // Check if description contains time and update selectedDate
-    const parsedTime = parseTimeFromDescription(newReminderDescription);
+    const parsedTime = parseTimeFromDescription(newReminderDescription, selectedDate);
     const finalDate = parsedTime || selectedDate;
 
     console.log('Creating reminder with data:', {
@@ -960,7 +938,7 @@ export default function RemindersScreen() {
                 onChangeText={text => {
                   setNewReminderDescription(text);
                   // Auto-detect time in description
-                  const detectedTime = parseTimeFromDescription(text);
+                  const detectedTime = parseTimeFromDescription(text, selectedDate);
                   if (detectedTime) {
                     setSelectedDate(detectedTime);
                   }
@@ -969,12 +947,12 @@ export default function RemindersScreen() {
                 multiline={true}
                 numberOfLines={3}
               />
-              {parseTimeFromDescription(newReminderDescription) && (
+              {parseTimeFromDescription(newReminderDescription, selectedDate) && (
                 <View style={styles.timeDetected}>
                   <Clock size={14} color={COLORS.PRIMARY} />
                   <Text style={styles.timeDetectedText}>
                     Time detected:{' '}
-                    {parseTimeFromDescription(newReminderDescription)?.toLocaleTimeString([], {
+                    {parseTimeFromDescription(newReminderDescription, selectedDate)?.toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
